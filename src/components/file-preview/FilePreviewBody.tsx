@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import prismStyles from 'react-syntax-highlighter/dist/esm/styles/prism';
-const { oneDark, oneLight } = prismStyles as any;
+import oneDark from 'react-syntax-highlighter/dist/esm/styles/prism/one-dark';
+import oneLight from 'react-syntax-highlighter/dist/esm/styles/prism/one-light';
 import { Code, Eye, FileQuestion } from 'lucide-react';
 
 import { useTheme } from '../../contexts/ThemeContext';
