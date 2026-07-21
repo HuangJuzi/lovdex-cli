@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import ChatInterface from '../../chat/view/ChatInterface';
 import type { MainContentProps } from '../types/types';
+import { useFileOpenResolver } from '../../../hooks/useFileOpenResolver';
+import { FilePreviewModal } from '../../file-preview/FilePreviewModal';
 import { useUiPreferences } from '../../../hooks/useUiPreferences';
 
 import MobileMenuButton from './subcomponents/MobileMenuButton';
@@ -33,8 +35,13 @@ function MainContent({
   const { preferences } = useUiPreferences();
   const { showRawParameters, showThinking, sendByCtrlEnter } = preferences;
 
-  // Editor/file-open features were removed; chat receives a no-op.
-  const handleFileOpen = (_filePath: string) => {};
+  const [preview, setPreview] = useState<{ filePath: string; line?: number } | null>(null);
+
+  // Resolve bare/partial refs (e.g. `foo.ts`) against the project file tree,
+  // then open the read-only preview modal.
+  const handleFileOpen = useFileOpenResolver(selectedProject, (filePath: string) => {
+    setPreview({ filePath });
+  });
 
   if (isLoading) {
     return <MainContentStateView mode="loading" isMobile={isMobile} onMenuClick={onMenuClick} />;
@@ -88,6 +95,18 @@ function MainContent({
           </div>
         </div>
       </div>
+
+      <FilePreviewModal
+        open={preview !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreview(null);
+          }
+        }}
+        projectId={selectedProject?.projectId}
+        filePath={preview?.filePath}
+        line={preview?.line}
+      />
     </div>
   );
 }

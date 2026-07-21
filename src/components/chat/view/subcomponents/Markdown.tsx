@@ -14,6 +14,7 @@ import { useTheme } from '../../../../contexts/ThemeContext';
 type MarkdownProps = {
   children: React.ReactNode;
   className?: string;
+  onFileOpen?: (filePath: string, line?: number) => void;
 };
 
 // Links to the wider web (or in-page anchors) keep normal browser navigation;
@@ -23,6 +24,12 @@ const isExternalHref = (href?: string): boolean =>
 
 // Strip a trailing `:line` / `:line:col` suffix (e.g. `src/foo.ts:130`).
 const stripLineSuffix = (value: string): string => value.replace(/:\d+(?::\d+)?$/, '');
+
+// Parse a trailing `:line` / `:line:col` suffix into a line number.
+const parseLineSuffix = (value: string): number | undefined => {
+  const match = value.match(/:(\d+)(?::\d+)?$/);
+  return match ? Number(match[1]) : undefined;
+};
 
 // A usable file path contains a separator or a filename with an extension.
 const looksLikeFilePath = (value?: string): value is string => {
@@ -183,12 +190,18 @@ const markdownComponents = {
   ),
 };
 
-export function Markdown({ children, className }: MarkdownProps) {
+export function Markdown({ children, className, onFileOpen }: MarkdownProps) {
   const content = normalizeInlineCodeFences(String(children ?? ''));
   const remarkPlugins = useMemo(() => [remarkGfm, remarkMath], []);
   const rehypePlugins = useMemo(() => [rehypeKatex], []);
-  // Simplified edition: in-app editor removed; file links open as plain anchors.
-  const openFileInEditor = useCallback((_file: string) => {}, []);
+  const openFileInEditor = useCallback(
+    (fileRef: string) => {
+      if (!onFileOpen) return;
+      const line = parseLineSuffix(fileRef);
+      onFileOpen(stripLineSuffix(fileRef), line);
+    },
+    [onFileOpen],
+  );
 
   const components = useMemo(
     () => ({
@@ -206,7 +219,7 @@ export function Markdown({ children, className }: MarkdownProps) {
               className="cursor-pointer text-blue-600 hover:underline dark:text-blue-400"
               onClick={(event) => {
                 event.preventDefault();
-                openFileInEditor(stripLineSuffix(fileRef));
+                openFileInEditor(fileRef);
               }}
             >
               {linkChildren}
