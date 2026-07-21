@@ -4,8 +4,8 @@ import assert from 'node:assert/strict';
 import { classifyFile, MAX_PREVIEW_BYTES, MAX_PREVIEW_LINES } from './filePreviewTypes';
 
 test('classifies markdown extensions', () => {
-  assert.equal(classifyFile('docs/foo.md').kind, 'markdown');
-  assert.equal(classifyFile('README.markdown').kind, 'markdown');
+  assert.deepEqual(classifyFile('docs/foo.md'), { kind: 'markdown', language: 'markdown' });
+  assert.deepEqual(classifyFile('README.markdown'), { kind: 'markdown', language: 'markdown' });
 });
 
 test('classifies code extensions with mapped Prism language', () => {
@@ -16,8 +16,10 @@ test('classifies code extensions with mapped Prism language', () => {
 });
 
 test('classifies plain-text extensions', () => {
-  assert.equal(classifyFile('notes.txt').kind, 'text');
-  assert.equal(classifyFile('server.log').kind, 'text');
+  assert.deepEqual(classifyFile('notes.txt'), { kind: 'text', language: 'text' });
+  assert.deepEqual(classifyFile('server.log'), { kind: 'text', language: 'text' });
+  // dot-prefixed files
+  assert.deepEqual(classifyFile('.env'), { kind: 'text', language: 'text' });
 });
 
 test('classifies image extensions', () => {

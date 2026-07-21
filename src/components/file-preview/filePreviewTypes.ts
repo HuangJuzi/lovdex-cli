@@ -15,10 +15,10 @@ const MARKDOWN_EXTS = new Set(['md', 'markdown']);
 
 const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico']);
 
-const TEXT_EXTS = new Set(['txt', 'log', 'csv', 'env', 'ini', 'conf', 'text']);
+const TEXT_EXTS = new Set(['txt', 'log', 'csv', 'env', 'ini', 'conf', 'text', 'gitignore', 'envrc']);
 
-// Extension -> Prism language id. Extensions not listed fall back to the
-// extension itself; Prism degrades unknown languages to plain text safely.
+// Extension -> Prism language id. Extensions not listed here fall through
+// to TEXT_EXTS, and if not found there either, become 'unsupported'.
 const CODE_LANG_MAP: Record<string, string> = {
   py: 'python',
   js: 'javascript',
@@ -51,8 +51,14 @@ const getExtension = (filePath: string): string => {
   const cleaned = stripLineSuffix(filePath.trim());
   const base = cleaned.split(/[\\/]/).pop() || '';
   const dot = base.lastIndexOf('.');
-  if (dot <= 0) {
+  // No dot → no extension.
+  if (dot === -1) {
     return '';
+  }
+  // Dot-prefixed file (e.g. `.env`, `.gitignore`) → treat the whole
+  // basename as the extension so `.env` matches TEXT_EXTS.
+  if (dot === 0) {
+    return base.slice(1).toLowerCase();
   }
   return base.slice(dot + 1).toLowerCase();
 };
