@@ -46,9 +46,15 @@ const looksLikeFilePath = (value?: string): value is string => {
 // ---------------------------------------------------------------------------
 // Pre-processor: wrap bare file paths in markdown links so the existing <a>
 // onClick handler can detect and open them in the preview modal.
-// Protected: fenced code blocks, inline code, and existing [text](url) links.
+// Protected: fenced code blocks, inline code, existing links, and URLs.
 // ---------------------------------------------------------------------------
-function autoLinkBareFilePaths(raw: string): string {
+
+// Path-like run: filename-safe chars plus an optional `:line[:col]` suffix.
+// Deliberately excludes CJK and whitespace so a path embedded next to Chinese
+// punctuation (e.g. `保存：docs/a.png`) is extracted cleanly.
+const BARE_PATH_RE = /[A-Za-z0-9_.@~/\\-]+(?::\d+(?::\d+)?)?/g;
+
+export function autoLinkBareFilePaths(raw: string): string {
   const placeholders: string[] = [];
 
   const save = (match: string): string => {
@@ -65,20 +71,22 @@ function autoLinkBareFilePaths(raw: string): string {
   // 3. Protect existing markdown links [text](url)
   text = text.replace(/\[([^\]]*)\]\(([^)]+)\)/g, save);
 
-  // 4. Wrap bare file paths in [path](path)
-  text = text.replace(/\S+/g, (token) => {
+  // 4. Protect URLs so their `//host/path` part is not linked as a file.
+  text = text.replace(/\b(?:https?|ftp|file):\/\/[^\s]+/gi, save);
+
+  // 5. Wrap bare file paths in [path](path)
+  text = text.replace(BARE_PATH_RE, (token) => {
     if (token.startsWith('◊')) return token;
-    if (/^https?:\/\//i.test(token)) return token;
-    // Strip trailing punctuation before checking whether it's a file path.
-    const cleaned = token.replace(/[,;:!?)\]}]+$/, '');
-    if (cleaned && looksLikeFilePath(cleaned)) {
+    // Strip trailing sentence punctuation before the path check.
+    const cleaned = token.replace(/[.,;:!?]+$/, '');
+    if (cleaned && !/^FPPH\d+$/.test(cleaned) && looksLikeFilePath(cleaned)) {
       const trail = token.slice(cleaned.length);
       return `[${cleaned}](${cleaned})${trail}`;
     }
     return token;
   });
 
-  // 5. Restore protected segments
+  // 6. Restore protected segments
   text = text.replace(/◊FPPH(\d+)◊/g, (_, i) => placeholders[Number(i)]);
 
   return text;
@@ -104,9 +112,10 @@ type CodeBlockProps = {
   inline?: boolean;
   className?: string;
   children?: React.ReactNode;
+  onInlineFileClick?: (fileRef: string) => void;
 };
 
-const CodeBlock = ({ node, inline, className, children, ...props }: CodeBlockProps) => {
+const CodeBlock = ({ node, inline, className, children, onInlineFileClick, ...props }: CodeBlockProps) => {
   const { t } = useTranslation('chat');
   const { isDarkMode } = useTheme();
   const [copied, setCopied] = useState(false);
@@ -116,6 +125,30 @@ const CodeBlock = ({ node, inline, className, children, ...props }: CodeBlockPro
   const shouldInline = inlineDetected || !looksMultiline;
 
   if (shouldInline) {
+    // Inline code that is a lone file path becomes a clickable preview link.
+    const trimmed = raw.trim();
+    const isFileRef =
+      onInlineFileClick && !/\s/.test(trimmed) && !isExternalHref(trimmed) && looksLikeFilePath(trimmed);
+    if (isFileRef) {
+      return (
+        <code
+          role="button"
+          tabIndex={0}
+          onClick={() => onInlineFileClick(trimmed)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onInlineFileClick(trimmed);
+            }
+          }}
+          className={`cursor-pointer whitespace-pre-wrap break-words rounded-md border border-blue-200 bg-blue-50 px-1.5 py-0.5 font-mono text-[0.9em] text-blue-700 hover:underline dark:border-blue-800/60 dark:bg-blue-900/20 dark:text-blue-300 ${className || ''
+            }`}
+          {...props}
+        >
+          {children}
+        </code>
+      );
+    }
     return (
       <code
         className={`whitespace-pre-wrap break-words rounded-md border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-mono text-[0.9em] text-gray-900 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-100 ${className || ''
@@ -247,6 +280,9 @@ export function Markdown({ children, className, onFileOpen }: MarkdownProps) {
   const components = useMemo(
     () => ({
       ...markdownComponents,
+      code: (codeProps: CodeBlockProps) => (
+        <CodeBlock {...codeProps} onInlineFileClick={onFileOpen ? openFileInEditor : undefined} />
+      ),
       a: ({ href, children: linkChildren }: { href?: string; children?: React.ReactNode }) => {
         // Prefer the href when it is a real path; otherwise fall back to the
         // link text, since models often emit `[src/foo.ts]()` with an empty href.
@@ -280,7 +316,7 @@ export function Markdown({ children, className, onFileOpen }: MarkdownProps) {
         );
       },
     }),
-    [openFileInEditor],
+    [openFileInEditor, onFileOpen],
   );
 
   return (
