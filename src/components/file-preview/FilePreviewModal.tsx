@@ -22,10 +22,10 @@ export function FilePreviewModal({ open, onOpenChange, projectId, filePath, line
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[80vh] w-[90vw] max-w-4xl flex-col overflow-hidden rounded-2xl border-border/80 bg-popover p-0 shadow-2xl">
+      <DialogContent className="flex h-[min(92dvh,50rem)] w-[calc(100vw-1rem)] max-w-4xl flex-col overflow-hidden rounded-2xl border-border/80 bg-popover p-0 shadow-2xl sm:w-[92vw]">
         <DialogTitle>{filePath ? basename(filePath) : 'File preview'}</DialogTitle>
 
-        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-4 py-3">
+        <div className="flex shrink-0 items-start justify-between gap-2 border-b border-border px-3 py-2.5 sm:px-4 sm:py-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-foreground">{filePath ? basename(filePath) : ''}</p>
             <p className="truncate text-xs text-muted-foreground">{filePath}</p>
@@ -35,14 +35,14 @@ export function FilePreviewModal({ open, onOpenChange, projectId, filePath, line
             variant="ghost"
             size="icon"
             onClick={() => onOpenChange(false)}
-            className="h-8 w-8 shrink-0 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="h-9 w-9 shrink-0 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
             aria-label={t('filePreview.close')}
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-hidden p-3">
+        <div className="min-h-0 flex-1 overflow-hidden p-2 sm:p-3">
           {state.loading ? (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">...</div>
           ) : state.error ? (

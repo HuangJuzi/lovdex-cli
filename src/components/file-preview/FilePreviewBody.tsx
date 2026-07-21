@@ -63,7 +63,7 @@ export function FilePreviewBody({
 
   if (kind === 'image') {
     return (
-      <div className="flex h-full items-center justify-center overflow-auto p-4">
+      <div className="flex h-full items-center justify-center overflow-auto p-2 sm:p-4">
         {blobUrl ? (
           <img src={blobUrl} alt={basename(filePath)} className="max-h-full max-w-full object-contain" />
         ) : null}
@@ -98,14 +98,14 @@ export function FilePreviewBody({
           <button
             type="button"
             onClick={() => setMarkdownRendered(true)}
-            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs ${markdownRendered ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/60'}`}
+            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs ${markdownRendered ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/60'}`}
           >
             <Eye className="h-3.5 w-3.5" /> {t('filePreview.rendered')}
           </button>
           <button
             type="button"
             onClick={() => setMarkdownRendered(false)}
-            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs ${!markdownRendered ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/60'}`}
+            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs ${!markdownRendered ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/60'}`}
           >
             <Code className="h-3.5 w-3.5" /> {t('filePreview.source')}
           </button>
