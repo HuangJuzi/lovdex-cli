@@ -22,8 +22,7 @@ export type FilePreviewBodyProps = {
 
 const basename = (p: string): string => p.split(/[\\/]/).pop() || p;
 
-function HighlightedText({ code, language }: { code: string; language: string }) {
-  const { isDarkMode } = useTheme();
+function HighlightedText({ code, language, isDarkMode }: { code: string; language: string; isDarkMode: boolean }) {
   return (
     <SyntaxHighlighter
       language={language}
@@ -36,6 +35,14 @@ function HighlightedText({ code, language }: { code: string; language: string })
   );
 }
 
+function useSafeThemeIsDark(): boolean {
+  try {
+    return useTheme().isDarkMode;
+  } catch {
+    return false;
+  }
+}
+
 export function FilePreviewBody({
   kind,
   filePath,
@@ -46,6 +53,7 @@ export function FilePreviewBody({
 }: FilePreviewBodyProps) {
   const { t } = useTranslation('chat');
   const [markdownRendered, setMarkdownRendered] = useState(true);
+  const isDarkMode = useSafeThemeIsDark();
 
   const truncationNotice = truncated ? (
     <div className="mb-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
@@ -107,7 +115,7 @@ export function FilePreviewBody({
           {markdownRendered ? (
             <Markdown className="prose prose-sm max-w-none font-serif dark:prose-invert">{text}</Markdown>
           ) : (
-            <HighlightedText code={text} language="markdown" />
+            <HighlightedText code={text} language="markdown" isDarkMode={isDarkMode} />
           )}
         </div>
       </div>
@@ -117,7 +125,7 @@ export function FilePreviewBody({
   return (
     <div className="h-full overflow-auto">
       {truncationNotice}
-      <HighlightedText code={text} language={language || 'text'} />
+      <HighlightedText code={text} language={language || 'text'} isDarkMode={isDarkMode} />
     </div>
   );
 }
