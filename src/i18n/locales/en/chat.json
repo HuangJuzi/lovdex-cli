@@ -236,5 +236,15 @@
   },
   "tasks": {
     "nextTaskPrompt": "Start the next task"
+  },
+  "filePreview": {
+    "unsupported": "Preview not available for this file type",
+    "emptyFile": "(empty file)",
+    "truncated": "File is large — showing the first part only",
+    "rendered": "Preview",
+    "source": "Source",
+    "loadFailed": "Failed to load file",
+    "retry": "Retry",
+    "close": "Close"
   }
 }
