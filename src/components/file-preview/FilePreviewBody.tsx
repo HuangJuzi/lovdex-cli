@@ -23,12 +23,7 @@ export type FilePreviewBodyProps = {
 const basename = (p: string): string => p.split(/[\\/]/).pop() || p;
 
 function HighlightedText({ code, language }: { code: string; language: string }) {
-  let isDarkMode = false;
-  try {
-    isDarkMode = useTheme().isDarkMode;
-  } catch {
-    isDarkMode = false;
-  }
+  const { isDarkMode } = useTheme();
   return (
     <SyntaxHighlighter
       language={language}
