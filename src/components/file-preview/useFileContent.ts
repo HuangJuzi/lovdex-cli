@@ -101,10 +101,12 @@ export function useFileContent(
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
-        const raw = await res.text();
+        // Backend wraps the body as { content, path } (JSON). Extract content.
+        const body = await res.json();
         if (cancelled) {
           return;
         }
+        const raw = typeof body?.content === 'string' ? body.content : '';
         const { text, truncated } = truncateIfLarge(raw);
         setState((s) => ({ ...s, loading: false, content: text, truncated }));
       } catch (err) {
