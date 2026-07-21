@@ -31,7 +31,9 @@ const parseLineSuffix = (value: string): number | undefined => {
   return match ? Number(match[1]) : undefined;
 };
 
-// A usable file path contains a separator or a filename with an extension.
+// A previewable file reference: its final path segment must carry a file
+// extension. This excludes directories (`src/components`, `docs/output/`),
+// which have no extension on the last segment and cannot be previewed.
 const looksLikeFilePath = (value?: string): value is string => {
   if (!value) {
     return false;
@@ -40,7 +42,13 @@ const looksLikeFilePath = (value?: string): value is string => {
   if (!cleaned || cleaned === '#') {
     return false;
   }
-  return /[\\/]/.test(cleaned) || /\.[a-z0-9]+$/i.test(cleaned);
+  // Trailing separator => directory, not a file.
+  if (/[\\/]$/.test(cleaned)) {
+    return false;
+  }
+  // The last segment (basename) must have an extension like `.ts` / `.png`.
+  const base = cleaned.split(/[\\/]/).pop() || '';
+  return /\.[a-z0-9]+$/i.test(base);
 };
 
 // ---------------------------------------------------------------------------

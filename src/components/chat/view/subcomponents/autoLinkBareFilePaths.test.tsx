@@ -42,3 +42,17 @@ test('strips trailing sentence punctuation out of the link target', () => {
   const out = autoLinkBareFilePaths('打开 src/a.ts。');
   assert.equal(out, '打开 [src/a.ts](src/a.ts)。');
 });
+
+test('does not link a directory path (no extension on last segment)', () => {
+  assert.equal(autoLinkBareFilePaths('见 src/components 目录'), '见 src/components 目录');
+  assert.equal(autoLinkBareFilePaths('放在 docs/output 下'), '放在 docs/output 下');
+});
+
+test('does not link a path with a trailing separator', () => {
+  assert.equal(autoLinkBareFilePaths('目录 src/components/ 里'), '目录 src/components/ 里');
+});
+
+test('still links a nested file under directories', () => {
+  const out = autoLinkBareFilePaths('见 src/components/file-preview/index.ts');
+  assert.equal(out, '见 [src/components/file-preview/index.ts](src/components/file-preview/index.ts)');
+});
