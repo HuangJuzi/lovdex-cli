@@ -14,6 +14,7 @@ import { useSessionStore } from '../../../stores/useSessionStore';
 import ChatMessagesPane from './subcomponents/ChatMessagesPane';
 import ChatComposer from './subcomponents/ChatComposer';
 import CommandResultModal from './subcomponents/CommandResultModal';
+import { ResumeSessionOverlay } from './subcomponents/ResumeSessionOverlay';
 
 function ChatInterface({
   selectedProject,
@@ -28,6 +29,7 @@ function ChatInterface({
   onNavigateToSession,
   onSessionEstablished,
   onShowSettings,
+  onResumeSession,
   showRawParameters,
   showThinking,
   sendByCtrlEnter,
@@ -146,6 +148,8 @@ function ChatInterface({
     textareaRef,
     inputHighlightRef,
     isTextareaExpanded,
+    resumeOverlayOpen,
+    setResumeOverlayOpen,
     slashCommandsCount,
     filteredCommands,
     frequentCommands,
@@ -210,6 +214,7 @@ function ChatInterface({
     onInputFocusChange,
     onFileOpen,
     onShowSettings,
+    onResumeSession,
     scrollToBottom,
     addMessage,
     setIsUserScrolledUp,
@@ -460,6 +465,13 @@ function ChatInterface({
         onHardRefreshProviderModels={hardRefreshProviderModels}
         currentSessionId={currentSessionId || selectedSession?.id || null}
         onSelectProviderModel={selectProviderModel}
+      />
+      <ResumeSessionOverlay
+        open={resumeOverlayOpen}
+        onClose={() => setResumeOverlayOpen(false)}
+        projectId={selectedProject?.projectId ?? ''}
+        provider={provider}
+        onSelect={(session) => onResumeSession?.(session)}
       />
     </PermissionContext.Provider>
   );

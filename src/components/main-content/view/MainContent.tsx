@@ -29,6 +29,7 @@ function MainContent({
   onNavigateToSession,
   onSessionEstablished,
   onShowSettings,
+  onResumeSession,
   externalMessageUpdate,
   newSessionTrigger,
 }: MainContentProps) {
@@ -84,6 +85,7 @@ function MainContent({
                 onNavigateToSession={onNavigateToSession}
                 onSessionEstablished={onSessionEstablished}
                 onShowSettings={onShowSettings}
+                onResumeSession={onResumeSession}
                 showRawParameters={showRawParameters}
                 showThinking={showThinking}
                 sendByCtrlEnter={sendByCtrlEnter}

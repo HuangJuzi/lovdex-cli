@@ -65,6 +65,7 @@ interface UseChatComposerStateArgs {
   onInputFocusChange?: (focused: boolean) => void;
   onFileOpen?: (filePath: string, diffInfo?: unknown) => void;
   onShowSettings?: () => void;
+  onResumeSession?: (session: ProjectSession) => void;
   scrollToBottom: () => void;
   addMessage: (msg: ChatMessage) => void;
   setIsUserScrolledUp: (isScrolledUp: boolean) => void;
@@ -210,6 +211,7 @@ export function useChatComposerState({
   onInputFocusChange,
   onFileOpen,
   onShowSettings,
+  onResumeSession,
   scrollToBottom,
   addMessage,
   setIsUserScrolledUp,
@@ -227,6 +229,7 @@ export function useChatComposerState({
   const [uploadingImages, setUploadingImages] = useState<Map<string, number>>(new Map());
   const [imageErrors, setImageErrors] = useState<Map<string, string>>(new Map());
   const [isTextareaExpanded, setIsTextareaExpanded] = useState(false);
+  const [resumeOverlayOpen, setResumeOverlayOpen] = useState(false);
   const [commandModalPayload, setCommandModalPayload] = useState<CommandModalPayload | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -706,6 +709,24 @@ export function useChatComposerState({
               } as SlashCommand)
             : undefined);
         const isForwardToProvider = matchedCommand?.metadata?.forwardToProvider === true;
+        const isUiOverlay = matchedCommand?.metadata?.handler === 'ui-overlay';
+        if (matchedCommand && matchedCommand.type !== 'skill' && isUiOverlay) {
+          const overlay = matchedCommand.metadata?.overlay;
+          if (overlay === 'resume') {
+            setResumeOverlayOpen(true);
+            setInput('');
+            inputValueRef.current = '';
+            setAttachedImages([]);
+            setUploadingImages(new Map());
+            setImageErrors(new Map());
+            resetCommandMenuState();
+            setIsTextareaExpanded(false);
+            if (textareaRef.current) {
+              textareaRef.current.style.height = 'auto';
+            }
+            return;
+          }
+        }
         if (matchedCommand && matchedCommand.type !== 'skill' && !isForwardToProvider) {
           executeCommand(matchedCommand, isHelpAlias ? '/help' : commandInput);
           setInput('');
@@ -1186,6 +1207,9 @@ export function useChatComposerState({
     textareaRef,
     inputHighlightRef,
     isTextareaExpanded,
+    resumeOverlayOpen,
+    setResumeOverlayOpen,
+    onResumeSession,
     slashCommandsCount,
     filteredCommands,
     frequentCommands,

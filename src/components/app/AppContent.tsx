@@ -67,6 +67,7 @@ function AppContentInner() {
     setSidebarOpen,
     setIsInputFocused,
     openSettings,
+    handleSessionSelect,
     refreshProjectsSilently,
     registerOptimisticSession,
     sidebarSharedProps,
@@ -248,6 +249,7 @@ function AppContentInner() {
             registerOptimisticSession({ sessionId: targetSessionId, ...context })
           }
           onShowSettings={openSettings}
+          onResumeSession={handleSessionSelect}
           externalMessageUpdate={externalMessageUpdate}
           newSessionTrigger={newSessionTrigger}
         />
