@@ -118,7 +118,7 @@ export function ResumeSessionOverlay({
               <CommandEmpty>{t('session.resume.empty')}</CommandEmpty>
             )}
             {!loading && !error && filtered.length > 0 && (
-              <CommandGroup heading="Recent conversations">
+              <CommandGroup heading={t('session.resume.recentHeading')}>
                 {filtered.map((session) => (
                   <CommandItem
                     key={session.id}

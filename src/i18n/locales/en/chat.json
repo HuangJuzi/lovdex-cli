@@ -182,6 +182,7 @@
       "loading": "Loading…",
       "empty": "No conversations found.",
       "untitled": "Untitled conversation",
+      "recentHeading": "Recent conversations",
       "messagesCount": "{{count}} messages · ",
       "time": {
         "justNow": "just now",
