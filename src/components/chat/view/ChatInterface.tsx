@@ -214,7 +214,6 @@ function ChatInterface({
     onInputFocusChange,
     onFileOpen,
     onShowSettings,
-    onResumeSession,
     scrollToBottom,
     addMessage,
     setIsUserScrolledUp,

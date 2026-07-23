@@ -65,7 +65,6 @@ interface UseChatComposerStateArgs {
   onInputFocusChange?: (focused: boolean) => void;
   onFileOpen?: (filePath: string, diffInfo?: unknown) => void;
   onShowSettings?: () => void;
-  onResumeSession?: (session: ProjectSession) => void;
   scrollToBottom: () => void;
   addMessage: (msg: ChatMessage) => void;
   setIsUserScrolledUp: (isScrolledUp: boolean) => void;
@@ -211,7 +210,6 @@ export function useChatComposerState({
   onInputFocusChange,
   onFileOpen,
   onShowSettings,
-  onResumeSession,
   scrollToBottom,
   addMessage,
   setIsUserScrolledUp,
@@ -1209,7 +1207,6 @@ export function useChatComposerState({
     isTextareaExpanded,
     resumeOverlayOpen,
     setResumeOverlayOpen,
-    onResumeSession,
     slashCommandsCount,
     filteredCommands,
     frequentCommands,
