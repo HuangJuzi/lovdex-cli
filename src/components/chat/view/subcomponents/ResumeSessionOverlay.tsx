@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   Command,
@@ -20,20 +21,6 @@ interface ResumeSessionOverlayProps {
   onSelect: (session: ProjectSession) => void;
 }
 
-const formatRelativeTime = (iso?: string): string => {
-  if (!iso) return '';
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return '';
-  const diffMs = Date.now() - then;
-  const minutes = Math.round(diffMs / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  return `${days}d ago`;
-};
-
 export function ResumeSessionOverlay({
   open,
   onClose,
@@ -41,6 +28,7 @@ export function ResumeSessionOverlay({
   provider,
   onSelect,
 }: ResumeSessionOverlayProps) {
+  const { t } = useTranslation('chat');
   const [sessions, setSessions] = useState<ProjectSession[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,32 +86,51 @@ export function ResumeSessionOverlay({
     [onSelect, onClose],
   );
 
+  const formatRelativeTime = (iso?: string): string => {
+    if (!iso) return '';
+    const then = new Date(iso).getTime();
+    if (Number.isNaN(then)) return '';
+    const diffMs = Date.now() - then;
+    const minutes = Math.round(diffMs / 60000);
+    if (minutes < 1) return t('session.resume.time.justNow');
+    if (minutes < 60) return t('session.resume.time.mAgo', { count: minutes });
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return t('session.resume.time.hAgo', { count: hours });
+    const days = Math.round(hours / 24);
+    return t('session.resume.time.dAgo', { count: days });
+  };
+
+  const resolveTitle = (session: ProjectSession): string =>
+    session.title ?? session.summary ?? session.name ?? t('session.resume.untitled');
+
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="flex h-[min(70dvh,32rem)] w-[calc(100vw-1rem)] max-w-2xl flex-col gap-3 p-4">
-        <DialogTitle>Resume a conversation</DialogTitle>
+        <DialogTitle>{t('session.resume.title')}</DialogTitle>
         <Command className="flex-1 overflow-hidden">
-          <CommandInput placeholder="Search sessions…" />
+          <CommandInput placeholder={t('session.resume.searchPlaceholder')} />
           <CommandList>
-            {loading && <div className="px-3 py-2 text-sm opacity-70">Loading…</div>}
+            {loading && (
+              <div className="px-3 py-2 text-sm opacity-70">{t('session.resume.loading')}</div>
+            )}
             {error && <div className="px-3 py-2 text-sm text-red-500">{error}</div>}
             {!loading && !error && filtered.length === 0 && (
-              <CommandEmpty>No conversations found.</CommandEmpty>
+              <CommandEmpty>{t('session.resume.empty')}</CommandEmpty>
             )}
             {!loading && !error && filtered.length > 0 && (
               <CommandGroup heading="Recent conversations">
                 {filtered.map((session) => (
                   <CommandItem
                     key={session.id}
-                    value={`${session.title ?? session.summary ?? session.id} ${session.id}`}
+                    value={`${session.title ?? session.summary ?? session.name ?? session.id} ${session.id}`}
                     onSelect={() => handleSelect(session)}
                   >
                     <div className="flex w-full flex-col gap-0.5">
-                      <span className="truncate text-sm font-medium">
-                        {session.title ?? session.summary ?? 'Untitled conversation'}
-                      </span>
+                      <span className="truncate text-sm font-medium">{resolveTitle(session)}</span>
                       <span className="text-xs opacity-60">
-                        {session.messageCount != null ? `${session.messageCount} messages · ` : ''}
+                        {session.messageCount != null
+                          ? t('session.resume.messagesCount', { count: session.messageCount })
+                          : ''}
                         {formatRelativeTime(
                           session.lastActivity ?? session.updated_at ?? session.created_at,
                         )}

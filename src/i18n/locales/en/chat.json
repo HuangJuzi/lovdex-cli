@@ -175,6 +175,20 @@
       "loadingAll": "Loading all messages...",
       "allLoaded": "All messages loaded",
       "perfWarning": "All messages loaded — scrolling may be slower. Click \"Scroll to bottom\" to restore performance."
+    },
+    "resume": {
+      "title": "Resume a conversation",
+      "searchPlaceholder": "Search sessions…",
+      "loading": "Loading…",
+      "empty": "No conversations found.",
+      "untitled": "Untitled conversation",
+      "messagesCount": "{{count}} messages · ",
+      "time": {
+        "justNow": "just now",
+        "mAgo": "{{count}}m ago",
+        "hAgo": "{{count}}h ago",
+        "dAgo": "{{count}}d ago"
+      }
     }
   },
   "shell": {
