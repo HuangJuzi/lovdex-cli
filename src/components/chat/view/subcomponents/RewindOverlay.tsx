@@ -20,7 +20,9 @@ export function RewindOverlay({ open, onClose, appId, turns, onSwitchToNewSessio
     setBusy(true);
     setError(null);
     try {
-      const res = await api.rewindSession(appId, { upToMessageId: turn.id, turnTimestamp: turn.timestamp });
+      // strip composite suffix (_0, _text, etc.) down to bare provider uuid
+      const bareId = turn.id.replace(/_.*$/, '');
+      const res = await api.rewindSession(appId, { upToMessageId: bareId, turnTimestamp: turn.timestamp });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body?.error?.message ?? 'Rewind failed');
       const warning = body.warnings?.length ? t('session.rewind.fileSkipped') : null;

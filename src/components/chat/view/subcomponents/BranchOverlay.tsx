@@ -20,7 +20,9 @@ export function BranchOverlay({ open, onClose, appId, turns, onSwitchToNewSessio
     setBusy(true);
     setError(null);
     try {
-      const res = await api.forkSession(appId, { upToMessageId: turn.id });
+      // strip composite suffix (_0, _text, etc.) down to bare provider uuid
+      const bareId = turn.id.replace(/_.*$/, '');
+      const res = await api.forkSession(appId, { upToMessageId: bareId });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body?.error?.message ?? 'Branch failed');
       onSwitchToNewSession(body.newSessionId, turn.summary);
