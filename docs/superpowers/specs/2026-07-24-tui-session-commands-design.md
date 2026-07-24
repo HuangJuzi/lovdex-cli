@@ -39,7 +39,11 @@ are out of scope except as the template this design follows.
 - `chat.send` (`chat-websocket.service.ts:146`) auto-resumes: if the app session has a
   `provider_session_id`, the SDK is spawned with `resume: true` and that id.
 - `sessionsService` exposes `listArchivedSessions`, `fetchHistory`, `restoreSessionById`,
-  `renameSessionById`, etc. History messages carry `messageId`.
+  `renameSessionById`, etc. History messages carry an `id` field = the provider message
+  UUID (`raw.uuid`, see `claude-sessions.provider.ts:332` `baseId`). This `id` is what
+  `forkSession`'s `upToMessageId` expects. The frontend `ChatMessage` TS type does not
+  currently declare `id` (it's present at runtime via the history payload); this design
+  adds `id?: string` to `ChatMessage` so the turn picker can read it.
 
 ### SDK primitives available (unwired)
 `@anthropic-ai/claude-agent-sdk` 0.3.210 exposes:
@@ -133,20 +137,25 @@ if (overlay === 'rewind') { setRewindOverlayOpen(true); ... return; }
 
 **Shared turn picker** — new `src/components/chat/view/subcomponents/TurnPickerOverlay.tsx`,
 a thin wrapper over the existing `Dialog` primitive (same one `ResumeSessionOverlay` uses).
-Props: `{ open, onOpenChange, turns: { messageId, summary, timestamp }[], onSelect, title }`.
+Props: `{ open, onOpenChange, turns: { id, summary, timestamp }[], onSelect, title }`
+where `id` is the message's provider UUID (the `id` field from the history payload).
 Renders the current session's turns (sourced from the already-loaded history in
 `useChatMessages` / `sessionsService.fetchHistory`) as a selectable list with timestamp +
 turn summary. `ResumeSessionOverlay` is left as-is (it picks *sessions*, not *turns* —
 different data); only the Dialog shell is shared.
 
+**ChatMessage type** — add `id?: string` to `ChatMessage` in
+`src/components/chat/types/types.ts` (already present in the runtime history payload, just
+not declared).
+
 **Three overlay components** under `src/components/chat/view/subcomponents/`:
 - `BranchOverlay.tsx` — uses `TurnPickerOverlay`, on select calls
-  `api.forkSession(appId, { upToMessageId })` then `onSwitchSession(newSession)`.
+  `api.forkSession(appId, { upToMessageId: turn.id })` then `onSwitchSession(newSession)`.
 - `ForkOverlay.tsx` — confirm-only (no turn picker), calls
   `api.forkSession(appId, {})` then `onSwitchSession`.
 - `RewindOverlay.tsx` — uses `TurnPickerOverlay`, calls
-  `api.rewindSession(appId, { upToMessageId })`, surfaces any `warnings` inline before
-  switching.
+  `api.rewindSession(appId, { upToMessageId: turn.id })`, surfaces any `warnings` inline
+  before switching.
 
 **API client** — `src/utils/api.js`: add `forkSession(appId, body)` →
 `POST /api/sessions/:appId/fork` and `rewindSession(appId, body)` →
