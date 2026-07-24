@@ -100,6 +100,18 @@ export const api = {
     authenticatedFetch(`/api/providers/sessions/${sessionId}/restore`, {
       method: 'POST',
     }),
+  forkSession: (appId, body) =>
+    authenticatedFetch(`/api/sessions/${encodeURIComponent(appId)}/fork`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body ?? {}),
+    }),
+  rewindSession: (appId, body) =>
+    authenticatedFetch(`/api/sessions/${encodeURIComponent(appId)}/rewind`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body ?? {}),
+    }),
   renameSession: (sessionId, summary) =>
     authenticatedFetch(`/api/providers/sessions/${sessionId}`, {
       method: 'PUT',
