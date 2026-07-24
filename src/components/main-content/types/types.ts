@@ -60,6 +60,7 @@ export type MainContentProps = {
   onSessionEstablished: (sessionId: string, context: SessionEstablishedContext) => void;
   onShowSettings: (tab?: SettingsMainTab) => void;
   onResumeSession: (session: ProjectSession) => void;
+  onSwitchToNewSession: (newSessionId: string, summary: string) => void;
   externalMessageUpdate: number;
   newSessionTrigger: number;
 };

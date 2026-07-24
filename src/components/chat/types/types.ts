@@ -132,6 +132,7 @@ export interface ChatInterfaceProps {
   onSessionEstablished?: (sessionId: string, context: SessionEstablishedContext) => void;
   onShowSettings?: () => void;
   onResumeSession?: (session: ProjectSession) => void;
+  onSwitchToNewSession?: (newSessionId: string, summary: string) => void;
   showRawParameters?: boolean;
   showThinking?: boolean;
   sendByCtrlEnter?: boolean;

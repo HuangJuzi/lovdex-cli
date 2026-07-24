@@ -190,6 +190,19 @@
         "hAgo": "{{count}}h ago",
         "dAgo": "{{count}}d ago"
       }
+    },
+    "branch": {
+      "title": "Branch from a turn",
+      "empty": "No turns to branch from"
+    },
+    "fork": {
+      "title": "Fork this conversation",
+      "busy": "Forking…"
+    },
+    "rewind": {
+      "title": "Rewind to a turn",
+      "empty": "No turns to rewind to",
+      "fileSkipped": "Conversation rewound; file changes left untouched."
     }
   },
   "shell": {
