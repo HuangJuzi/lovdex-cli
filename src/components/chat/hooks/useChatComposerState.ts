@@ -228,6 +228,9 @@ export function useChatComposerState({
   const [imageErrors, setImageErrors] = useState<Map<string, string>>(new Map());
   const [isTextareaExpanded, setIsTextareaExpanded] = useState(false);
   const [resumeOverlayOpen, setResumeOverlayOpen] = useState(false);
+  const [branchOverlayOpen, setBranchOverlayOpen] = useState(false);
+  const [forkOverlayOpen, setForkOverlayOpen] = useState(false);
+  const [rewindOverlayOpen, setRewindOverlayOpen] = useState(false);
   const [commandModalPayload, setCommandModalPayload] = useState<CommandModalPayload | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -724,6 +727,22 @@ export function useChatComposerState({
             }
             return;
           }
+          if (overlay === 'branch' || overlay === 'fork' || overlay === 'rewind') {
+            if (overlay === 'branch') setBranchOverlayOpen(true);
+            else if (overlay === 'fork') setForkOverlayOpen(true);
+            else setRewindOverlayOpen(true);
+            setInput('');
+            inputValueRef.current = '';
+            setAttachedImages([]);
+            setUploadingImages(new Map());
+            setImageErrors(new Map());
+            resetCommandMenuState();
+            setIsTextareaExpanded(false);
+            if (textareaRef.current) {
+              textareaRef.current.style.height = 'auto';
+            }
+            return;
+          }
         }
         if (matchedCommand && matchedCommand.type !== 'skill' && !isForwardToProvider) {
           executeCommand(matchedCommand, isHelpAlias ? '/help' : commandInput);
@@ -1207,6 +1226,12 @@ export function useChatComposerState({
     isTextareaExpanded,
     resumeOverlayOpen,
     setResumeOverlayOpen,
+    branchOverlayOpen,
+    setBranchOverlayOpen,
+    forkOverlayOpen,
+    setForkOverlayOpen,
+    rewindOverlayOpen,
+    setRewindOverlayOpen,
     slashCommandsCount,
     filteredCommands,
     frequentCommands,
