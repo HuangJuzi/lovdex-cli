@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import type { Project, ProjectSession } from '../../../types/app';
+
 import { getSessionDotState, isProjectActive, sortProjects } from './utils';
 
 const mkSession = (id: string, lastActivity?: string): ProjectSession => ({
@@ -28,7 +29,7 @@ test('isProjectActive returns true when any loaded session is processing', () =>
 });
 
 test('isProjectActive handles numeric session ids', () => {
-  const project = mkProject('p1', 'P1', { sessions: [{ id: '42', summary: 'x' }] });
+  const project = mkProject('p1', 'P1', { sessions: [{ id: 42 as unknown as string, summary: 'x' }] });
   assert.equal(isProjectActive(project, new Set(['42'])), true);
 });
 
@@ -81,9 +82,16 @@ test('sortProjects falls back to name order for idle projects', () => {
   assert.deepEqual(result.map((p) => p.projectId), ['aa', 'bb', 'zc']);
 });
 
-test('sortProjects uses date order within an activity bucket', () => {
+test('sortProjects uses date order for idle projects', () => {
   const older = mkProject('older', 'Older', { sessions: [mkSession('s1', '2026-01-01T00:00:00Z')] });
   const newer = mkProject('newer', 'Newer', { sessions: [mkSession('s2', '2026-02-01T00:00:00Z')] });
   const result = sortProjects([older, newer], 'date', new Set());
   assert.deepEqual(result.map((p) => p.projectId), ['newer', 'older']);
+});
+
+test('sortProjects falls back to name order within the active bucket', () => {
+  const activeA = mkProject('pb', 'B', { sessions: [mkSession('a1')] });
+  const activeAa = mkProject('pa', 'A', { sessions: [mkSession('a1')] });
+  const result = sortProjects([activeA, activeAa], 'name', new Set(['a1']));
+  assert.deepEqual(result.map((p) => p.projectId), ['pa', 'pb']);
 });

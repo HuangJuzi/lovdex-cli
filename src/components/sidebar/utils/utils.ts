@@ -118,6 +118,14 @@ export const getProjectLastActivity = (project: Project): Date => {
   }, new Date(0));
 };
 
+/** True when any of the project's loaded sessions is currently processing. */
+export const isProjectActive = (
+  project: Project,
+  activeSessionIds: ReadonlySet<string>,
+): boolean => {
+  return (project.sessions ?? []).some((session) => activeSessionIds.has(String(session.id)));
+};
+
 export const sortProjects = (
   projects: Project[],
   projectSortOrder: ProjectSortOrder,
@@ -159,14 +167,6 @@ export const sortProjects = (
   });
 
   return byName;
-};
-
-/** True when any of the project's loaded sessions is currently processing. */
-export const isProjectActive = (
-  project: Project,
-  activeSessionIds: ReadonlySet<string>,
-): boolean => {
-  return (project.sessions ?? []).some((session) => activeSessionIds.has(String(session.id)));
 };
 
 export type SessionDotState = 'attention' | 'active' | 'idle';
