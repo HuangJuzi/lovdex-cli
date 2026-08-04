@@ -59,6 +59,8 @@ export type MainContentProps = {
   onNavigateToSession: (targetSessionId: string, options?: SessionNavigationOptions) => void;
   onSessionEstablished: (sessionId: string, context: SessionEstablishedContext) => void;
   onShowSettings: (tab?: SettingsMainTab) => void;
+  onResumeSession: (session: ProjectSession) => void;
+  onSwitchToNewSession: (newSessionId: string, summary: string) => void;
   externalMessageUpdate: number;
   newSessionTrigger: number;
 };

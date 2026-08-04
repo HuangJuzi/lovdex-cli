@@ -175,6 +175,34 @@
       "loadingAll": "Loading all messages...",
       "allLoaded": "All messages loaded",
       "perfWarning": "All messages loaded — scrolling may be slower. Click \"Scroll to bottom\" to restore performance."
+    },
+    "resume": {
+      "title": "Resume a conversation",
+      "searchPlaceholder": "Search sessions…",
+      "loading": "Loading…",
+      "empty": "No conversations found.",
+      "untitled": "Untitled conversation",
+      "recentHeading": "Recent conversations",
+      "messagesCount": "{{count}} messages · ",
+      "time": {
+        "justNow": "just now",
+        "mAgo": "{{count}}m ago",
+        "hAgo": "{{count}}h ago",
+        "dAgo": "{{count}}d ago"
+      }
+    },
+    "branch": {
+      "title": "Branch from a turn",
+      "empty": "No turns to branch from"
+    },
+    "fork": {
+      "title": "Fork this conversation",
+      "busy": "Forking…"
+    },
+    "rewind": {
+      "title": "Rewind to a turn",
+      "empty": "No turns to rewind to",
+      "fileSkipped": "Conversation rewound; file changes left untouched."
     }
   },
   "shell": {

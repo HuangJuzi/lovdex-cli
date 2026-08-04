@@ -14,6 +14,11 @@ import { useSessionStore } from '../../../stores/useSessionStore';
 import ChatMessagesPane from './subcomponents/ChatMessagesPane';
 import ChatComposer from './subcomponents/ChatComposer';
 import CommandResultModal from './subcomponents/CommandResultModal';
+import { ResumeSessionOverlay } from './subcomponents/ResumeSessionOverlay';
+import { BranchOverlay } from './subcomponents/BranchOverlay';
+import { ForkOverlay } from './subcomponents/ForkOverlay';
+import { RewindOverlay } from './subcomponents/RewindOverlay';
+import type { TurnPick } from './subcomponents/TurnPickerOverlay';
 
 function ChatInterface({
   selectedProject,
@@ -28,6 +33,8 @@ function ChatInterface({
   onNavigateToSession,
   onSessionEstablished,
   onShowSettings,
+  onResumeSession,
+  onSwitchToNewSession,
   showRawParameters,
   showThinking,
   sendByCtrlEnter,
@@ -146,6 +153,14 @@ function ChatInterface({
     textareaRef,
     inputHighlightRef,
     isTextareaExpanded,
+    resumeOverlayOpen,
+    setResumeOverlayOpen,
+    branchOverlayOpen,
+    setBranchOverlayOpen,
+    forkOverlayOpen,
+    setForkOverlayOpen,
+    rewindOverlayOpen,
+    setRewindOverlayOpen,
     slashCommandsCount,
     filteredCommands,
     frequentCommands,
@@ -312,6 +327,23 @@ function ChatInterface({
     );
   }
 
+  const turns: TurnPick[] = useMemo(
+    () =>
+      chatMessages
+        .filter((m) => m.id && !m.isToolUse && !m.isCompactSummary)
+        .map((m) => ({
+          id: m.id as string,
+          summary: (m.content || m.displayText || '').slice(0, 80) || '(turn)',
+          timestamp:
+            typeof m.timestamp === 'string'
+              ? m.timestamp
+              : m.timestamp instanceof Date
+                ? m.timestamp.toISOString()
+                : String(m.timestamp),
+        })),
+    [chatMessages],
+  );
+
   return (
     <PermissionContext.Provider value={permissionContextValue}>
       <div className="flex h-full min-h-0 flex-col">
@@ -460,6 +492,40 @@ function ChatInterface({
         onHardRefreshProviderModels={hardRefreshProviderModels}
         currentSessionId={currentSessionId || selectedSession?.id || null}
         onSelectProviderModel={selectProviderModel}
+      />
+      <ResumeSessionOverlay
+        open={resumeOverlayOpen}
+        onClose={() => setResumeOverlayOpen(false)}
+        projectId={selectedProject?.projectId ?? ''}
+        provider={provider}
+        onSelect={(session) => onResumeSession?.(session)}
+      />
+      <BranchOverlay
+        open={branchOverlayOpen}
+        onClose={() => setBranchOverlayOpen(false)}
+        appId={currentSessionId || selectedSession?.id || ''}
+        turns={turns}
+        onSwitchToNewSession={(newSessionId, summary) =>
+          onSwitchToNewSession?.(newSessionId, summary)
+        }
+      />
+      <ForkOverlay
+        open={forkOverlayOpen}
+        onClose={() => setForkOverlayOpen(false)}
+        appId={currentSessionId || selectedSession?.id || ''}
+        summary={selectedSession?.summary ?? ''}
+        onSwitchToNewSession={(newSessionId, summary) =>
+          onSwitchToNewSession?.(newSessionId, summary)
+        }
+      />
+      <RewindOverlay
+        open={rewindOverlayOpen}
+        onClose={() => setRewindOverlayOpen(false)}
+        appId={currentSessionId || selectedSession?.id || ''}
+        turns={turns}
+        onSwitchToNewSession={(newSessionId, summary) =>
+          onSwitchToNewSession?.(newSessionId, summary)
+        }
       />
     </PermissionContext.Provider>
   );

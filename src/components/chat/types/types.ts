@@ -35,6 +35,7 @@ export interface SubagentChildTool {
 }
 
 export interface ChatMessage {
+  id?: string;
   type: string;
   content?: string;
   displayText?: string;
@@ -130,6 +131,8 @@ export interface ChatInterfaceProps {
   onNavigateToSession?: (targetSessionId: string, options?: SessionNavigationOptions) => void;
   onSessionEstablished?: (sessionId: string, context: SessionEstablishedContext) => void;
   onShowSettings?: () => void;
+  onResumeSession?: (session: ProjectSession) => void;
+  onSwitchToNewSession?: (newSessionId: string, summary: string) => void;
   showRawParameters?: boolean;
   showThinking?: boolean;
   sendByCtrlEnter?: boolean;

@@ -227,6 +227,10 @@ export function useChatComposerState({
   const [uploadingImages, setUploadingImages] = useState<Map<string, number>>(new Map());
   const [imageErrors, setImageErrors] = useState<Map<string, string>>(new Map());
   const [isTextareaExpanded, setIsTextareaExpanded] = useState(false);
+  const [resumeOverlayOpen, setResumeOverlayOpen] = useState(false);
+  const [branchOverlayOpen, setBranchOverlayOpen] = useState(false);
+  const [forkOverlayOpen, setForkOverlayOpen] = useState(false);
+  const [rewindOverlayOpen, setRewindOverlayOpen] = useState(false);
   const [commandModalPayload, setCommandModalPayload] = useState<CommandModalPayload | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -706,6 +710,40 @@ export function useChatComposerState({
               } as SlashCommand)
             : undefined);
         const isForwardToProvider = matchedCommand?.metadata?.forwardToProvider === true;
+        const isUiOverlay = matchedCommand?.metadata?.handler === 'ui-overlay';
+        if (matchedCommand && matchedCommand.type !== 'skill' && isUiOverlay) {
+          const overlay = matchedCommand.metadata?.overlay;
+          if (overlay === 'resume') {
+            setResumeOverlayOpen(true);
+            setInput('');
+            inputValueRef.current = '';
+            setAttachedImages([]);
+            setUploadingImages(new Map());
+            setImageErrors(new Map());
+            resetCommandMenuState();
+            setIsTextareaExpanded(false);
+            if (textareaRef.current) {
+              textareaRef.current.style.height = 'auto';
+            }
+            return;
+          }
+          if (overlay === 'branch' || overlay === 'fork' || overlay === 'rewind') {
+            if (overlay === 'branch') setBranchOverlayOpen(true);
+            else if (overlay === 'fork') setForkOverlayOpen(true);
+            else setRewindOverlayOpen(true);
+            setInput('');
+            inputValueRef.current = '';
+            setAttachedImages([]);
+            setUploadingImages(new Map());
+            setImageErrors(new Map());
+            resetCommandMenuState();
+            setIsTextareaExpanded(false);
+            if (textareaRef.current) {
+              textareaRef.current.style.height = 'auto';
+            }
+            return;
+          }
+        }
         if (matchedCommand && matchedCommand.type !== 'skill' && !isForwardToProvider) {
           executeCommand(matchedCommand, isHelpAlias ? '/help' : commandInput);
           setInput('');
@@ -1186,6 +1224,14 @@ export function useChatComposerState({
     textareaRef,
     inputHighlightRef,
     isTextareaExpanded,
+    resumeOverlayOpen,
+    setResumeOverlayOpen,
+    branchOverlayOpen,
+    setBranchOverlayOpen,
+    forkOverlayOpen,
+    setForkOverlayOpen,
+    rewindOverlayOpen,
+    setRewindOverlayOpen,
     slashCommandsCount,
     filteredCommands,
     frequentCommands,

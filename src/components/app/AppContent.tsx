@@ -67,6 +67,7 @@ function AppContentInner() {
     setSidebarOpen,
     setIsInputFocused,
     openSettings,
+    handleSessionSelect,
     refreshProjectsSilently,
     registerOptimisticSession,
     sidebarSharedProps,
@@ -248,6 +249,20 @@ function AppContentInner() {
             registerOptimisticSession({ sessionId: targetSessionId, ...context })
           }
           onShowSettings={openSettings}
+          onResumeSession={handleSessionSelect}
+          onSwitchToNewSession={(newSessionId, summary) => {
+            if (!selectedProject) return;
+            const provider =
+              (selectedSession?.provider ?? selectedSession?.__provider) as
+                | import('../../types/app').LLMProvider
+                | undefined;
+            registerOptimisticSession({
+              sessionId: newSessionId,
+              provider: provider ?? 'claude',
+              project: selectedProject,
+              summary,
+            });
+          }}
           externalMessageUpdate={externalMessageUpdate}
           newSessionTrigger={newSessionTrigger}
         />
