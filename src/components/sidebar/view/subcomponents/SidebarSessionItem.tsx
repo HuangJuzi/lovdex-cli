@@ -132,12 +132,13 @@ export default function SidebarSessionItem({
         <div
           className={cn(
             'p-2 mx-3 my-0.5 rounded-md bg-card border active:scale-[0.98] transition-all duration-150 relative',
-            isSelected ? 'bg-primary/10 border-primary/50' : '',
-            !isSelected && isProcessing
-              ? 'border-green-500/30 bg-green-50/5 dark:bg-green-900/5'
-              : !isSelected && needsAttention
-              ? 'border-amber-500/40 bg-amber-50/5 dark:bg-amber-900/5'
-              : 'border-border/30',
+            isSelected
+              ? 'bg-primary/10 border-primary/50'
+              : isProcessing
+                ? 'border-green-500/30 bg-green-50/5 dark:bg-green-900/5'
+                : needsAttention
+                  ? 'border-amber-500/40 bg-amber-50/5 dark:bg-amber-900/5'
+                  : 'border-border/30',
           )}
           onClick={selectMobileSession}
         >
@@ -209,12 +210,13 @@ export default function SidebarSessionItem({
           className={cn(
             buttonVariants({ variant: 'ghost' }),
             'relative h-auto w-full justify-start rounded-md border bg-card p-2 text-left font-normal transition-all duration-150',
-            isSelected ? 'border-primary/50 bg-primary/10' : 'border-border/30',
-            !isSelected && isProcessing
-              ? 'border-green-500/30 bg-green-50/5 hover:bg-green-50/10 dark:bg-green-900/5 dark:hover:bg-green-900/10'
-              : !isSelected && needsAttention
-                ? 'border-amber-500/40 bg-amber-50/5 hover:bg-amber-50/10 dark:bg-amber-900/5 dark:hover:bg-amber-900/10'
-                : 'hover:bg-accent/50',
+            isSelected
+              ? 'border-primary/50 bg-primary/10'
+              : isProcessing
+                ? 'border-green-500/30 bg-green-50/5 hover:bg-green-50/10 dark:bg-green-900/5 dark:hover:bg-green-900/10'
+                : needsAttention
+                  ? 'border-amber-500/40 bg-amber-50/5 hover:bg-amber-50/10 dark:bg-amber-900/5 dark:hover:bg-amber-900/10'
+                  : 'hover:bg-accent/50',
           )}
           // Left-click keeps in-app navigation; Ctrl/Cmd/middle-click and the
           // native right-click menu use the href to open a new tab/window.
