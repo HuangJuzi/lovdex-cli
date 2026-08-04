@@ -79,8 +79,10 @@ Call `useSidebarWidth()` in `Sidebar`. Pass `width`, `onWidthChange={setWidth}`,
 
 ### 4.4 `SidebarContent.tsx`
 
-- Class: `md:w-72` → `w-full`; add `relative` to the root container.
-- `style={isMobile ? {} : { width }}` — inline width applied only on desktop.
+- Root container: add `relative`; **keep `md:w-72` as the CSS default fallback**. Inline
+  `style={{ width }}` applied only on desktop (`!isMobile`) overrides it (inline beats
+  class). This avoids switching to `w-full`, which would circularly resolve against the
+  `flex-shrink-0` auto-width parent and collapse the sidebar.
 - Render `<SidebarResizeHandle width={width} onWidthChange={onWidthChange} onReset={onReset} />`
   only when `!isMobile`.
 
