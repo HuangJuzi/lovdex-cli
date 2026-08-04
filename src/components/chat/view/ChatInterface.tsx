@@ -303,6 +303,26 @@ function ChatInterface({
   // overlapping the last message.
   const hasActivityIndicator = Boolean(sessionActivity && pendingPermissionRequests.length === 0);
 
+  // Hooks must run unconditionally on every render — this memo was previously
+  // declared AFTER the `!selectedProject` early return, which changed the hook
+  // order when switching between the empty state and a real session.
+  const turns: TurnPick[] = useMemo(
+    () =>
+      chatMessages
+        .filter((m) => m.id && !m.isToolUse && !m.isCompactSummary)
+        .map((m) => ({
+          id: m.id as string,
+          summary: (m.content || m.displayText || '').slice(0, 80) || '(turn)',
+          timestamp:
+            typeof m.timestamp === 'string'
+              ? m.timestamp
+              : m.timestamp instanceof Date
+                ? m.timestamp.toISOString()
+                : String(m.timestamp),
+        })),
+    [chatMessages],
+  );
+
   if (!selectedProject) {
     const selectedProviderLabel =
       provider === 'cursor'
@@ -326,23 +346,6 @@ function ChatInterface({
       </div>
     );
   }
-
-  const turns: TurnPick[] = useMemo(
-    () =>
-      chatMessages
-        .filter((m) => m.id && !m.isToolUse && !m.isCompactSummary)
-        .map((m) => ({
-          id: m.id as string,
-          summary: (m.content || m.displayText || '').slice(0, 80) || '(turn)',
-          timestamp:
-            typeof m.timestamp === 'string'
-              ? m.timestamp
-              : m.timestamp instanceof Date
-                ? m.timestamp.toISOString()
-                : String(m.timestamp),
-        })),
-    [chatMessages],
-  );
 
   return (
     <PermissionContext.Provider value={permissionContextValue}>
