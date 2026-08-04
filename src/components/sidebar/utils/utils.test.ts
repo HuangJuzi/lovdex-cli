@@ -56,7 +56,7 @@ test('getSessionDotState prioritizes attention over running', () => {
   assert.equal(getSessionDotState(true, false), 'attention');
 });
 
-test('getSessionDotState maps running to active and idle otherwise', () => {
+test('getSessionDotState distinguishes active from idle', () => {
   assert.equal(getSessionDotState(false, true), 'active');
   assert.equal(getSessionDotState(false, false), 'idle');
 });
@@ -103,6 +103,13 @@ test('isSessionRecentlyActive is true only within the 10-minute window', () => {
   assert.equal(isSessionRecentlyActive(mkSession('s1', '2026-08-04T11:55:00Z'), NOW), true);
   assert.equal(isSessionRecentlyActive(mkSession('s1', '2026-08-04T11:00:00Z'), NOW), false);
   assert.equal(isSessionRecentlyActive(mkSession('s1'), NOW), false);
+});
+
+test('isSessionRecentlyActive uses a strict 10-minute boundary', () => {
+  // exactly 10 minutes ago → not recent (strict <)
+  assert.equal(isSessionRecentlyActive(mkSession('s1', '2026-08-04T11:50:00Z'), NOW), false);
+  // one second inside the window → recent
+  assert.equal(isSessionRecentlyActive(mkSession('s1', '2026-08-04T11:50:01Z'), NOW), true);
 });
 
 test('isSessionActive is true when running or recently active', () => {

@@ -107,7 +107,7 @@ export default function SidebarProjectItem({
     (session) => activeSessions.has(session.id) || isSessionRecentlyActive(session, currentTime),
   );
   const projectStatusLabel = projectIsActive
-    ? t('tooltips.projectActive', 'Project has a running session')
+    ? t('tooltips.projectActive', 'Project has an active session')
     : t('tooltips.projectIdle', 'Project is idle');
   const taskStatus = getTaskIndicatorStatus(project, mcpServerStatus);
 

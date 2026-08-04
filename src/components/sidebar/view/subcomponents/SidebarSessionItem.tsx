@@ -90,7 +90,7 @@ export default function SidebarSessionItem({
     dotState === 'attention'
       ? t('tooltips.attentionRequiredIndicator', { defaultValue: 'Session needs attention' })
       : dotState === 'active'
-        ? t('tooltips.sessionRunning', 'Session is running')
+        ? t('tooltips.sessionRunning', 'Session is active')
         : t('tooltips.sessionIdle', 'Session is idle');
 
   // The rename panel sits inside a group-hover opacity wrapper, so leaving the row
