@@ -11,7 +11,7 @@ Fix four readability issues in the left sidebar project list:
 1. **New session is too prominent** — collapse the full-width blue button into a small
    `+` on the project-name row.
 2. **Session activity is invisible** — give every session a status dot: green =
-   running, yellow = idle.
+   running or recently active (last 10 minutes), yellow = idle.
 3. **Selected session is hard to spot** — stronger selected styling (border + left
    accent bar + tinted background + bolder text).
 4. **Project activity is invisible and unsorted** — green dot in front of active
@@ -39,62 +39,92 @@ Fix four readability issues in the left sidebar project list:
   feeds `filteredProjects`.
 - Running = a session currently in the `activeSessions` map (`useSessionProtection`),
   the same set powering the header's emerald "Running now" tab and `runningProjects`.
+- **"Active" = running OR recently active (last activity within 10 minutes).** The
+  10-minute window reuses the existing `createSessionViewModel.isActive` recency logic.
+  This was revised after user feedback: the running-only definition left the list
+  looking "always yellow" because sessions are only in `activeSessions` while a request
+  is in flight.
 
 ## 3. Non-goals (YAGNI)
 
 - No change to the header "Running now" tab, the running search mode, or the archive view.
 - No change to the collapse/expand behavior or the resizable width (recently landed).
 - No persistence or settings UI for the new indicators.
-- No change to `createSessionViewModel.isActive` (recent-activity view-model field) — it
-  simply stops driving dot/border styling. It may become unused in `SidebarSessionItem`;
-  that's acceptable, removal is out of scope.
+- No change to `createSessionViewModel.isActive` (recent-activity view-model field). It
+  keeps driving dot/border styling: "active" = running OR `sessionView.isActive`.
 - No library dependencies.
 
 ## 4. Design
 
 ### 4.1 Pure helpers — `src/components/sidebar/utils/utils.ts`
 
-Add one helper and extend one existing helper. Both exported for tests.
+Add pure helpers and extend one existing helper. All exported for tests.
 
 ```ts
-/** True when any of the project's loaded sessions is currently processing. */
+/** Sessions with activity within this window count as active. */
+export const ACTIVE_WINDOW_MS = 10 * 60 * 1000;
+
+/** True when the session's last activity is within the 10-minute active window. */
+export const isSessionRecentlyActive = (
+  session: SessionWithProvider,
+  currentTime: Date,
+): boolean => {
+  return currentTime.getTime() - getSessionDate(session).getTime() < ACTIVE_WINDOW_MS;
+};
+
+/** True when the session is running OR was recently active. */
+export const isSessionActive = (
+  session: SessionWithProvider,
+  activeSessionIds: ReadonlySet<string>,
+  currentTime: Date,
+): boolean => {
+  return activeSessionIds.has(String(session.id)) || isSessionRecentlyActive(session, currentTime);
+};
+
+/** True when any of the project's loaded sessions is active (running or recent). */
 export const isProjectActive = (
   project: Project,
   activeSessionIds: ReadonlySet<string>,
+  currentTime: Date,
 ): boolean => {
-  return (project.sessions ?? []).some((session) => activeSessionIds.has(String(session.id)));
+  return (project.sessions ?? []).some((session) => isSessionActive(session, activeSessionIds, currentTime));
 };
 ```
 
-`sortProjects(projects, projectSortOrder)` gains a third parameter:
+`sortProjects(projects, projectSortOrder)` gains `activeSessionIds` and `currentTime`:
 
 ```ts
 export const sortProjects = (
   projects: Project[],
   projectSortOrder: ProjectSortOrder,
   activeSessionIds: ReadonlySet<string>,
+  currentTime: Date,
 ): Project[]
 ```
 
 Comparator order becomes: **active > starred > name/date**.
 
 ```ts
-const aActive = isProjectActive(projectA, activeSessionIds);
-const bActive = isProjectActive(projectB, activeSessionIds);
+const aActive = isProjectActive(projectA, activeSessionIds, currentTime);
+const bActive = isProjectActive(projectB, activeSessionIds, currentTime);
 if (aActive !== bActive) {
   return aActive ? -1 : 1;
 }
 // ... existing starred-first, then name/date logic unchanged
 ```
 
+The session-row dot uses `getSessionDotState(needsAttention, isActive)` where `isActive`
+is `isProcessing || sessionView.isActive` (running or recently active); attention still
+takes precedence (`attention > active > idle`).
+
 ### 4.2 Controller — `useSidebarController.ts`
 
-Pass the already-computed `activeSessionIds` into the sort:
+Pass the already-computed `activeSessionIds` and `currentTime` into the sort:
 
 ```ts
 const sortedProjects = useMemo(
-  () => sortProjects(projectsWithResolvedStarState, projectSortOrder, activeSessionIds),
-  [projectSortOrder, projectsWithResolvedStarState, activeSessionIds],
+  () => sortProjects(projectsWithResolvedStarState, projectSortOrder, activeSessionIds, currentTime),
+  [projectSortOrder, projectsWithResolvedStarState, activeSessionIds, currentTime],
 );
 ```
 
@@ -107,18 +137,14 @@ before the provider logo, in both mobile and desktop layouts. The absolute-posit
 indicator block (`:126-146`) is removed.
 
 ```tsx
-const dotState = needsAttention
-  ? 'attention'   // amber, pulsing — highest priority
-  : isProcessing
-    ? 'active'    // green
-    : 'idle';     // yellow
+const sessionIsActive = isProcessing || sessionView.isActive; // running OR recent
+const dotState = getSessionDotState(needsAttention, sessionIsActive);
 ```
 
 ```tsx
 <span
   role="status"
-  aria-label={dotState === 'attention' ? 'Session needs attention'
-    : dotState === 'active' ? 'Session is running' : 'Session is idle'}
+  aria-label={dotLabel}
   className={cn(
     'flex-shrink-0 rounded-full',
     dotState === 'attention' && 'h-2 w-2 animate-pulse bg-amber-500',
@@ -128,15 +154,15 @@ const dotState = needsAttention
 />
 ```
 
-`showAttentionIndicator` / `showRecentIndicator` are deleted; the dot always shows.
-`sessionView.isActive` no longer drives dots or borders.
+`showAttentionIndicator` / `showRecentIndicator` are deleted; the dot always shows and
+`sessionView.isActive` (recent activity) drives it again alongside `isProcessing`.
 
 **Row styling re-map** (desktop `:213-222` and mobile `:150-158`):
 
 | State | Desktop / mobile style |
 |---|---|
 | selected | `border-primary/50 bg-primary/10` + left accent bar + `font-medium` name |
-| not selected, running | green tint `border-green-500/30 bg-green-50/5` (existing pattern, re-pointed at `isProcessing`) |
+| not selected, active (running or recent) | green tint `border-green-500/30 bg-green-50/5` (re-pointed at `sessionIsActive`) |
 | not selected, attention | amber tint `border-amber-500/40 bg-amber-50/5` |
 | not selected, idle | neutral + existing hover |
 
@@ -157,11 +183,13 @@ The processing spinner (Loader2) is retained for running sessions.
 
 ### 4.4 Project rows — `SidebarProjectItem.tsx`
 
-**Activity dot.** `isProjectActive` is computed from props already on the item
-(`sessions` + `activeSessions`):
+**Activity dot.** Computed from props already on the item (`sessions` + `activeSessions`
++ `currentTime`), using the `isSessionRecentlyActive` helper for the recency check:
 
 ```tsx
-const projectIsActive = sessions.some((session) => activeSessions.has(session.id));
+const projectIsActive = sessions.some(
+  (session) => activeSessions.has(session.id) || isSessionRecentlyActive(session, currentTime),
+);
 ```
 
 Render an inline dot between the star and the name, in both mobile (`:138-160` row) and
@@ -215,12 +243,12 @@ other locales degrade gracefully). Reuse existing keys where possible.
 - **Empty session list**: project with no sessions → not active → yellow dot.
 - **Running session not yet loaded** (paginated sessions): the dot/sort only sees
   loaded sessions. Acceptable; note it.
-- **Attention beats running**: a session that needs attention shows amber regardless of
-  running state.
-- **Selected + running/attention**: the row uses the selected style, the dot still
+- **Attention beats active**: a session that needs attention shows amber regardless of
+  running/recent state.
+- **Selected + active/attention**: the row uses the selected style, the dot still
   reflects amber/green/yellow so the status column stays consistent.
-- **Recently active but idle** (activity < 10 min, not running): now shows **yellow**
-  (was green). This is the intended semantic change — "active" now means "running".
+- **Recently active but idle** (activity < 10 min, not running): shows **green** — a
+  session used in the last 10 minutes counts as active.
 - **Editing states**: `+` hidden while the project name is being edited; session dot is
   unaffected by session-name editing.
 - **Collapsed sidebar / mobile drawer**: unchanged except the new indicators; no width
@@ -230,11 +258,12 @@ other locales degrade gracefully). Reuse existing keys where possible.
 
 ## 6. Files touched
 
-- Modify: `src/components/sidebar/utils/utils.ts` — add `isProjectActive`, extend
-  `sortProjects` with `activeSessionIds`.
-- Create: `src/components/sidebar/utils/utils.test.ts` — tests for both.
+- Modify: `src/components/sidebar/utils/utils.ts` — add `ACTIVE_WINDOW_MS`,
+  `isSessionRecentlyActive`, `isSessionActive`, `isProjectActive`; extend `sortProjects`
+  with `activeSessionIds` + `currentTime`; `getSessionDotState` second arg is "isActive".
+- Create: `src/components/sidebar/utils/utils.test.ts` — tests for the helpers + sort.
 - Modify: `src/components/sidebar/hooks/useSidebarController.ts` — pass
-  `activeSessionIds` to `sortProjects`.
+  `activeSessionIds` + `currentTime` to `sortProjects`.
 - Modify: `src/components/sidebar/view/subcomponents/SidebarSessionItem.tsx` — always-on
   status dot (amber/green/yellow), Option-A selected style, border re-map.
 - Modify: `src/components/sidebar/view/subcomponents/SidebarProjectItem.tsx` — activity
@@ -249,8 +278,8 @@ other locales degrade gracefully). Reuse existing keys where possible.
 - `npm run typecheck && npm run lint` pass.
 - `npm run build` passes.
 - Manual (Playwright / browser):
-  - Every session shows a dot: running = green + spinner, idle = yellow, attention =
-    amber pulsing (overrides).
+  - Every session shows a dot: running-or-recent = green + spinner, idle = yellow,
+    attention = amber pulsing (overrides).
   - Selected session shows border + left primary accent bar + tinted background + bolder
     name; clearly distinct from idle rows.
   - Project rows show green dot when any session is running, yellow otherwise; active
