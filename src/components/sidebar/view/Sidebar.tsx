@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useDeviceSettings } from '../../../hooks/useDeviceSettings';
 import { useUiPreferences } from '../../../hooks/useUiPreferences';
 import { useSidebarController } from '../hooks/useSidebarController';
+import { useSidebarWidth } from '../../../hooks/useSidebarWidth';
 import type { Project, LLMProvider } from '../../../types/app';
 import type { MCPServerStatus, SidebarProps } from '../types/types';
 
@@ -142,6 +143,8 @@ function Sidebar({
     sidebarVisible,
   });
 
+  const { width: sidebarWidth, setWidth: setSidebarWidth, resetWidth: resetSidebarWidth } = useSidebarWidth();
+
   useEffect(() => {
     if (typeof document === 'undefined') {
       return;
@@ -276,6 +279,9 @@ function Sidebar({
         <SidebarContent
             isPWA={isPWA}
             isMobile={isMobile}
+            width={sidebarWidth}
+            onWidthChange={setSidebarWidth}
+            onReset={resetSidebarWidth}
             isLoading={isLoading}
             projects={projects}
             runningSessionsCount={runningSessionsCount}

@@ -14,6 +14,7 @@ import { getAllSessions } from '../../utils/utils';
 import SidebarFooter from './SidebarFooter';
 import SidebarHeader from './SidebarHeader';
 import SidebarProjectList, { type SidebarProjectListProps } from './SidebarProjectList';
+import SidebarResizeHandle from './SidebarResizeHandle';
 
 function HighlightedSnippet({ snippet, highlights }: { snippet: string; highlights: { start: number; end: number }[] }) {
   const parts: ReactNode[] = [];
@@ -115,6 +116,9 @@ function formatCompactArchivedAge(dateString: string | null): string {
 type SidebarContentProps = {
   isPWA: boolean;
   isMobile: boolean;
+  width: number;
+  onWidthChange: (width: number) => void;
+  onReset: () => void;
   isLoading: boolean;
   projects: Project[];
   runningSessionsCount: number;
@@ -155,6 +159,9 @@ type SidebarContentProps = {
 export default function SidebarContent({
   isPWA,
   isMobile,
+  width,
+  onWidthChange,
+  onReset,
   isLoading,
   projects,
   runningSessionsCount,
@@ -195,8 +202,8 @@ export default function SidebarContent({
 
   return (
     <div
-      className="flex h-full flex-col bg-background/80 backdrop-blur-sm md:w-72 md:select-none"
-      style={{}}
+      className="relative flex h-full flex-col bg-background/80 backdrop-blur-sm md:w-72 md:select-none"
+      style={isMobile ? {} : { width }}
     >
       <SidebarHeader
         isPWA={isPWA}
@@ -560,6 +567,13 @@ export default function SidebarContent({
         onShowSettings={onShowSettings}
         t={t}
       />
+      {!isMobile && (
+        <SidebarResizeHandle
+          width={width}
+          onWidthChange={onWidthChange}
+          onReset={onReset}
+        />
+      )}
     </div>
   );
 }
