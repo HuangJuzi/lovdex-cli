@@ -6,7 +6,7 @@ import { Badge, Tooltip, buttonVariants } from '../../../../shared/view/ui';
 import { cn } from '../../../../lib/utils';
 import type { Project, ProjectSession, LLMProvider } from '../../../../types/app';
 import type { SessionWithProvider } from '../../types/types';
-import { createSessionViewModel } from '../../utils/utils';
+import { createSessionViewModel, getSessionDotState } from '../../utils/utils';
 import SessionProviderLogo from '../../../llm-logo-provider/SessionProviderLogo';
 
 type SidebarSessionItemProps = {
@@ -84,8 +84,13 @@ export default function SidebarSessionItem({
   const isEditing = editingSession === session.id;
   const compactSessionAge = formatCompactSessionAge(sessionView.sessionTime, currentTime);
   const editingContainerRef = useRef<HTMLDivElement>(null);
-  const showAttentionIndicator = needsAttention && !isSelected;
-  const showRecentIndicator = !showAttentionIndicator && !isProcessing && sessionView.isActive;
+  const dotState = getSessionDotState(needsAttention, isProcessing);
+  const dotLabel =
+    dotState === 'attention'
+      ? t('tooltips.attentionRequiredIndicator', { defaultValue: 'Session needs attention' })
+      : dotState === 'active'
+        ? t('tooltips.sessionRunning', 'Session is running')
+        : t('tooltips.sessionIdle', 'Session is idle');
 
   // The rename panel sits inside a group-hover opacity wrapper, so leaving the row
   // would visually hide it. While editing, dismiss only when the user clicks outside
@@ -123,42 +128,33 @@ export default function SidebarSessionItem({
 
   return (
     <div className="group relative">
-      {(showAttentionIndicator || showRecentIndicator) && (
-        <div className="absolute left-0 top-1/2 -translate-x-1 -translate-y-1/2 transform">
-          <Tooltip
-            content={showAttentionIndicator
-              ? t('tooltips.attentionRequiredIndicator', { defaultValue: 'Session needs attention' })
-              : t('tooltips.activeSessionIndicator')}
-            position="right"
-          >
-            <div
-              role="status"
-              aria-label={showAttentionIndicator
-                ? t('tooltips.attentionRequiredIndicator', { defaultValue: 'Session needs attention' })
-                : t('tooltips.activeSessionIndicator')}
-              className={cn(
-                'h-2 w-2 animate-pulse rounded-full',
-                showAttentionIndicator ? 'bg-amber-500' : 'bg-green-500',
-              )}
-            />
-          </Tooltip>
-        </div>
-      )}
-
       <div className="md:hidden">
         <div
           className={cn(
             'p-2 mx-3 my-0.5 rounded-md bg-card border active:scale-[0.98] transition-all duration-150 relative',
-            isSelected ? 'bg-primary/5 border-primary/20' : '',
+            isSelected ? 'bg-primary/10 border-primary/50' : '',
             !isSelected && isProcessing
-              ? 'border-border/60 bg-muted/20'
-              : !isSelected && sessionView.isActive
               ? 'border-green-500/30 bg-green-50/5 dark:bg-green-900/5'
+              : !isSelected && needsAttention
+              ? 'border-amber-500/40 bg-amber-50/5 dark:bg-amber-900/5'
               : 'border-border/30',
           )}
           onClick={selectMobileSession}
         >
+          {isSelected && (
+            <span className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r bg-primary" />
+          )}
           <div className="flex items-center gap-2">
+            <span
+              role="status"
+              aria-label={dotLabel}
+              className={cn(
+                'flex-shrink-0 rounded-full',
+                dotState === 'attention' && 'h-2 w-2 animate-pulse bg-amber-500',
+                dotState === 'active' && 'h-2 w-2 bg-green-500',
+                dotState === 'idle' && 'h-1.5 w-1.5 bg-amber-400',
+              )}
+            />
             <div
               className={cn(
                 'w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0',
@@ -170,7 +166,7 @@ export default function SidebarSessionItem({
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <div className="min-w-0 flex-1 truncate text-sm font-normal text-foreground">{sessionView.sessionName}</div>
+                <div className={cn('min-w-0 flex-1 truncate text-sm text-foreground', isSelected ? 'font-medium' : 'font-normal')}>{sessionView.sessionName}</div>
                 {isProcessing ? (
                   <span className="ml-auto flex-shrink-0">
                     <Tooltip content={t('tooltips.processingSessionIndicator', 'Processing session')} position="top">
@@ -212,12 +208,12 @@ export default function SidebarSessionItem({
           href={`/session/${session.id}`}
           className={cn(
             buttonVariants({ variant: 'ghost' }),
-            'h-auto w-full justify-start rounded-md border bg-card p-2 text-left font-normal transition-all duration-150',
-            isSelected ? 'border-primary/20 bg-primary/5' : 'border-border/30',
+            'relative h-auto w-full justify-start rounded-md border bg-card p-2 text-left font-normal transition-all duration-150',
+            isSelected ? 'border-primary/50 bg-primary/10' : 'border-border/30',
             !isSelected && isProcessing
-              ? 'border-border/60 bg-muted/20 hover:bg-muted/25'
-              : !isSelected && sessionView.isActive
-                ? 'border-green-500/30 bg-green-50/5 hover:bg-green-50/10 dark:bg-green-900/5 dark:hover:bg-green-900/10'
+              ? 'border-green-500/30 bg-green-50/5 hover:bg-green-50/10 dark:bg-green-900/5 dark:hover:bg-green-900/10'
+              : !isSelected && needsAttention
+                ? 'border-amber-500/40 bg-amber-50/5 hover:bg-amber-50/10 dark:bg-amber-900/5 dark:hover:bg-amber-900/10'
                 : 'hover:bg-accent/50',
           )}
           // Left-click keeps in-app navigation; Ctrl/Cmd/middle-click and the
@@ -228,7 +224,20 @@ export default function SidebarSessionItem({
             onSessionSelect(session, project.projectId);
           }}
         >
+          {isSelected && (
+            <span className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r bg-primary" />
+          )}
           <div className="flex w-full min-w-0 items-center gap-2">
+            <span
+              role="status"
+              aria-label={dotLabel}
+              className={cn(
+                'flex-shrink-0 rounded-full',
+                dotState === 'attention' && 'h-2 w-2 animate-pulse bg-amber-500',
+                dotState === 'active' && 'h-2 w-2 bg-green-500',
+                dotState === 'idle' && 'h-1.5 w-1.5 bg-amber-400',
+              )}
+            />
             <div
               className={cn(
                 'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md',
@@ -239,7 +248,7 @@ export default function SidebarSessionItem({
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <div className="min-w-0 flex-1 truncate text-sm font-normal text-foreground">{sessionView.sessionName}</div>
+                <div className={cn('min-w-0 flex-1 truncate text-sm text-foreground', isSelected ? 'font-medium' : 'font-normal')}>{sessionView.sessionName}</div>
                 {isProcessing ? (
                   <span
                     className={cn(
