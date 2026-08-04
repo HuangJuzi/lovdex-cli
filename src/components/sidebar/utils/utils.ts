@@ -121,10 +121,24 @@ export const getProjectLastActivity = (project: Project): Date => {
 export const sortProjects = (
   projects: Project[],
   projectSortOrder: ProjectSortOrder,
+  activeSessionIds: ReadonlySet<string>,
 ): Project[] => {
   const byName = [...projects];
 
   byName.sort((projectA, projectB) => {
+    // Projects with a running session float to the top, ahead of starred
+    // projects and the name/date order.
+    const aActive = isProjectActive(projectA, activeSessionIds);
+    const bActive = isProjectActive(projectB, activeSessionIds);
+
+    if (aActive && !bActive) {
+      return -1;
+    }
+
+    if (!aActive && bActive) {
+      return 1;
+    }
+
     // Star order now comes from backend `projects.isStarred`.
     const aStarred = Boolean(projectA.isStarred);
     const bStarred = Boolean(projectB.isStarred);
@@ -145,6 +159,30 @@ export const sortProjects = (
   });
 
   return byName;
+};
+
+/** True when any of the project's loaded sessions is currently processing. */
+export const isProjectActive = (
+  project: Project,
+  activeSessionIds: ReadonlySet<string>,
+): boolean => {
+  return (project.sessions ?? []).some((session) => activeSessionIds.has(String(session.id)));
+};
+
+export type SessionDotState = 'attention' | 'active' | 'idle';
+
+/** Status column for a session row: needs-attention > running > idle. */
+export const getSessionDotState = (
+  needsAttention: boolean,
+  isProcessing: boolean,
+): SessionDotState => {
+  if (needsAttention) {
+    return 'attention';
+  }
+  if (isProcessing) {
+    return 'active';
+  }
+  return 'idle';
 };
 
 export const filterProjects = (projects: Project[], searchFilter: string): Project[] => {
