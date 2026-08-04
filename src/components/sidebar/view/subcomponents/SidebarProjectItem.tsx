@@ -6,7 +6,7 @@ import { cn } from '../../../../lib/utils';
 import type { Project, ProjectSession, LLMProvider } from '../../../../types/app';
 import type { SessionActivityMap } from '../../../../hooks/useSessionProtection';
 import type { MCPServerStatus, SessionWithProvider } from '../../types/types';
-import { getTaskIndicatorStatus } from '../../utils/utils';
+import { getTaskIndicatorStatus, isSessionRecentlyActive } from '../../utils/utils';
 
 import TaskIndicator from './TaskIndicator';
 import SidebarProjectSessions from './SidebarProjectSessions';
@@ -103,7 +103,9 @@ export default function SidebarProjectItem({
   const totalSessionCount = Number(project.sessionMeta?.total ?? sessions.length);
   const sessionCountDisplay = getSessionCountDisplay(project, sessions);
   const sessionCountLabel = `${sessionCountDisplay} session${totalSessionCount === 1 ? '' : 's'}`;
-  const projectIsActive = sessions.some((session) => activeSessions.has(session.id));
+  const projectIsActive = sessions.some(
+    (session) => activeSessions.has(session.id) || isSessionRecentlyActive(session, currentTime),
+  );
   const projectStatusLabel = projectIsActive
     ? t('tooltips.projectActive', 'Project has a running session')
     : t('tooltips.projectIdle', 'Project is idle');

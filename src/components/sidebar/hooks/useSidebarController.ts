@@ -585,8 +585,8 @@ export function useSidebarController({
   }, [optimisticStarByProjectId, projects]);
 
   const sortedProjects = useMemo(
-    () => sortProjects(projectsWithResolvedStarState, projectSortOrder, activeSessionIds),
-    [projectSortOrder, projectsWithResolvedStarState, activeSessionIds],
+    () => sortProjects(projectsWithResolvedStarState, projectSortOrder, activeSessionIds, currentTime),
+    [projectSortOrder, projectsWithResolvedStarState, activeSessionIds, currentTime],
   );
 
   const runningProjects = useMemo(() => {

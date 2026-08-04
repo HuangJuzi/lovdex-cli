@@ -84,7 +84,8 @@ export default function SidebarSessionItem({
   const isEditing = editingSession === session.id;
   const compactSessionAge = formatCompactSessionAge(sessionView.sessionTime, currentTime);
   const editingContainerRef = useRef<HTMLDivElement>(null);
-  const dotState = getSessionDotState(needsAttention, isProcessing);
+  const sessionIsActive = isProcessing || sessionView.isActive;
+  const dotState = getSessionDotState(needsAttention, sessionIsActive);
   const dotLabel =
     dotState === 'attention'
       ? t('tooltips.attentionRequiredIndicator', { defaultValue: 'Session needs attention' })
@@ -134,7 +135,7 @@ export default function SidebarSessionItem({
             'p-2 mx-3 my-0.5 rounded-md bg-card border active:scale-[0.98] transition-all duration-150 relative',
             isSelected
               ? 'bg-primary/10 border-primary/50'
-              : isProcessing
+              : sessionIsActive
                 ? 'border-green-500/30 bg-green-50/5 dark:bg-green-900/5'
                 : needsAttention
                   ? 'border-amber-500/40 bg-amber-50/5 dark:bg-amber-900/5'
@@ -212,7 +213,7 @@ export default function SidebarSessionItem({
             'relative h-auto w-full justify-start rounded-md border bg-card p-2 text-left font-normal transition-all duration-150',
             isSelected
               ? 'border-primary/50 bg-primary/10'
-              : isProcessing
+              : sessionIsActive
                 ? 'border-green-500/30 bg-green-50/5 hover:bg-green-50/10 dark:bg-green-900/5 dark:hover:bg-green-900/10'
                 : needsAttention
                   ? 'border-amber-500/40 bg-amber-50/5 hover:bg-amber-50/10 dark:bg-amber-900/5 dark:hover:bg-amber-900/10'

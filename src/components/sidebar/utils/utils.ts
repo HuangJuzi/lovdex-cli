@@ -54,11 +54,11 @@ export const clearLegacyStarredProjectIds = () => {
   }
 };
 
-const getCreatedTimestamp = (session: SessionWithProvider): string => {
+const getCreatedTimestamp = (session: ProjectSession): string => {
   return String(session.createdAt || session.created_at || '');
 };
 
-const getUpdatedTimestamp = (session: SessionWithProvider): string => {
+const getUpdatedTimestamp = (session: ProjectSession): string => {
   return String(session.lastActivity || '');
 };
 
@@ -69,7 +69,7 @@ const getSessionProvider = (session: ProjectSession): LLMProvider => {
     : 'claude';
 };
 
-export const getSessionDate = (session: SessionWithProvider): Date => {
+export const getSessionDate = (session: ProjectSession): Date => {
   return new Date(getUpdatedTimestamp(session) || getCreatedTimestamp(session) || 0);
 };
 
@@ -118,26 +118,48 @@ export const getProjectLastActivity = (project: Project): Date => {
   }, new Date(0));
 };
 
-/** True when any of the project's loaded sessions is currently processing. */
+/** Sessions with activity within this window count as active. */
+export const ACTIVE_WINDOW_MS = 10 * 60 * 1000;
+
+/** True when the session's last activity is within the 10-minute active window. */
+export const isSessionRecentlyActive = (
+  session: ProjectSession,
+  currentTime: Date,
+): boolean => {
+  return currentTime.getTime() - getSessionDate(session).getTime() < ACTIVE_WINDOW_MS;
+};
+
+/** True when the session is running OR was recently active. */
+export const isSessionActive = (
+  session: ProjectSession,
+  activeSessionIds: ReadonlySet<string>,
+  currentTime: Date,
+): boolean => {
+  return activeSessionIds.has(String(session.id)) || isSessionRecentlyActive(session, currentTime);
+};
+
+/** True when any of the project's loaded sessions is active (running or recent). */
 export const isProjectActive = (
   project: Project,
   activeSessionIds: ReadonlySet<string>,
+  currentTime: Date,
 ): boolean => {
-  return (project.sessions ?? []).some((session) => activeSessionIds.has(String(session.id)));
+  return (project.sessions ?? []).some((session) => isSessionActive(session, activeSessionIds, currentTime));
 };
 
 export const sortProjects = (
   projects: Project[],
   projectSortOrder: ProjectSortOrder,
   activeSessionIds: ReadonlySet<string>,
+  currentTime: Date,
 ): Project[] => {
   const byName = [...projects];
 
   byName.sort((projectA, projectB) => {
-    // Projects with a running session float to the top, ahead of starred
-    // projects and the name/date order.
-    const aActive = isProjectActive(projectA, activeSessionIds);
-    const bActive = isProjectActive(projectB, activeSessionIds);
+    // Projects with an active session (running or recent) float to the top,
+    // ahead of starred projects and the name/date order.
+    const aActive = isProjectActive(projectA, activeSessionIds, currentTime);
+    const bActive = isProjectActive(projectB, activeSessionIds, currentTime);
 
     if (aActive && !bActive) {
       return -1;
@@ -171,15 +193,15 @@ export const sortProjects = (
 
 export type SessionDotState = 'attention' | 'active' | 'idle';
 
-/** Status column for a session row: needs-attention > running > idle. */
+/** Status column for a session row: needs-attention > active > idle. */
 export const getSessionDotState = (
   needsAttention: boolean,
-  isProcessing: boolean,
+  isActive: boolean,
 ): SessionDotState => {
   if (needsAttention) {
     return 'attention';
   }
-  if (isProcessing) {
+  if (isActive) {
     return 'active';
   }
   return 'idle';
