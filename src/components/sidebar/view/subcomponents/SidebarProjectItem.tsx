@@ -1,4 +1,4 @@
-import { Check, ChevronDown, ChevronRight, Edit3, Star, Trash2, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Edit3, Plus, Star, Trash2, X } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
 import { Button } from '../../../../shared/view/ui';
@@ -103,6 +103,10 @@ export default function SidebarProjectItem({
   const totalSessionCount = Number(project.sessionMeta?.total ?? sessions.length);
   const sessionCountDisplay = getSessionCountDisplay(project, sessions);
   const sessionCountLabel = `${sessionCountDisplay} session${totalSessionCount === 1 ? '' : 's'}`;
+  const projectIsActive = sessions.some((session) => activeSessions.has(session.id));
+  const projectStatusLabel = projectIsActive
+    ? t('tooltips.projectActive', 'Project has a running session')
+    : t('tooltips.projectIdle', 'Project is idle');
   const taskStatus = getTaskIndicatorStatus(project, mcpServerStatus);
 
   const toggleProject = () => onToggleProject(project.projectId);
@@ -158,6 +162,14 @@ export default function SidebarProjectItem({
                     )}
                   />
                 </button>
+
+                <span
+                  title={projectStatusLabel}
+                  className={cn(
+                    'flex-shrink-0 rounded-full',
+                    projectIsActive ? 'h-2 w-2 bg-green-500' : 'h-1.5 w-1.5 bg-amber-400',
+                  )}
+                />
 
                 <div className="min-w-0 flex-1">
                   {isEditing ? (
@@ -228,6 +240,16 @@ export default function SidebarProjectItem({
                 ) : (
                   <>
                     <button
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 active:scale-90 dark:border-primary/30 dark:bg-primary/20"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onNewSession(project);
+                      }}
+                      aria-label={t('tooltips.newSession', 'Start a new session in this project')}
+                    >
+                      <Plus className="h-4 w-4 text-primary" />
+                    </button>
+                    <button
                       className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-500/10 active:scale-90 dark:border-red-800 dark:bg-red-900/30"
                       onClick={(event) => {
                         event.stopPropagation();
@@ -295,6 +317,15 @@ export default function SidebarProjectItem({
                 )}
               />
             </div>
+
+            <span
+              title={projectStatusLabel}
+              className={cn(
+                'flex-shrink-0 rounded-full',
+                projectIsActive ? 'h-2 w-2 bg-green-500' : 'h-1.5 w-1.5 bg-amber-400',
+              )}
+            />
+
             <div className="min-w-0 flex-1 text-left">
               {isEditing ? (
                 <div className="space-y-1">
@@ -361,6 +392,17 @@ export default function SidebarProjectItem({
               </>
             ) : (
               <>
+                <button
+                  className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onNewSession(project);
+                  }}
+                  title={t('tooltips.newSession', 'Start a new session in this project')}
+                  aria-label={t('tooltips.newSession', 'Start a new session in this project')}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
                 <div
                   className="touch:opacity-100 flex h-6 w-6 cursor-pointer items-center justify-center rounded opacity-0 transition-all duration-200 hover:bg-accent group-hover:opacity-100"
                   onClick={(event) => {
