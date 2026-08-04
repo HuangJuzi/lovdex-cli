@@ -469,7 +469,6 @@ export default function SidebarProjectItem({
         onSessionSelect={onSessionSelect}
         onDeleteSession={onDeleteSession}
         onLoadMoreSessions={onLoadMoreSessions}
-        onNewSession={onNewSession}
         t={t}
       />
     </div>
