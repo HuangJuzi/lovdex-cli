@@ -164,6 +164,8 @@ export default function SidebarProjectItem({
                 </button>
 
                 <span
+                  role="status"
+                  aria-label={projectStatusLabel}
                   title={projectStatusLabel}
                   className={cn(
                     'flex-shrink-0 rounded-full',
@@ -245,6 +247,7 @@ export default function SidebarProjectItem({
                         event.stopPropagation();
                         onNewSession(project);
                       }}
+                      title={t('tooltips.newSession', 'Start a new session in this project')}
                       aria-label={t('tooltips.newSession', 'Start a new session in this project')}
                     >
                       <Plus className="h-4 w-4 text-primary" />
@@ -319,6 +322,8 @@ export default function SidebarProjectItem({
             </div>
 
             <span
+              role="status"
+              aria-label={projectStatusLabel}
               title={projectStatusLabel}
               className={cn(
                 'flex-shrink-0 rounded-full',
@@ -392,17 +397,26 @@ export default function SidebarProjectItem({
               </>
             ) : (
               <>
-                <button
-                  className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                   onClick={(event) => {
                     event.stopPropagation();
                     onNewSession(project);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      onNewSession(project);
+                    }
                   }}
                   title={t('tooltips.newSession', 'Start a new session in this project')}
                   aria-label={t('tooltips.newSession', 'Start a new session in this project')}
                 >
                   <Plus className="h-3.5 w-3.5" />
-                </button>
+                </div>
                 <div
                   className="touch:opacity-100 flex h-6 w-6 cursor-pointer items-center justify-center rounded opacity-0 transition-all duration-200 hover:bg-accent group-hover:opacity-100"
                   onClick={(event) => {
