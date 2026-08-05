@@ -103,8 +103,14 @@ export default function SidebarProjectItem({
   const totalSessionCount = Number(project.sessionMeta?.total ?? sessions.length);
   const sessionCountDisplay = getSessionCountDisplay(project, sessions);
   const sessionCountLabel = `${sessionCountDisplay} session${totalSessionCount === 1 ? '' : 's'}`;
+  // A session that needs attention renders amber (overriding green), so it must not
+  // count toward the project's green dot — otherwise a project can look active while
+  // every one of its sessions shows amber/yellow. This keeps project and session dots
+  // consistent: project green ⟺ at least one session renders green.
   const projectIsActive = sessions.some(
-    (session) => activeSessions.has(session.id) || isSessionRecentlyActive(session, currentTime),
+    (session) =>
+      !attentionSessionIds.has(session.id) &&
+      (activeSessions.has(session.id) || isSessionRecentlyActive(session, currentTime)),
   );
   const projectStatusLabel = projectIsActive
     ? t('tooltips.projectActive', 'Project has an active session')
