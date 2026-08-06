@@ -164,3 +164,27 @@ export function resolveWorkflowRoot(
   }
   return (event.taskId && taskIdToRoot[event.taskId]) || toolUseId || undefined;
 }
+
+/**
+ * Seed per-tool-use Workflow trees from REST history.
+ *
+ * The backend attaches a pre-aggregated `workflowState` onto each Workflow
+ * tool_use message in history (fetchHistory/aggregateWorkflowState). When the
+ * store loads history it must seed its tree map from those so a freshly loaded
+ * session shows the full card without waiting for live events. Returns a new
+ * merged map (does not mutate the input).
+ */
+export function seedWorkflowStateFromHistory(
+  prev: Record<string, WorkflowState>,
+  messages: Array<{ kind?: string; toolName?: string; toolId?: string; workflowState?: WorkflowState }>,
+): Record<string, WorkflowState> {
+  let next = prev;
+  for (const m of messages) {
+    if (m.kind === 'tool_use' && m.toolName === 'Workflow' && m.toolId && m.workflowState) {
+      if (!next[m.toolId] || !next[m.toolId].notification) {
+        next = { ...next, [m.toolId]: m.workflowState };
+      }
+    }
+  }
+  return next;
+}

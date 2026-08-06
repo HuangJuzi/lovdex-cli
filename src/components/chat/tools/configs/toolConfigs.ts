@@ -479,6 +479,10 @@ export const TOOL_CONFIGS: Record<string, ToolDisplayConfig> = {
     },
     result: {
       type: 'collapsible',
+      // The input-mode card already renders the full tree + actions + terminal
+      // summary (from seeded/live workflowState), so a second result-mode card
+      // would duplicate it. Hide on success; errors still surface.
+      hideOnSuccess: true,
       contentType: 'workflow',
       getContentProps: (result) => {
         const r = (result?.toolUseResult || result) || {};

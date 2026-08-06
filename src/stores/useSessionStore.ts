@@ -11,7 +11,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { authenticatedFetch } from '../utils/api';
 import type { LLMProvider } from '../types/app';
-import { applyWorkflowEvent as applyWorkflowEventReducer } from '../components/chat/tools/workflowState';
+import { applyWorkflowEvent as applyWorkflowEventReducer, seedWorkflowStateFromHistory } from '../components/chat/tools/workflowState';
 import type { WorkflowEvent, WorkflowState } from '../components/chat/tools/workflowState';
 
 // ─── NormalizedMessage (mirrors server/adapters/types.js) ────────────────────
@@ -67,6 +67,13 @@ export interface NormalizedMessage {
   toolInput?: unknown;
   toolId?: string;
   toolResult?: { content: string; isError: boolean; toolUseResult?: unknown } | null;
+  /**
+   * Pre-aggregated Workflow tree attached by the backend to Workflow tool_use
+   * messages in REST history (fetchHistory/aggregateWorkflowState). Seeded into
+   * workflowStateByToolUseIdRef on load so a freshly loaded session shows the
+   * full Workflow card without waiting for live WS events.
+   */
+  workflowState?: WorkflowState;
   isError?: boolean;
   text?: string;
   tokens?: number;
@@ -454,6 +461,20 @@ export function useSessionStore() {
     setTick(n => n + 1);
   }, []);
 
+  /**
+   * Seed the per-tool-use Workflow tree map from REST history messages that
+   * carry a backend-attached `workflowState` (Workflow tool_use rows). Live WS
+   * progress stays fresher than history, so an existing tree that already has a
+   * terminal notification is never overwritten. No-op when nothing changed.
+   */
+  const seedWorkflowStateFromMessages = useCallback((messages: NormalizedMessage[]) => {
+    const seeded = seedWorkflowStateFromHistory(workflowStateByToolUseIdRef.current, messages);
+    if (seeded !== workflowStateByToolUseIdRef.current) {
+      workflowStateByToolUseIdRef.current = seeded;
+      notifyAll();
+    }
+  }, [notifyAll]);
+
   const setActiveSession = useCallback((sessionId: string | null) => {
     activeSessionIdRef.current = sessionId;
   }, []);
@@ -514,6 +535,7 @@ export function useSessionStore() {
       slot._appliedFetchSeq = fetchTicket;
 
       slot.serverMessages = messages;
+      seedWorkflowStateFromMessages(messages);
       slot.total = data.total ?? messages.length;
       slot.hasMore = Boolean(data.hasMore);
       slot.offset = (opts.offset ?? 0) + messages.length;
@@ -535,7 +557,7 @@ export function useSessionStore() {
       }
       return slot;
     }
-  }, [getSlot, notify]);
+  }, [getSlot, notify, seedWorkflowStateFromMessages]);
 
   /**
    * Load older (paginated) messages and prepend to serverMessages.
@@ -574,6 +596,7 @@ export function useSessionStore() {
 
       // Prepend older messages (they're earlier in the conversation)
       slot.serverMessages = [...olderMessages, ...slot.serverMessages];
+      seedWorkflowStateFromMessages(olderMessages);
       slot.hasMore = Boolean(data.hasMore);
       slot.offset = slot.offset + olderMessages.length;
       recomputeMergedIfNeeded(slot);
@@ -583,7 +606,7 @@ export function useSessionStore() {
       console.error(`[SessionStore] fetchMore failed for ${sessionId}:`, error);
       return slot;
     }
-  }, [getSlot, notify]);
+  }, [getSlot, notify, seedWorkflowStateFromMessages]);
 
   /**
    * Append a realtime (WebSocket) message to the correct session slot.
@@ -649,6 +672,7 @@ export function useSessionStore() {
       slot._appliedFetchSeq = fetchTicket;
 
       slot.serverMessages = data.messages || [];
+      seedWorkflowStateFromMessages(slot.serverMessages);
       slot.total = data.total ?? slot.serverMessages.length;
       slot.hasMore = Boolean(data.hasMore);
       slot.fetchedAt = Date.now();
@@ -664,7 +688,7 @@ export function useSessionStore() {
     } catch (error) {
       console.error(`[SessionStore] refresh failed for ${sessionId}:`, error);
     }
-  }, [getSlot, notify]);
+  }, [getSlot, notify, seedWorkflowStateFromMessages]);
 
   /**
    * Update session status.

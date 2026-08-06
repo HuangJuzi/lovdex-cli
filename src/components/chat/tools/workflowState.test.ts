@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { applyWorkflowEvent, resolveWorkflowRoot, type WorkflowState } from './workflowState';
+import { applyWorkflowEvent, resolveWorkflowRoot, seedWorkflowStateFromHistory, type WorkflowState } from './workflowState';
 
 test('task_started creates a root entry with running status', () => {
   const state = applyWorkflowEvent(undefined, {
@@ -115,4 +115,52 @@ test('resolveWorkflowRoot: unknown taskId with no fallback returns undefined', (
 test('resolveWorkflowRoot: background_tasks_changed is not routable', () => {
   const root = resolveWorkflowRoot({}, null, { kind: 'background_tasks_changed', tasks: [] });
   assert.equal(root, undefined);
+});
+
+test('seedWorkflowStateFromHistory seeds a Workflow tool_use into an empty map', () => {
+  const ws: WorkflowState = {
+    status: 'completed',
+    workflowName: 'spec',
+    agents: [],
+    notification: { status: 'completed', summary: 'ok' },
+  };
+  const result = seedWorkflowStateFromHistory({}, [
+    { kind: 'tool_use', toolName: 'Workflow', toolId: 'TU_1', workflowState: ws },
+  ]);
+  assert.deepEqual(result, { TU_1: ws });
+});
+
+test('seedWorkflowStateFromHistory does NOT overwrite a live tree with a terminal notification', () => {
+  const live: WorkflowState = {
+    status: 'completed',
+    agents: [{ taskId: 'T1', description: 'agent:Explore', tools: [] }],
+    notification: { status: 'completed', summary: 'live summary', usage: { total_tokens: 5, tool_uses: 1, duration_ms: 50 } },
+  };
+  const history: WorkflowState = {
+    status: 'completed',
+    agents: [],
+    notification: { status: 'completed', summary: 'history summary' },
+  };
+  const prev = { TU_1: live };
+  const result = seedWorkflowStateFromHistory(prev, [
+    { kind: 'tool_use', toolName: 'Workflow', toolId: 'TU_1', workflowState: history },
+  ]);
+  // Same reference returned when nothing changes; the live (fresher) tree is kept.
+  assert.equal(result, prev);
+  assert.equal(result.TU_1, live);
+});
+
+test('seedWorkflowStateFromHistory ignores non-Workflow / missing-workflowState messages', () => {
+  const ws: WorkflowState = {
+    status: 'completed',
+    agents: [],
+    notification: { status: 'completed', summary: 'x' },
+  };
+  const result = seedWorkflowStateFromHistory({}, [
+    { kind: 'tool_use', toolName: 'Bash', toolId: 'TU_1', workflowState: ws },
+    { kind: 'tool_use', toolName: 'Workflow', toolId: 'TU_2' },
+    { kind: 'tool_use', toolName: 'Workflow', toolId: 'TU_3', workflowState: ws },
+    { kind: 'text' },
+  ]);
+  assert.deepEqual(result, { TU_3: ws });
 });
