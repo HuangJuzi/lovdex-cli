@@ -68,3 +68,21 @@ test('events for unknown taskId (no task_started) are ignored', () => {
   const state = applyWorkflowEvent(undefined, { kind: 'task_progress', taskId: 'T9', toolUseId: 'TU', description: 'x', lastToolName: undefined, usage: undefined });
   assert.equal(state, undefined);
 });
+
+test('applyWorkflowEvent returns a NEW reference on task_progress', () => {
+  let state: WorkflowState | undefined;
+  state = applyWorkflowEvent(state, { kind: 'task_started', taskId: 'T1', toolUseId: 'TU_root', taskType: 'local_workflow', workflowName: 'spec', description: 'spec' });
+  const state1 = state;
+  state = applyWorkflowEvent(state, { kind: 'task_progress', taskId: 'T1', toolUseId: 'TU_root', description: 'a', lastToolName: 'Grep', usage: { total_tokens: 1, tool_uses: 1, duration_ms: 1 } });
+  assert.notEqual(state, state1);
+});
+
+test('tool_progress without taskId falls back to parentToolUseId match', () => {
+  let state: WorkflowState | undefined;
+  state = applyWorkflowEvent(state, { kind: 'task_started', taskId: 'T1', toolUseId: 'TU_root', taskType: 'local_workflow', workflowName: 'spec', description: 'spec' });
+  state = applyWorkflowEvent(state, { kind: 'task_progress', taskId: 'T1', toolUseId: 'TU_agent', description: 'a', lastToolName: 'Grep', usage: { total_tokens: 1, tool_uses: 1, duration_ms: 1 } });
+  state = applyWorkflowEvent(state, { kind: 'tool_progress', toolUseId: 'TU_leaf', toolName: 'Read', parentToolUseId: 'TU_agent', elapsedTimeSeconds: 0.5 });
+  assert(state);
+  assert.equal(state.agents[0].tools.length, 1);
+  assert.equal(state.agents[0].tools[0].toolName, 'Read');
+});

@@ -8,16 +8,25 @@
  *   Workflow → agents[] → tools[]
  *
  * Kept as a pure function so it can be unit-tested with node:test (no jsdom).
- * The hook (useWorkflowState) wraps this with a per-toolUseId Map.
+ * Every state-changing path returns a NEW reference (immutable), so Zustand
+ * selectors in the wrapping hook (useWorkflowState) see next !== prev and
+ * re-render on task_progress/task_notification.
  */
+
+export interface WorkflowUsage {
+  total_tokens: number;
+  tool_uses: number;
+  duration_ms: number;
+}
 
 export interface WorkflowAgentNode {
   taskId: string;
+  toolUseId?: string;
   subagentType?: string;
   taskType?: string;
   description: string;
   lastToolName?: string;
-  usage?: { total_tokens: number; tool_uses: number; duration_ms: number };
+  usage?: WorkflowUsage;
   tools: Array<{
     toolUseId: string;
     toolName: string;
@@ -27,12 +36,13 @@ export interface WorkflowAgentNode {
 
 export interface WorkflowState {
   status: 'running' | 'completed' | 'failed' | 'stopped' | 'async_launched';
+  taskType?: string;
   workflowName?: string;
   agents: WorkflowAgentNode[];
   notification?: {
     status: 'completed' | 'failed' | 'stopped';
     summary: string;
-    usage?: { total_tokens: number; tool_uses: number; duration_ms: number };
+    usage?: WorkflowUsage;
   };
 }
 
@@ -48,56 +58,77 @@ export function applyWorkflowEvent(state: WorkflowState | undefined, event: Work
     case 'task_started':
       return {
         status: 'running',
+        taskType: event.taskType ?? undefined,
         workflowName: event.workflowName ?? undefined,
         agents: [],
       };
 
     case 'task_progress': {
       if (!state) return undefined;
-      const existing = state.agents.find((a) => a.taskId === event.taskId);
-      if (existing) {
-        existing.description = event.description;
-        if (event.lastToolName) existing.lastToolName = event.lastToolName;
-        if (event.usage) existing.usage = event.usage as WorkflowAgentNode['usage'];
+      const index = state.agents.findIndex((a) => a.taskId === event.taskId);
+      const newAgents = [...state.agents];
+      if (index >= 0) {
+        const existing = state.agents[index];
+        newAgents[index] = {
+          ...existing,
+          description: event.description,
+          lastToolName: event.lastToolName ? event.lastToolName : existing.lastToolName,
+          usage: event.usage ? (event.usage as WorkflowUsage) : existing.usage,
+        };
       } else {
-        state.agents.push({
+        newAgents.push({
           taskId: event.taskId,
+          toolUseId: event.toolUseId ?? undefined,
           subagentType: event.subagentType ?? undefined,
           description: event.description,
           lastToolName: event.lastToolName ?? undefined,
-          usage: event.usage as WorkflowAgentNode['usage'],
+          usage: event.usage as WorkflowUsage | undefined,
           tools: [],
         });
       }
-      return state;
+      return { ...state, agents: newAgents };
     }
 
     case 'tool_progress': {
-      if (!state || !event.taskId) return undefined;
-      const agent = state.agents.find((a) => a.taskId === event.taskId);
-      if (!agent) return undefined;
-      const existing = agent.tools.find((t) => t.toolUseId === event.toolUseId);
-      if (existing) {
-        existing.elapsedTimeSeconds = event.elapsedTimeSeconds ?? existing.elapsedTimeSeconds;
+      if (!state) return undefined;
+      // Route by taskId when present; otherwise fall back to the agent whose
+      // toolUseId matches the SDK's parentToolUseId (subagent tool_use events
+      // carry the subagent tool_use id, not the workflow taskId).
+      const agentIndex = event.taskId
+        ? state.agents.findIndex((a) => a.taskId === event.taskId)
+        : state.agents.findIndex((a) => a.toolUseId === event.parentToolUseId);
+      if (agentIndex < 0) return undefined;
+      const agent = state.agents[agentIndex];
+      const newTools = [...agent.tools];
+      const toolIndex = newTools.findIndex((t) => t.toolUseId === event.toolUseId);
+      if (toolIndex >= 0) {
+        newTools[toolIndex] = {
+          ...newTools[toolIndex],
+          elapsedTimeSeconds: event.elapsedTimeSeconds ?? newTools[toolIndex].elapsedTimeSeconds,
+        };
       } else {
-        agent.tools.push({
+        newTools.push({
           toolUseId: event.toolUseId,
           toolName: event.toolName,
           elapsedTimeSeconds: event.elapsedTimeSeconds ?? 0,
         });
       }
-      return state;
+      const newAgents = [...state.agents];
+      newAgents[agentIndex] = { ...agent, tools: newTools };
+      return { ...state, agents: newAgents };
     }
 
     case 'task_notification': {
       if (!state) return undefined;
-      state.status = event.status;
-      state.notification = {
+      return {
+        ...state,
         status: event.status,
-        summary: event.summary,
-        usage: (event.usage ?? undefined) as { total_tokens: number; tool_uses: number; duration_ms: number } | undefined,
+        notification: {
+          status: event.status,
+          summary: event.summary,
+          usage: (event.usage ?? undefined) as WorkflowUsage | undefined,
+        },
       };
-      return state;
     }
 
     case 'background_tasks_changed':
