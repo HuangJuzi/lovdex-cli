@@ -408,6 +408,8 @@ export function useProjectsState({
    * must read the latest values through refs instead of stale closures —
    * re-subscribing on every state change would risk missing events.
    */
+  const selectedProjectRef = useRef(selectedProject);
+  selectedProjectRef.current = selectedProject;
   const selectedSessionRef = useRef(selectedSession);
   selectedSessionRef.current = selectedSession;
   const activeSessionsRef = useRef(activeSessions);
@@ -916,42 +918,52 @@ export function useProjectsState({
         projectsHaveChanges(prevProjects, mergedProjects) ? mergedProjects : prevProjects,
       );
 
-      if (!selectedProject) {
+      // Restore the *current* selection, read through refs rather than the
+      // render-closure values. A refresh kicked off just before the user
+      // switched projects/sessions (e.g. right after creating a project, when
+      // `handleNewSession` picks the new project) would otherwise resolve with
+      // a stale closure and yank the selection back to the previous
+      // project/session — undoing the navigation into the new project.
+      const currentSelectedProject = selectedProjectRef.current;
+      if (!currentSelectedProject) {
         return;
       }
 
-      const refreshedProject = mergedProjects.find((project) => project.projectId === selectedProject.projectId);
+      const refreshedProject = mergedProjects.find(
+        (project) => project.projectId === currentSelectedProject.projectId,
+      );
       if (!refreshedProject) {
         return;
       }
 
-      if (serialize(refreshedProject) !== serialize(selectedProject)) {
+      if (serialize(refreshedProject) !== serialize(currentSelectedProject)) {
         setSelectedProject(refreshedProject);
       }
 
-      if (!selectedSession) {
+      const currentSelectedSession = selectedSessionRef.current;
+      if (!currentSelectedSession) {
         return;
       }
 
       const refreshedSession = getProjectSessions(refreshedProject).find(
-        (session) => session.id === selectedSession.id,
+        (session) => session.id === currentSelectedSession.id,
       );
 
       if (refreshedSession) {
         // Keep provider metadata stable when refreshed payload doesn't include __provider.
         const normalizedRefreshedSession =
-          refreshedSession.__provider || !selectedSession.__provider
+          refreshedSession.__provider || !currentSelectedSession.__provider
             ? refreshedSession
-            : { ...refreshedSession, __provider: selectedSession.__provider };
+            : { ...refreshedSession, __provider: currentSelectedSession.__provider };
 
-        if (serialize(normalizedRefreshedSession) !== serialize(selectedSession)) {
+        if (serialize(normalizedRefreshedSession) !== serialize(currentSelectedSession)) {
           setSelectedSession(normalizedRefreshedSession);
         }
       }
     } catch (error) {
       console.error('Error refreshing sidebar:', error);
     }
-  }, [projects, selectedProject, selectedSession]);
+  }, [projects]);
 
   const loadMoreProjectSessions = useCallback(async (projectId: string) => {
     const project = projects.find((candidate) => candidate.projectId === projectId);
