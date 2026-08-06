@@ -11,6 +11,7 @@ import type {
 } from '../../../../types/app';
 import { getIntrinsicMessageKey } from '../../utils/messageKeys';
 import { groupConsecutiveTools, isToolGroupItem } from '../../utils/toolGrouping';
+import type { WorkflowState } from '../../tools/workflowState';
 
 import MessageComponent from './MessageComponent';
 import ProviderSelectionEmptyState from './ProviderSelectionEmptyState';
@@ -65,6 +66,10 @@ interface ChatMessagesPaneProps {
   showRawParameters?: boolean;
   showThinking?: boolean;
   selectedProject: Project;
+  getWorkflowState: (toolId: string | undefined) => WorkflowState | undefined;
+  onWorkflowEdit: (scriptPath: string) => void;
+  onWorkflowRerun: (scriptPath: string) => void;
+  onWorkflowResume: (scriptPath: string, runId: string) => void;
 }
 
 function ChatMessagesPane({
@@ -113,6 +118,10 @@ function ChatMessagesPane({
   showRawParameters,
   showThinking,
   selectedProject,
+  getWorkflowState,
+  onWorkflowEdit,
+  onWorkflowRerun,
+  onWorkflowResume,
 }: ChatMessagesPaneProps) {
   const { t } = useTranslation('chat');
   const groupedVisibleMessages = useMemo(
@@ -265,6 +274,10 @@ function ChatMessagesPane({
                     showThinking={showThinking}
                     selectedProject={selectedProject}
                     provider={provider}
+                    getWorkflowState={getWorkflowState}
+                    onWorkflowEdit={onWorkflowEdit}
+                    onWorkflowRerun={onWorkflowRerun}
+                    onWorkflowResume={onWorkflowResume}
                   />
                 );
               }
@@ -285,6 +298,10 @@ function ChatMessagesPane({
                   showThinking={showThinking}
                   selectedProject={selectedProject}
                   provider={provider}
+                  getWorkflowState={getWorkflowState}
+                  onWorkflowEdit={onWorkflowEdit}
+                  onWorkflowRerun={onWorkflowRerun}
+                  onWorkflowResume={onWorkflowResume}
                 />
               );
             });

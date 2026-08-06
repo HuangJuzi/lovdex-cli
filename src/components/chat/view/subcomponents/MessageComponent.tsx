@@ -11,6 +11,7 @@ import type {
 import { formatUsageLimitText } from '../../utils/chatFormatting';
 import type { Project } from '../../../../types/app';
 import { ToolRenderer, shouldHideToolResult } from '../../tools';
+import type { WorkflowState } from '../../tools/workflowState';
 import { Reasoning, ReasoningTrigger, ReasoningContent } from '../../../../shared/view/ui';
 
 import ChatMessageImages from './ChatMessageImages';
@@ -34,6 +35,10 @@ type MessageComponentProps = {
   showThinking?: boolean;
   selectedProject?: Project | null;
   provider: Provider | string;
+  getWorkflowState?: (toolId: string | undefined) => WorkflowState | undefined;
+  onWorkflowEdit?: (scriptPath: string) => void;
+  onWorkflowRerun?: (scriptPath: string) => void;
+  onWorkflowResume?: (scriptPath: string, runId: string) => void;
 };
 
 type InteractiveOption = {
@@ -44,7 +49,7 @@ type InteractiveOption = {
 
 const COPY_HIDDEN_TOOL_NAMES = new Set(['Bash', 'Edit', 'Write', 'ApplyPatch']);
 
-const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, showRawParameters, showThinking, selectedProject, provider }: MessageComponentProps) => {
+const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, showRawParameters, showThinking, selectedProject, provider, getWorkflowState, onWorkflowEdit, onWorkflowRerun, onWorkflowResume }: MessageComponentProps) => {
   const { t } = useTranslation('chat');
   const isGrouped = prevMessage && prevMessage.type === message.type &&
     ((prevMessage.type === 'assistant') ||
@@ -186,6 +191,10 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
                     rawToolInput={typeof message.toolInput === 'string' ? message.toolInput : undefined}
                     isSubagentContainer={message.isSubagentContainer}
                     subagentState={message.subagentState}
+                    getWorkflowState={getWorkflowState}
+                    onWorkflowEdit={onWorkflowEdit}
+                    onWorkflowRerun={onWorkflowRerun}
+                    onWorkflowResume={onWorkflowResume}
                   />
                 )}
 
@@ -221,6 +230,10 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
                         onFileOpen={onFileOpen}
                         createDiff={createDiff}
                         selectedProject={selectedProject}
+                        getWorkflowState={getWorkflowState}
+                        onWorkflowEdit={onWorkflowEdit}
+                        onWorkflowRerun={onWorkflowRerun}
+                        onWorkflowResume={onWorkflowResume}
                       />
                     </div>
                   )

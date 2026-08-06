@@ -69,9 +69,17 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
   // First pass: collect tool results for attachment
   const toolResultMap = new Map<string, NormalizedMessage>();
   const toolUseIds = new Set<string>();
+  // Workflow tool_use ids whose terminal state lives on the Workflow card
+  // (backend `workflowState` aggregation). Their task_notification bubbles are
+  // suppressed so the notification doesn't render twice.
+  const workflowToolUseIds = new Set<string>();
   for (const msg of messages) {
     if (msg.kind === 'tool_use' && msg.toolId) {
       toolUseIds.add(msg.toolId);
+    }
+
+    if (msg.kind === 'tool_use' && msg.toolName === 'Workflow' && msg.toolId) {
+      workflowToolUseIds.add(msg.toolId);
     }
 
     if (msg.kind === 'tool_result' && msg.toolId) {
@@ -221,7 +229,14 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
         });
         break;
 
-      case 'task_notification':
+      case 'task_notification': {
+        // Workflow task notifications are folded into the Workflow card's
+        // terminal state (workflowState), so a standalone bubble would
+        // duplicate it.
+        const nToolUseId = (msg as { toolUseId?: string | null }).toolUseId ?? undefined;
+        if (nToolUseId && workflowToolUseIds.has(nToolUseId)) {
+          break;
+        }
         converted.push({
           type: 'assistant',
           content: msg.summary || 'Background task update',
@@ -231,6 +246,7 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
           ...sharedMetadata,
         });
         break;
+      }
 
       case 'stream_delta':
         if (msg.content) {

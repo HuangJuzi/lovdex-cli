@@ -249,6 +249,54 @@ function ChatInterface({
     });
   }, [selectedProject, selectedSession, sendMessage, sessionStore]);
 
+  // Workflow card actions: hand off to Claude via a normal chat message so it
+  // invokes Workflow({scriptPath}) / Workflow({scriptPath, resumeFromRunId}).
+  const handleWorkflowRerun = useCallback((scriptPath: string) => {
+    const sid = currentSessionId ?? selectedSession?.id;
+    if (!sid) return;
+    sendMessage({
+      type: 'chat.send',
+      sessionId: sid,
+      content: `请用 scriptPath \`${scriptPath}\` 重跑这个 workflow(不带 resumeFromRunId)。`,
+      options: {},
+    });
+  }, [currentSessionId, selectedSession, sendMessage]);
+
+  const handleWorkflowResume = useCallback((scriptPath: string, runId: string) => {
+    const sid = currentSessionId ?? selectedSession?.id;
+    if (!sid) return;
+    sendMessage({
+      type: 'chat.send',
+      sessionId: sid,
+      content: `请用 scriptPath \`${scriptPath}\` 和 resumeFromRunId \`${runId}\` 续跑这个 workflow。`,
+      options: {},
+    });
+  }, [currentSessionId, selectedSession, sendMessage]);
+
+  const handleWorkflowEdit = useCallback((scriptPath: string) => {
+    const sid = currentSessionId ?? selectedSession?.id;
+    if (!sid) return;
+    void (async () => {
+      let content = '';
+      try {
+        const res = await fetch(`/api/sessions/${sid}/workflow-script?path=${encodeURIComponent(scriptPath)}`);
+        if (res.ok) {
+          const body = await res.json();
+          content = body.content || '';
+        }
+      } catch { /* fall through to path-only message */ }
+      const snippet = content
+        ? `\n\n当前脚本内容:\n\`\`\`js\n${content}\n\`\`\``
+        : '';
+      sendMessage({
+        type: 'chat.send',
+        sessionId: sid,
+        content: `请编辑 workflow 脚本 \`${scriptPath}\` 并(如合理)用 scriptPath 重跑。${snippet}`,
+        options: {},
+      });
+    })();
+  }, [currentSessionId, selectedSession, sendMessage]);
+
   useChatRealtimeHandlers({
     subscribe,
     provider,
@@ -396,6 +444,10 @@ function ChatInterface({
           showRawParameters={showRawParameters}
           showThinking={showThinking}
           selectedProject={selectedProject}
+          getWorkflowState={sessionStore.getWorkflowState}
+          onWorkflowEdit={handleWorkflowEdit}
+          onWorkflowRerun={handleWorkflowRerun}
+          onWorkflowResume={handleWorkflowResume}
         />
 
         <div className="relative flex-shrink-0">

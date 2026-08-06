@@ -5,6 +5,7 @@ import type { ChatMessage, ClaudePermissionSuggestion, PermissionGrantResult, Pr
 import type { Project } from '../../../../types/app';
 import type { ToolGroupItem } from '../../utils/toolGrouping';
 import { getToolConfig } from '../../tools';
+import type { WorkflowState } from '../../tools/workflowState';
 
 import MessageComponent from './MessageComponent';
 
@@ -26,6 +27,10 @@ interface ToolGroupContainerProps {
   showThinking?: boolean;
   selectedProject?: Project | null;
   provider: Provider | string;
+  getWorkflowState?: (toolId: string | undefined) => WorkflowState | undefined;
+  onWorkflowEdit?: (scriptPath: string) => void;
+  onWorkflowRerun?: (scriptPath: string) => void;
+  onWorkflowResume?: (scriptPath: string, runId: string) => void;
 }
 
 function parseToolInput(toolInput: unknown): unknown {
@@ -69,6 +74,10 @@ export default function ToolGroupContainer({
   showThinking,
   selectedProject,
   provider,
+  getWorkflowState,
+  onWorkflowEdit,
+  onWorkflowRerun,
+  onWorkflowResume,
 }: ToolGroupContainerProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const config = getToolConfig(group.toolName).input;
@@ -135,6 +144,10 @@ export default function ToolGroupContainer({
               showThinking={showThinking}
               selectedProject={selectedProject}
               provider={provider}
+              getWorkflowState={getWorkflowState}
+              onWorkflowEdit={onWorkflowEdit}
+              onWorkflowRerun={onWorkflowRerun}
+              onWorkflowResume={onWorkflowResume}
             />
           ))}
         </div>
