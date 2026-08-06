@@ -139,3 +139,28 @@ export function applyWorkflowEvent(state: WorkflowState | undefined, event: Work
       return state;
   }
 }
+
+/**
+ * Resolve the owning Workflow tree's ROOT tool_use_id for an edge event.
+ *
+ * The store keys each progress tree by the root tool_use_id recorded on
+ * `task_started`, but `task_progress` / `tool_progress` / `task_notification`
+ * events carry the LEAF toolUseId (and/or just a taskId). The caller maintains
+ * a `taskId → root toolUseId` map (from `task_started`) so these events route to
+ * the tree they belong to.
+ *
+ * Returns `undefined` when the event has no routable root (nothing to apply).
+ * `background_tasks_changed` is level-only and is handled separately.
+ */
+export function resolveWorkflowRoot(
+  taskIdToRoot: Record<string, string>,
+  toolUseId: string | null | undefined,
+  event: WorkflowEvent,
+): string | undefined {
+  if (event.kind === 'background_tasks_changed') return undefined;
+  // task_started is the tree root itself.
+  if (event.kind === 'task_started' && event.taskId && event.toolUseId) {
+    return event.toolUseId;
+  }
+  return (event.taskId && taskIdToRoot[event.taskId]) || toolUseId || undefined;
+}

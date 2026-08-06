@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { applyWorkflowEvent, type WorkflowState } from './workflowState';
+import { applyWorkflowEvent, resolveWorkflowRoot, type WorkflowState } from './workflowState';
 
 test('task_started creates a root entry with running status', () => {
   const state = applyWorkflowEvent(undefined, {
@@ -85,4 +85,34 @@ test('tool_progress without taskId falls back to parentToolUseId match', () => {
   assert(state);
   assert.equal(state.agents[0].tools.length, 1);
   assert.equal(state.agents[0].tools[0].toolName, 'Read');
+});
+
+test('resolveWorkflowRoot: task_started returns its own toolUseId', () => {
+  const root = resolveWorkflowRoot({}, null, { kind: 'task_started', taskId: 'T1', toolUseId: 'TU_root', taskType: 'local_workflow', workflowName: 'spec', description: 'spec' });
+  assert.equal(root, 'TU_root');
+});
+
+test('resolveWorkflowRoot: task_progress routes via taskId → root map', () => {
+  const root = resolveWorkflowRoot({ T1: 'TU_root' }, 'TU_leaf', { kind: 'task_progress', taskId: 'T1', toolUseId: 'TU_leaf', description: 'a' });
+  assert.equal(root, 'TU_root');
+});
+
+test('resolveWorkflowRoot: tool_progress routes via taskId → root map', () => {
+  const root = resolveWorkflowRoot({ T1: 'TU_root' }, 'TU_leaf', { kind: 'tool_progress', toolUseId: 'TU_leaf', toolName: 'Read', taskId: 'T1', elapsedTimeSeconds: 0.5 });
+  assert.equal(root, 'TU_root');
+});
+
+test('resolveWorkflowRoot: tool_progress without taskId falls back to event toolUseId', () => {
+  const root = resolveWorkflowRoot({ T1: 'TU_root' }, 'TU_leaf', { kind: 'tool_progress', toolUseId: 'TU_leaf', toolName: 'Read', elapsedTimeSeconds: 0.5 });
+  assert.equal(root, 'TU_leaf');
+});
+
+test('resolveWorkflowRoot: unknown taskId with no fallback returns undefined', () => {
+  const root = resolveWorkflowRoot({ T1: 'TU_root' }, null, { kind: 'task_progress', taskId: 'T9', toolUseId: null, description: 'x' });
+  assert.equal(root, undefined);
+});
+
+test('resolveWorkflowRoot: background_tasks_changed is not routable', () => {
+  const root = resolveWorkflowRoot({}, null, { kind: 'background_tasks_changed', tasks: [] });
+  assert.equal(root, undefined);
 });

@@ -6,6 +6,7 @@ import type { MarkSessionIdle, MarkSessionProcessing } from '../../../hooks/useS
 import type { PendingPermissionRequest } from '../types/types';
 import type { ProjectSession, LLMProvider } from '../../../types/app';
 import type { SessionStore, NormalizedMessage } from '../../../stores/useSessionStore';
+import type { WorkflowEvent } from '../tools/workflowState';
 
 import { useWorkflowState } from './useWorkflowState';
 
@@ -16,6 +17,9 @@ const isActionablePermissionRequest = (request: { toolName?: unknown } | null | 
 const hasActionablePermissionRequests = (requests: Array<{ toolName?: unknown }> | null | undefined): boolean => {
   return Array.isArray(requests) && requests.some((request) => isActionablePermissionRequest(request));
 };
+
+const WORKFLOW_KINDS = ['task_started', 'task_progress', 'tool_progress', 'task_notification', 'background_tasks_changed'] as const;
+const isWorkflowEventKind = (k: unknown): boolean => typeof k === 'string' && (WORKFLOW_KINDS as readonly string[]).includes(k);
 
 interface UseChatRealtimeHandlersArgs {
   subscribe: (listener: (event: ServerEvent) => void) => () => void;
@@ -113,9 +117,9 @@ export function useChatRealtimeHandlers({
       // Workflow SDK events are edge/level signals that never render as
       // standalone chat messages — they feed the Workflow card's progress tree
       // via the store. Handle them here so both switches below never see them.
-      const k = (msg as { kind?: unknown }).kind;
-      if (k === 'task_started' || k === 'task_progress' || k === 'tool_progress' || k === 'task_notification' || k === 'background_tasks_changed') {
-        workflowStateDispatch((msg as { toolUseId?: string | null }).toolUseId ?? null, msg as any);
+      const k = msg.kind;
+      if (isWorkflowEventKind(k)) {
+        workflowStateDispatch((msg as { toolUseId?: string | null }).toolUseId ?? null, msg as unknown as WorkflowEvent);
         return;
       }
 

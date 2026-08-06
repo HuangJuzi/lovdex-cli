@@ -442,13 +442,16 @@ export function useSessionStore() {
   // no alias/redirect indirection.
   const [, setTick] = useState(0);
   const notify = useCallback((sessionId: string) => {
-    // Empty-string sessionId is a global "re-render everyone" signal used by
-    // the Workflow live-event actions below: they are keyed by the Workflow
-    // tool_use id rather than a session id, so there is no active session to
-    // compare against (notify('') would never fire otherwise).
-    if (sessionId === '' || sessionId === activeSessionIdRef.current) {
+    if (sessionId === activeSessionIdRef.current) {
       setTick(n => n + 1);
     }
+  }, []);
+
+  // Bump the tick unconditionally. Used by the Workflow live-event actions,
+  // which are keyed by the Workflow tool_use id rather than a session id and so
+  // have no active-session guard to compare against.
+  const notifyAll = useCallback(() => {
+    setTick(n => n + 1);
   }, []);
 
   const setActiveSession = useCallback((sessionId: string | null) => {
@@ -766,18 +769,23 @@ export function useSessionStore() {
       ...workflowStateByToolUseIdRef.current,
       [toolUseId]: next,
     };
-    notify(''); // bump tick to re-render consumers
-  }, [notify]);
+    notifyAll(); // bump tick to re-render consumers
+  }, [notifyAll]);
 
   /** REPLACE the live background-task set (level signal). */
   const setBackgroundTasks = useCallback((tasks: Array<{ taskId: string; taskType: string; description: string }>) => {
     backgroundTasksRef.current = tasks;
-    notify('');
-  }, [notify]);
+    notifyAll();
+  }, [notifyAll]);
 
   /** Read the aggregated WorkflowState for a Workflow tool_use id. */
   const getWorkflowState = useCallback((toolUseId: string | undefined): WorkflowState | undefined => {
     return toolUseId ? workflowStateByToolUseIdRef.current[toolUseId] : undefined;
+  }, []);
+
+  /** Read the current live background-task set (level signal). */
+  const getBackgroundTasks = useCallback(() => {
+    return backgroundTasksRef.current;
   }, []);
 
   return useMemo(() => ({
@@ -796,15 +804,18 @@ export function useSessionStore() {
     clearRealtime,
     getMessages,
     getSessionSlot,
+    notifyAll,
     applyWorkflowEvent,
     setBackgroundTasks,
     getWorkflowState,
+    getBackgroundTasks,
   }), [
     getSlot, has, fetchFromServer, fetchMore,
     appendRealtime, appendRealtimeBatch, refreshFromServer,
     setActiveSession, setStatus, isStale, updateStreaming, finalizeStreaming,
     clearRealtime, getMessages, getSessionSlot,
-    applyWorkflowEvent, setBackgroundTasks, getWorkflowState,
+    notifyAll, applyWorkflowEvent, setBackgroundTasks,
+    getWorkflowState, getBackgroundTasks,
   ]);
 }
 
