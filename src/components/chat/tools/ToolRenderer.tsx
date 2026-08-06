@@ -4,10 +4,11 @@ import type { Project } from '../../../types/app';
 import type { SubagentChildTool } from '../types/types';
 
 import { getToolConfig } from './configs/toolConfigs';
-import { OneLineDisplay, BashCommandDisplay, CollapsibleDisplay, ToolDiffViewer, MarkdownContent, FileListContent, TodoListContent, TaskListContent, TextContent, QuestionAnswerContent, SubagentContainer } from './components';
+import { OneLineDisplay, BashCommandDisplay, CollapsibleDisplay, ToolDiffViewer, MarkdownContent, FileListContent, TodoListContent, TaskListContent, TextContent, QuestionAnswerContent, SubagentContainer, WorkflowContainer } from './components';
 import { PlanDisplay } from './components/PlanDisplay';
 import { ToolStatusBadge } from './components/ToolStatusBadge';
 import type { ToolStatus } from './components/ToolStatusBadge';
+import type { WorkflowState } from './workflowState';
 
 type DiffLine = {
   type: string;
@@ -32,6 +33,10 @@ interface ToolRendererProps {
     currentToolIndex: number;
     isComplete: boolean;
   };
+  getWorkflowState?: (toolId: string | undefined) => WorkflowState | undefined;
+  onWorkflowEdit?: (scriptPath: string) => void;
+  onWorkflowRerun?: (scriptPath: string) => void;
+  onWorkflowResume?: (scriptPath: string, runId: string) => void;
 }
 
 function getToolCategory(toolName: string): string {
@@ -41,6 +46,7 @@ function getToolCategory(toolName: string): string {
   if (['TodoWrite', 'TodoRead'].includes(toolName)) return 'todo';
   if (['TaskCreate', 'TaskUpdate', 'TaskList', 'TaskGet'].includes(toolName)) return 'task';
   if (toolName === 'Task') return 'agent';
+  if (toolName === 'Workflow') return 'workflow';
   if (toolName === 'exit_plan_mode' || toolName === 'ExitPlanMode') return 'plan';
   if (toolName === 'AskUserQuestion') return 'question';
   return 'default';
@@ -82,7 +88,11 @@ export const ToolRenderer: React.FC<ToolRendererProps> = memo(({
   showRawParameters = false,
   rawToolInput,
   isSubagentContainer,
-  subagentState
+  subagentState,
+  getWorkflowState,
+  onWorkflowEdit,
+  onWorkflowRerun,
+  onWorkflowResume
 }) => {
   const config = getToolConfig(toolName);
   const displayConfig: any = mode === 'input' ? config.input : config.result;
@@ -293,6 +303,23 @@ export const ToolRenderer: React.FC<ToolRendererProps> = memo(({
             </svg>
             {msg}
           </div>
+        );
+        break;
+      }
+
+      case 'workflow': {
+        const ws = getWorkflowState?.(toolId);
+        contentComponent = (
+          <WorkflowContainer
+            toolInput={parsedData}
+            toolResult={toolResult}
+            workflowState={ws}
+            scriptPath={contentProps.scriptPath}
+            runId={contentProps.runId}
+            onEdit={onWorkflowEdit}
+            onRerun={onWorkflowRerun}
+            onResume={onWorkflowResume}
+          />
         );
         break;
       }
