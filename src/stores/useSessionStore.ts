@@ -11,6 +11,8 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { authenticatedFetch } from '../utils/api';
 import type { LLMProvider } from '../types/app';
+import { applyWorkflowEvent as applyWorkflowEventReducer } from '../components/chat/tools/workflowState';
+import type { WorkflowEvent, WorkflowState } from '../components/chat/tools/workflowState';
 
 // ─── NormalizedMessage (mirrors server/adapters/types.js) ────────────────────
 
@@ -430,13 +432,21 @@ const MAX_REALTIME_MESSAGES = 500;
 export function useSessionStore() {
   const storeRef = useRef(new Map<string, SessionSlot>());
   const activeSessionIdRef = useRef<string | null>(null);
+  // Workflow SDK live-event aggregation. Keyed by the Workflow tool_use id.
+  // `background_tasks_changed` is a level (REPLACE) signal stored separately.
+  const workflowStateByToolUseIdRef = useRef<Record<string, WorkflowState>>({});
+  const backgroundTasksRef = useRef<Array<{ taskId: string; taskType: string; description: string }>>([]);
   // Bump to force re-render — only when the active session's data changes.
   // Session ids are stable for the whole conversation lifetime (the backend
   // allocates them before the first send), so slots are keyed directly with
   // no alias/redirect indirection.
   const [, setTick] = useState(0);
   const notify = useCallback((sessionId: string) => {
-    if (sessionId === activeSessionIdRef.current) {
+    // Empty-string sessionId is a global "re-render everyone" signal used by
+    // the Workflow live-event actions below: they are keyed by the Workflow
+    // tool_use id rather than a session id, so there is no active session to
+    // compare against (notify('') would never fire otherwise).
+    if (sessionId === '' || sessionId === activeSessionIdRef.current) {
       setTick(n => n + 1);
     }
   }, []);
@@ -746,6 +756,30 @@ export function useSessionStore() {
     return storeRef.current.get(sessionId);
   }, []);
 
+  /** Feed a Workflow SDK edge event into the per-tool-use progress tree. */
+  const applyWorkflowEvent = useCallback((toolUseId: string, event: WorkflowEvent) => {
+    if (event.kind === 'background_tasks_changed') return;
+    const prev = workflowStateByToolUseIdRef.current[toolUseId];
+    const next = applyWorkflowEventReducer(prev, event);
+    if (next === prev || !next) return;
+    workflowStateByToolUseIdRef.current = {
+      ...workflowStateByToolUseIdRef.current,
+      [toolUseId]: next,
+    };
+    notify(''); // bump tick to re-render consumers
+  }, [notify]);
+
+  /** REPLACE the live background-task set (level signal). */
+  const setBackgroundTasks = useCallback((tasks: Array<{ taskId: string; taskType: string; description: string }>) => {
+    backgroundTasksRef.current = tasks;
+    notify('');
+  }, [notify]);
+
+  /** Read the aggregated WorkflowState for a Workflow tool_use id. */
+  const getWorkflowState = useCallback((toolUseId: string | undefined): WorkflowState | undefined => {
+    return toolUseId ? workflowStateByToolUseIdRef.current[toolUseId] : undefined;
+  }, []);
+
   return useMemo(() => ({
     getSlot,
     has,
@@ -762,11 +796,15 @@ export function useSessionStore() {
     clearRealtime,
     getMessages,
     getSessionSlot,
+    applyWorkflowEvent,
+    setBackgroundTasks,
+    getWorkflowState,
   }), [
     getSlot, has, fetchFromServer, fetchMore,
     appendRealtime, appendRealtimeBatch, refreshFromServer,
     setActiveSession, setStatus, isStale, updateStreaming, finalizeStreaming,
     clearRealtime, getMessages, getSessionSlot,
+    applyWorkflowEvent, setBackgroundTasks, getWorkflowState,
   ]);
 }
 

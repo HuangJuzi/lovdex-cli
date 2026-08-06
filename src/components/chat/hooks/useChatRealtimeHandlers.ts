@@ -7,6 +7,8 @@ import type { PendingPermissionRequest } from '../types/types';
 import type { ProjectSession, LLMProvider } from '../../../types/app';
 import type { SessionStore, NormalizedMessage } from '../../../stores/useSessionStore';
 
+import { useWorkflowState } from './useWorkflowState';
+
 const isActionablePermissionRequest = (request: { toolName?: unknown } | null | undefined): boolean => {
   return request?.toolName !== 'ExitPlanMode' && request?.toolName !== 'exit_plan_mode';
 };
@@ -82,6 +84,11 @@ export function useChatRealtimeHandlers({
   // notification sound before React finishes a rerender.
   const pendingPermissionRequestsRef = useRef(pendingPermissionRequests);
 
+  // Dispatches Workflow SDK edge/level events into the session store's
+  // per-tool-use progress tree. The store is per-instance (not a singleton),
+  // so this hook takes the same sessionStore instance that owns the messages.
+  const { dispatch: workflowStateDispatch } = useWorkflowState(sessionStore);
+
   useEffect(() => {
     pendingPermissionRequestsRef.current = pendingPermissionRequests;
   }, [pendingPermissionRequests]);
@@ -101,6 +108,15 @@ export function useChatRealtimeHandlers({
         if (msg.seq > known) {
           lastSeqRef.current.set(sid, msg.seq);
         }
+      }
+
+      // Workflow SDK events are edge/level signals that never render as
+      // standalone chat messages — they feed the Workflow card's progress tree
+      // via the store. Handle them here so both switches below never see them.
+      const k = (msg as { kind?: unknown }).kind;
+      if (k === 'task_started' || k === 'task_progress' || k === 'tool_progress' || k === 'task_notification' || k === 'background_tasks_changed') {
+        workflowStateDispatch((msg as { toolUseId?: string | null }).toolUseId ?? null, msg as any);
+        return;
       }
 
       switch (msg.kind) {
@@ -355,5 +371,6 @@ export function useChatRealtimeHandlers({
     onSessionIdle,
     onWebSocketReconnect,
     sessionStore,
+    workflowStateDispatch,
   ]);
 }
