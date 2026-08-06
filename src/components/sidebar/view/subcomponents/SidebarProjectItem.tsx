@@ -408,7 +408,7 @@ export default function SidebarProjectItem({
                 <div
                   role="button"
                   tabIndex={0}
-                  className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  className="touch:opacity-100 flex h-7 w-7 cursor-pointer items-center justify-center rounded text-muted-foreground opacity-0 transition-all duration-150 hover:bg-primary/20 hover:text-primary hover:ring-1 hover:ring-primary/40 group-hover:opacity-100"
                   onClick={(event) => {
                     event.stopPropagation();
                     onNewSession(project);
@@ -423,10 +423,10 @@ export default function SidebarProjectItem({
                   title={t('tooltips.newSession', 'Start a new session in this project')}
                   aria-label={t('tooltips.newSession', 'Start a new session in this project')}
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="!h-5 !w-5" />
                 </div>
                 <div
-                  className="touch:opacity-100 flex h-6 w-6 cursor-pointer items-center justify-center rounded opacity-0 transition-all duration-200 hover:bg-accent group-hover:opacity-100"
+                  className="touch:opacity-100 flex h-7 w-7 cursor-pointer items-center justify-center rounded text-muted-foreground opacity-0 transition-all duration-150 hover:bg-foreground/15 hover:text-foreground hover:ring-1 hover:ring-foreground/30 group-hover:opacity-100"
                   onClick={(event) => {
                     event.stopPropagation();
                     onStartEditingProject(project);
@@ -436,7 +436,7 @@ export default function SidebarProjectItem({
                   <Edit3 className="h-3 w-3" />
                 </div>
                 <div
-                  className="touch:opacity-100 flex h-6 w-6 cursor-pointer items-center justify-center rounded opacity-0 transition-all duration-200 hover:bg-red-50 group-hover:opacity-100 dark:hover:bg-red-900/20"
+                  className="touch:opacity-100 flex h-7 w-7 cursor-pointer items-center justify-center rounded opacity-0 transition-all duration-150 hover:bg-red-500/20 hover:ring-1 hover:ring-red-500/40 group-hover:opacity-100"
                   onClick={(event) => {
                     event.stopPropagation();
                     onDeleteProject(project);
