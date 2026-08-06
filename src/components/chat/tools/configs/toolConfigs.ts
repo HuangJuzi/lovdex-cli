@@ -24,7 +24,7 @@ export interface ToolDisplayConfig {
     // Collapsible config
     title?: string | ((input: any) => string);
     defaultOpen?: boolean;
-    contentType?: 'diff' | 'markdown' | 'file-list' | 'todo-list' | 'text' | 'task' | 'question-answer';
+    contentType?: 'diff' | 'markdown' | 'file-list' | 'todo-list' | 'text' | 'task' | 'question-answer' | 'workflow';
     getContentProps?: (input: any, helpers?: any) => any;
     actionButton?: 'file-button' | 'none';
   };
@@ -35,7 +35,7 @@ export interface ToolDisplayConfig {
     title?: string | ((result: any) => string);
     defaultOpen?: boolean;
     // Special result handlers
-    contentType?: 'markdown' | 'file-list' | 'todo-list' | 'text' | 'success-message' | 'task' | 'question-answer';
+    contentType?: 'markdown' | 'file-list' | 'todo-list' | 'text' | 'success-message' | 'task' | 'question-answer' | 'workflow';
     getMessage?: (result: any) => string;
     getContentProps?: (result: any) => any;
   };
@@ -458,6 +458,39 @@ export const TOOL_CONFIGS: Record<string, ToolDisplayConfig> = {
         return { content: String(result || 'No response') };
       }
     }
+  },
+
+  Workflow: {
+    input: {
+      type: 'collapsible',
+      title: (input) => {
+        const name = input?.name || (input?.scriptPath ? input.scriptPath.split('/').pop() : null) || 'workflow';
+        return `Workflow · ${name}`;
+      },
+      defaultOpen: true,
+      contentType: 'workflow',
+      getContentProps: (input) => ({
+        script: input?.script,
+        scriptPath: input?.scriptPath,
+        name: input?.name,
+        resumeFromRunId: input?.resumeFromRunId,
+        args: input?.args,
+      }),
+    },
+    result: {
+      type: 'collapsible',
+      contentType: 'workflow',
+      getContentProps: (result) => {
+        const r = (result?.toolUseResult || result) || {};
+        return {
+          scriptPath: r.scriptPath,
+          runId: r.runId,
+          workflowName: r.workflowName,
+          taskId: r.taskId,
+          summary: r.summary,
+        };
+      },
+    },
   },
 
   // ============================================================================
