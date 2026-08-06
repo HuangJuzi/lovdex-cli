@@ -71,14 +71,33 @@ export const WorkflowContainer: React.FC<WorkflowContainerProps> = ({
     || basename
     || 'workflow';
 
-  const rawStatus = workflowState?.status
+  const terminalStatuses = ['completed', 'failed', 'stopped'];
+  const carriedStatus = toolResult?.status
     || toolResult?.toolUseResult?.status
-    || toolResult?.status
+    || toolInput?.status
+    || toolInput?.toolUseResult?.status;
+
+  // Prefer the live workflowState status; otherwise trust a terminal status
+  // carried by toolResult/toolInput (WorkflowOutput terminal statuses). Only
+  // default to 'running' when truly unknown — avoids showing a misleading
+  // "Running" badge on a result-only view of a completed/failed run.
+  const rawStatus = workflowState?.status
+    || (carriedStatus && terminalStatuses.includes(carriedStatus) ? carriedStatus : undefined)
     || 'running';
   const status = mapStatus(rawStatus);
 
   const agents: WorkflowAgentNode[] = workflowState?.agents || [];
   const notification = workflowState?.notification;
+
+  const notificationSummary = notification?.summary
+    || toolResult?.toolUseResult?.summary
+    || toolResult?.summary
+    || toolInput?.summary;
+  const notificationUsage = notification?.usage
+    || toolResult?.toolUseResult?.usage
+    || toolResult?.usage
+    || toolInput?.usage;
+  const notificationUsageText = formatUsage(notificationUsage);
 
   const canRerun = Boolean(scriptPath);
   const canResume = Boolean(scriptPath) && Boolean(runId);
@@ -128,11 +147,11 @@ export const WorkflowContainer: React.FC<WorkflowContainerProps> = ({
       )}
 
       {/* Terminal summary */}
-      {notification && (
+      {notificationSummary && (
         <div className="flex flex-wrap items-center gap-1.5 text-xs text-gray-700 dark:text-gray-300">
-          <span>{notification.summary}</span>
-          {formatUsage(notification.usage) && (
-            <span className="text-gray-500 dark:text-gray-400">· {formatUsage(notification.usage)}</span>
+          <span>{notificationSummary}</span>
+          {notificationUsageText && (
+            <span className="text-gray-500 dark:text-gray-400">· {notificationUsageText}</span>
           )}
         </div>
       )}

@@ -23,6 +23,15 @@ const STATE_DONE: WorkflowState = {
   notification: { status: 'completed', summary: 'all good', usage: { total_tokens: 100, tool_uses: 2, duration_ms: 1000 } },
 };
 
+const STATE_MULTI: WorkflowState = {
+  status: 'running',
+  workflowName: 'multi',
+  agents: [
+    { taskId: 'A', description: 'agent:One', tools: [{ toolUseId: 'a1', toolName: 'Read', elapsedTimeSeconds: 1 }, { toolUseId: 'a2', toolName: 'Bash', elapsedTimeSeconds: 2 }] },
+    { taskId: 'B', description: 'agent:Two', tools: [{ toolUseId: 'b1', toolName: 'Grep', elapsedTimeSeconds: 3 }] },
+  ],
+};
+
 test('renders workflow name + agent + leaf tool', () => {
   const html = renderToStaticMarkup(
     <WorkflowContainer
@@ -51,7 +60,7 @@ test('disables rerun + edit buttons when scriptPath missing', () => {
   const html = renderToStaticMarkup(
     <WorkflowContainer toolInput={{}} workflowState={STATE_DONE} onRerun={() => {}} onResume={() => {}} onEdit={() => {}} />,
   );
-  const disabledCount = (html.match(/disabled/g) || []).length;
+  const disabledCount = (html.match(/<button[^>]*disabled/g) || []).length;
   assert.ok(disabledCount >= 2, `expected at least 2 disabled buttons, got ${disabledCount}`);
 });
 
@@ -63,6 +72,32 @@ test('disables resume button when runId missing', () => {
   const htmlWithRunId = renderToStaticMarkup(
     <WorkflowContainer toolInput={{}} workflowState={STATE_DONE} scriptPath="/p/wf.js" runId="wf_1" onRerun={() => {}} onResume={() => {}} onEdit={() => {}} />,
   );
-  assert.ok((html.match(/disabled/g) || []).length >= 1, 'resume disabled without runId');
-  assert.equal((htmlWithRunId.match(/disabled/g) || []).length, 0, 'nothing disabled with scriptPath + runId');
+  assert.ok((html.match(/<button[^>]*disabled/g) || []).length >= 1, 'resume disabled without runId');
+  assert.equal((htmlWithRunId.match(/<button[^>]*disabled/g) || []).length, 0, 'nothing disabled with scriptPath + runId');
+});
+
+test('renders name + terminal summary from toolResult when workflowState undefined', () => {
+  const html = renderToStaticMarkup(
+    <WorkflowContainer
+      toolInput={{ name: 'inline-flow' }}
+      toolResult={{ status: 'completed', summary: 'finished ok' }}
+      scriptPath="/p/wf.js"
+      onRerun={() => {}}
+      onResume={() => {}}
+      onEdit={() => {}}
+    />,
+  );
+  assert.match(html, /inline-flow/);
+  assert.match(html, /finished ok/);
+});
+
+test('renders multiple agents + multiple leaves per agent', () => {
+  const html = renderToStaticMarkup(
+    <WorkflowContainer toolInput={{}} workflowState={STATE_MULTI} onRerun={() => {}} onResume={() => {}} onEdit={() => {}} />,
+  );
+  assert.match(html, /agent:One/);
+  assert.match(html, /agent:Two/);
+  assert.match(html, /Read/);
+  assert.match(html, /Bash/);
+  assert.match(html, /Grep/);
 });
