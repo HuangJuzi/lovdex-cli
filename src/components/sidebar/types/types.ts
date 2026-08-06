@@ -2,24 +2,10 @@ import type { LoadingProgress, Project, ProjectSession, LLMProvider } from '../.
 import type { SessionActivityMap } from '../../../hooks/useSessionProtection';
 
 export type ProjectSortOrder = 'name' | 'date';
-export type SidebarSearchMode = 'projects' | 'conversations' | 'running' | 'archived';
-export type ArchivedProjectListItem = Project & { isArchived: true };
+export type SidebarProjectFilter = 'all' | 'active' | 'favorited';
 
 export type SessionWithProvider = ProjectSession & {
   __provider: LLMProvider;
-};
-
-export type ArchivedSessionListItem = {
-  sessionId: string;
-  provider: LLMProvider;
-  projectId: string | null;
-  projectPath: string | null;
-  projectDisplayName: string;
-  sessionTitle: string;
-  createdAt: string | null;
-  updatedAt: string | null;
-  lastActivity: string | null;
-  isProjectArchived: boolean;
 };
 
 export type DeleteProjectConfirmation = {

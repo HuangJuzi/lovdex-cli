@@ -78,8 +78,8 @@ function Sidebar({
     editingSession,
     editingSessionName,
     searchFilter,
-    searchMode,
-    setSearchMode,
+    projectFilter,
+    setProjectFilter,
     conversationResults,
     isSearching,
     searchProgress,
@@ -90,10 +90,6 @@ function Sidebar({
     sessionDeleteConfirmation,
     showVersionModal,
     filteredProjects,
-    archivedProjects,
-    archivedSessions,
-    archivedSessionsCount,
-    isArchivedSessionsLoading,
     toggleProject,
     handleSessionClick,
     toggleStarProject,
@@ -109,9 +105,6 @@ function Sidebar({
     requestProjectDelete,
     confirmDeleteProject,
     handleProjectSelect,
-    openArchivedSession,
-    restoreArchivedProject,
-    restoreArchivedSession,
     refreshProjects,
     updateSessionSummary,
     collapseSidebar: handleCollapseSidebar,
@@ -209,7 +202,7 @@ function Sidebar({
     loadingMoreProjects,
     activeSessions,
     attentionSessionIds,
-    forceExpanded: searchMode === 'running',
+    forceExpanded: projectFilter === 'active',
     isProjectStarred,
     onEditingNameChange: setEditingName,
     onToggleProject: toggleProject,
@@ -285,33 +278,17 @@ function Sidebar({
             isLoading={isLoading}
             projects={projects}
             runningSessionsCount={runningSessionsCount}
-            archivedProjects={archivedProjects}
-            archivedSessions={archivedSessions}
-            archivedSessionsCount={archivedSessionsCount}
-            isArchivedSessionsLoading={isArchivedSessionsLoading}
             searchFilter={searchFilter}
             onSearchFilterChange={setSearchFilter}
-            onClearSearchFilter={() => setSearchFilter('')}
-            searchMode={searchMode}
-            onSearchModeChange={(mode) => {
-              setSearchMode(mode);
-              if (mode === 'projects') clearConversationResults();
+            onClearSearchFilter={() => {
+              setSearchFilter('');
+              clearConversationResults();
             }}
+            projectFilter={projectFilter}
+            onProjectFilterChange={setProjectFilter}
             conversationResults={conversationResults}
             isSearching={isSearching}
             searchProgress={searchProgress}
-            onRestoreArchivedProject={restoreArchivedProject}
-            onArchivedSessionClick={openArchivedSession}
-            onRestoreArchivedSession={restoreArchivedSession}
-            onDeleteArchivedSession={(session) => {
-              showDeleteSessionConfirmation(
-                session.projectId,
-                session.sessionId,
-                session.sessionTitle,
-                session.provider,
-                { isArchived: true },
-              );
-            }}
             onConversationResultClick={(projectId: string | null, sessionId: string, provider: string, messageTimestamp?: string | null, messageSnippet?: string | null) => {
               // `projectId` (DB key) is the canonical identifier post-migration.
               // The server emits null when it can't resolve a project row for

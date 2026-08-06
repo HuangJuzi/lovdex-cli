@@ -125,9 +125,7 @@
     "restartRequired": "Update installed — restart the server to apply"
   },
   "search": {
-    "modeProjects": "Projects",
-    "modeConversations": "Conversations",
-    "conversationsPlaceholder": "Search in conversations...",
+    "placeholder": "Search projects and conversations...",
     "searching": "Searching...",
     "noResults": "No results found",
     "tryDifferentQuery": "Try a different search query",
@@ -135,6 +133,11 @@
     "matches_other": "{{count}} matches",
     "projectsScanned_one": "{{count}} project scanned",
     "projectsScanned_other": "{{count}} projects scanned"
+  },
+  "filter": {
+    "all": "All",
+    "active": "Active",
+    "favorited": "Favorited"
   },
   "deleteConfirmation": {
     "deleteProject": "Remove Project",

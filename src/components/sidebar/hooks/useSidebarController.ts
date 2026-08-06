@@ -2,15 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { TFunction } from 'i18next';
 
 import { api } from '../../../utils/api';
-import { resolveSessionTitle } from '../../../utils/sessionTitle';
 import type { Project, ProjectSession, LLMProvider } from '../../../types/app';
 import type { SessionActivityMap } from '../../../hooks/useSessionProtection';
 import type {
-  ArchivedProjectListItem,
-  ArchivedSessionListItem,
   DeleteProjectConfirmation,
   ProjectSortOrder,
-  SidebarSearchMode,
+  SidebarProjectFilter,
   SessionDeleteConfirmation,
   SessionWithProvider,
 } from '../types/types';
@@ -62,20 +59,6 @@ export type ConversationSearchResults = {
 export type SearchProgress = {
   scannedProjects: number;
   totalProjects: number;
-};
-
-type ArchivedSessionsApiPayload = {
-  success?: boolean;
-  data?: {
-    sessions?: ArchivedSessionListItem[];
-  };
-};
-
-type ArchivedProjectsApiPayload = {
-  success?: boolean;
-  data?: {
-    projects?: ArchivedProjectListItem[];
-  };
 };
 
 type UseSidebarControllerArgs = {
@@ -134,13 +117,10 @@ export function useSidebarController({
   const [deleteConfirmation, setDeleteConfirmation] = useState<DeleteProjectConfirmation | null>(null);
   const [sessionDeleteConfirmation, setSessionDeleteConfirmation] = useState<SessionDeleteConfirmation | null>(null);
   const [showVersionModal, setShowVersionModal] = useState(false);
-  const [searchMode, setSearchMode] = useState<SidebarSearchMode>('projects');
+  const [projectFilter, setProjectFilter] = useState<SidebarProjectFilter>('all');
   const [conversationResults, setConversationResults] = useState<ConversationSearchResults | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchProgress, setSearchProgress] = useState<SearchProgress | null>(null);
-  const [archivedProjects, setArchivedProjects] = useState<ArchivedProjectListItem[]>([]);
-  const [archivedSessions, setArchivedSessions] = useState<ArchivedSessionListItem[]>([]);
-  const [isArchivedSessionsLoading, setIsArchivedSessionsLoading] = useState(false);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [optimisticStarByProjectId, setOptimisticStarByProjectId] = useState<Map<string, boolean>>(new Map());
   const [loadingMoreProjects, setLoadingMoreProjects] = useState<Set<string>>(new Set());
@@ -228,40 +208,6 @@ export function useSidebarController({
     onRefreshRef.current = onRefresh;
   }, [onRefresh]);
 
-  const fetchArchivedSessions = useCallback(async () => {
-    setIsArchivedSessionsLoading(true);
-
-    try {
-      const [archivedProjectsResponse, archivedSessionsResponse] = await Promise.all([
-        api.archivedProjects(),
-        api.getArchivedSessions(),
-      ]);
-
-      if (!archivedProjectsResponse.ok) {
-        throw new Error(`Failed to load archived projects: ${archivedProjectsResponse.status}`);
-      }
-
-      if (!archivedSessionsResponse.ok) {
-        throw new Error(`Failed to load archived sessions: ${archivedSessionsResponse.status}`);
-      }
-
-      const archivedProjectsPayload = (await archivedProjectsResponse.json()) as ArchivedProjectsApiPayload;
-      const archivedSessionsPayload = (await archivedSessionsResponse.json()) as ArchivedSessionsApiPayload;
-      const nextProjects = Array.isArray(archivedProjectsPayload.data?.projects) ? archivedProjectsPayload.data.projects : [];
-      const archivedProjectIds = new Set(nextProjects.map((project) => project.projectId));
-      const nextStandaloneSessions = Array.isArray(archivedSessionsPayload.data?.sessions)
-        ? archivedSessionsPayload.data.sessions.filter((session) => !session.projectId || !archivedProjectIds.has(session.projectId))
-        : [];
-
-      setArchivedProjects(nextProjects);
-      setArchivedSessions(nextStandaloneSessions);
-    } catch (error) {
-      console.error('[Sidebar] Failed to load archived sessions:', error);
-    } finally {
-      setIsArchivedSessionsLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     if (migrationStartedRef.current) {
       return;
@@ -287,20 +233,6 @@ export function useSidebarController({
 
     void migrateLegacyStars();
   }, [onRefresh]);
-
-  useEffect(() => {
-    void fetchArchivedSessions();
-  }, [fetchArchivedSessions]);
-
-  useEffect(() => {
-    if (searchMode !== 'archived') {
-      return;
-    }
-
-    // Refresh archive contents when the archived tab opens so restore actions
-    // and background synchronizer updates are reflected without a full reload.
-    void fetchArchivedSessions();
-  }, [fetchArchivedSessions, searchMode]);
 
   useEffect(() => {
     setOptimisticStarByProjectId((previous) => {
@@ -349,7 +281,7 @@ export function useSidebarController({
     }
 
     const query = debouncedSearchQuery;
-    if (searchMode !== 'conversations' || query.length < 2) {
+    if (query.length < 2) {
       searchSeqRef.current += 1;
       setConversationResults(null);
       setSearchProgress(null);
@@ -428,7 +360,7 @@ export function useSidebarController({
         eventSourceRef.current = null;
       }
     };
-  }, [debouncedSearchQuery, searchMode]);
+  }, [debouncedSearchQuery]);
 
   // All sidebar state keys (expanded, starred, loading, etc.) use the DB
   // `projectId` as their identifier after the migration.
@@ -615,55 +547,16 @@ export function useSidebarController({
     }, []);
   }, [activeSessionIds, sortedProjects]);
 
-  const filteredProjects = useMemo(
-    () => filterProjects(searchMode === 'running' ? runningProjects : sortedProjects, debouncedSearchQuery),
-    [debouncedSearchQuery, runningProjects, searchMode, sortedProjects],
-  );
+  const filteredProjects = useMemo(() => {
+    const baseList =
+      projectFilter === 'active'
+        ? runningProjects
+        : projectFilter === 'favorited'
+          ? sortedProjects.filter((project) => resolveProjectStarState(project.projectId))
+          : sortedProjects;
 
-  const filteredArchivedSessions = useMemo(() => {
-    const normalizedSearch = debouncedSearchQuery.trim().toLowerCase();
-    if (!normalizedSearch) {
-      return archivedSessions;
-    }
-
-    return archivedSessions.filter((session) => {
-      const searchableFields = [
-        session.sessionTitle,
-        session.projectDisplayName,
-        session.projectPath ?? '',
-        session.provider,
-      ];
-
-      return searchableFields.some((value) => value.toLowerCase().includes(normalizedSearch));
-    });
-  }, [archivedSessions, debouncedSearchQuery]);
-
-  const filteredArchivedProjects = useMemo(() => {
-    const normalizedSearch = debouncedSearchQuery.trim().toLowerCase();
-    if (!normalizedSearch) {
-      return archivedProjects;
-    }
-
-    return archivedProjects.filter((project) => {
-      const projectMatches = [
-        project.displayName,
-        project.fullPath || '',
-      ].some((value) => value.toLowerCase().includes(normalizedSearch));
-
-      if (projectMatches) {
-        return true;
-      }
-
-      return getAllSessions(project).some((session) => {
-        const sessionSummary = resolveSessionTitle(session) ?? '';
-
-        return [
-          sessionSummary,
-          session.__provider,
-        ].some((value) => value.toLowerCase().includes(normalizedSearch));
-      });
-    });
-  }, [archivedProjects, debouncedSearchQuery]);
+    return filterProjects(baseList, debouncedSearchQuery);
+  }, [projectFilter, runningProjects, sortedProjects, resolveProjectStarState, debouncedSearchQuery]);
 
   const startEditing = useCallback((project: Project) => {
     // `editingProject` is keyed by projectId so it stays stable across
@@ -734,7 +627,6 @@ export function useSidebarController({
 
       if (response.ok) {
         onSessionDelete?.(sessionId);
-        await fetchArchivedSessions();
       } else {
         const errorText = await response.text();
         console.error('[Sidebar] Failed to delete session:', {
@@ -747,7 +639,7 @@ export function useSidebarController({
       console.error('[Sidebar] Error deleting session:', error);
       alert(t('messages.deleteSessionError'));
     }
-  }, [fetchArchivedSessions, onSessionDelete, sessionDeleteConfirmation, t]);
+  }, [onSessionDelete, sessionDeleteConfirmation, t]);
 
   const requestProjectDelete = useCallback(
     (project: Project) => {
@@ -803,88 +695,14 @@ export function useSidebarController({
     [onProjectSelect, setCurrentProject],
   );
 
-  const openArchivedSession = useCallback((session: ArchivedSessionListItem) => {
-    const activeProject = session.projectId
-      ? projects.find((candidate) => candidate.projectId === session.projectId)
-      : null;
-    const archivedProject = session.projectId
-      ? archivedProjects.find((candidate) => candidate.projectId === session.projectId)
-      : null;
-    const matchingProject = activeProject ?? archivedProject ?? null;
-    const sessionPayload: ProjectSession = {
-      id: session.sessionId,
-      summary: session.sessionTitle,
-      __provider: session.provider,
-      __projectId: matchingProject?.projectId ?? session.projectId ?? undefined,
-    };
-
-    // Archived sessions still need a selected project context. Active projects
-    // come from the normal sidebar list, while archived-project sessions resolve
-    // through the archive payload loaded by this controller.
-    if (matchingProject) {
-      handleProjectSelect(matchingProject);
-    }
-
-    onSessionSelect(sessionPayload);
-  }, [archivedProjects, handleProjectSelect, onSessionSelect, projects]);
-
-  const restoreArchivedProject = useCallback(async (projectId: string) => {
-    try {
-      const response = await api.restoreProject(projectId);
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[Sidebar] Failed to restore project:', {
-          status: response.status,
-          error: errorText,
-        });
-        alert(t('messages.restoreProjectFailed', 'Failed to restore project. Please try again.'));
-        return;
-      }
-
-      await Promise.all([
-        Promise.resolve(onRefresh()),
-        fetchArchivedSessions(),
-      ]);
-    } catch (error) {
-      console.error('[Sidebar] Error restoring project:', error);
-      alert(t('messages.restoreProjectError', 'Error restoring project. Please try again.'));
-    }
-  }, [fetchArchivedSessions, onRefresh, t]);
-
-  const restoreArchivedSession = useCallback(async (sessionId: string) => {
-    try {
-      const response = await api.restoreSession(sessionId);
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[Sidebar] Failed to restore session:', {
-          status: response.status,
-          error: errorText,
-        });
-        alert(t('messages.restoreSessionFailed', 'Failed to restore session. Please try again.'));
-        return;
-      }
-
-      await Promise.all([
-        Promise.resolve(onRefresh()),
-        fetchArchivedSessions(),
-      ]);
-    } catch (error) {
-      console.error('[Sidebar] Error restoring session:', error);
-      alert(t('messages.restoreSessionError', 'Error restoring session. Please try again.'));
-    }
-  }, [fetchArchivedSessions, onRefresh, t]);
-
   const refreshProjects = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      await Promise.all([
-        Promise.resolve(onRefresh()),
-        fetchArchivedSessions(),
-      ]);
+      await Promise.resolve(onRefresh());
     } finally {
       setIsRefreshing(false);
     }
-  }, [fetchArchivedSessions, onRefresh]);
+  }, [onRefresh]);
 
   const updateSessionSummary = useCallback(
     // `_projectId` and `_provider` are preserved for compatibility with
@@ -943,10 +761,6 @@ export function useSidebarController({
     showVersionModal,
     filteredProjects,
     runningSessionsCount,
-    archivedProjects: filteredArchivedProjects,
-    archivedSessions: filteredArchivedSessions,
-    archivedSessionsCount: archivedProjects.length + archivedSessions.length,
-    isArchivedSessionsLoading,
     toggleProject,
     handleSessionClick,
     toggleStarProject,
@@ -961,9 +775,6 @@ export function useSidebarController({
     requestProjectDelete,
     confirmDeleteProject,
     handleProjectSelect,
-    openArchivedSession,
-    restoreArchivedProject,
-    restoreArchivedSession,
     refreshProjects,
     updateSessionSummary,
     collapseSidebar,
@@ -972,8 +783,8 @@ export function useSidebarController({
     setEditingName,
     setEditingSession,
     setEditingSessionName,
-    searchMode,
-    setSearchMode,
+    projectFilter,
+    setProjectFilter,
     conversationResults,
     isSearching,
     searchProgress,
