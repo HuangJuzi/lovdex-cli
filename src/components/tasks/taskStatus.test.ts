@@ -16,6 +16,8 @@ function mk(overrides: Record<string, unknown> = {}) {
     executor_model: null,
     position: 0,
     session_id: null,
+    started_at: null,
+    completed_at: null,
     created_at: '',
     updated_at: '',
     ...overrides,

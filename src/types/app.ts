@@ -86,6 +86,8 @@ export interface Task {
   executor_model: string | null;
   position: number;
   session_id: string | null;
+  started_at: string | null;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
 }
