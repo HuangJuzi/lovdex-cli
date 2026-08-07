@@ -7,6 +7,7 @@ import type { Task, TaskStatus } from '../../types/app';
 
 import { buildTaskChatSend } from './taskExecution';
 import { STATUS_META, STATUS_ORDER } from './taskStatus';
+import { formatAbsoluteTime } from './taskTimestamp';
 
 export function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -236,6 +237,26 @@ export function TaskDetailPage() {
                   {task.executor_model ? ` · ${task.executor_model}` : ''}
                 </div>
               </div>
+              <div className="mt-3 border-t border-border pt-3">
+                <div className="mb-1 text-xs text-muted-foreground">创建时间</div>
+                <div className="text-sm text-foreground">{formatAbsoluteTime(task.created_at)}</div>
+              </div>
+              <div className="mt-3">
+                <div className="mb-1 text-xs text-muted-foreground">更新时间</div>
+                <div className="text-sm text-foreground">{formatAbsoluteTime(task.updated_at)}</div>
+              </div>
+              {task.started_at && (
+                <div className="mt-3">
+                  <div className="mb-1 text-xs text-muted-foreground">开始时间</div>
+                  <div className="text-sm text-foreground">{formatAbsoluteTime(task.started_at)}</div>
+                </div>
+              )}
+              {task.completed_at && (
+                <div className="mt-3">
+                  <div className="mb-1 text-xs text-muted-foreground">完成时间</div>
+                  <div className="text-sm text-foreground">{formatAbsoluteTime(task.completed_at)}</div>
+                </div>
+              )}
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <h4 className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">执行</h4>
