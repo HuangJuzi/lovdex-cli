@@ -56,6 +56,55 @@ function parseTaskNotification(content: string): ParsedTaskNotification | null {
 }
 
 /**
+ * Per-source-message conversion cache.
+ *
+ * The session store keeps stable references for unchanged messages (its dedupe
+ * pass re-pushes the same objects), so a given NormalizedMessage that already
+ * produced ChatMessage[] can return the *same* ChatMessage references on the
+ * next store tick. That lets `MessageComponent`'s default `memo` (reference
+ * equality) bail out instead of re-parsing markdown for every visible message
+ * on every streaming frame — the dominant cause of progressive lag.
+ *
+ * A WeakMap keyed by the source object self-evicts when the store drops it, so
+ * this never leaks. The streaming row is a brand-new object each frame
+ * (updateStreaming mints a fresh NormalizedMessage), so it always misses the
+ * cache and is re-converted — exactly the one row whose content actually
+ * changed.
+ */
+type ConversionCacheEntry = { produced: ChatMessage[]; dep: unknown };
+const conversionCache = new WeakMap<NormalizedMessage, ConversionCacheEntry>();
+
+/**
+ * Everything a message's conversion depends on *beyond its own fields*. When
+ * this is unchanged (and the source object is identical), the prior ChatMessage
+ * output is still valid and can be reused by reference.
+ *
+ * - tool_use: the attached tool_result object (arrives later, changes output).
+ * - task_notification / tool_result: whether the matching tool_use is loaded,
+ *   which flips whether the row is rendered or folded/attached elsewhere.
+ * - everything else: purely a function of the source object's own fields.
+ */
+function computeConversionDep(
+  msg: NormalizedMessage,
+  toolResultMap: Map<string, NormalizedMessage>,
+  toolUseIds: Set<string>,
+  workflowToolUseIds: Set<string>,
+): unknown {
+  switch (msg.kind) {
+    case 'tool_use':
+      return msg.toolResult || (msg.toolId ? toolResultMap.get(msg.toolId) ?? 0 : 0);
+    case 'task_notification': {
+      const id = (msg as { toolUseId?: string | null }).toolUseId;
+      return id && workflowToolUseIds.has(id) ? 1 : 0;
+    }
+    case 'tool_result':
+      return msg.toolId && toolUseIds.has(msg.toolId) ? 1 : 0;
+    default:
+      return 0;
+  }
+}
+
+/**
  * Convert NormalizedMessage[] from the session store into ChatMessage[]
  * that the existing UI components expect.
  *
@@ -88,6 +137,17 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
   }
 
   for (const msg of messages) {
+    // Reuse the previously converted ChatMessage[] for this exact source object
+    // when nothing it depends on has changed. Same references out → downstream
+    // `memo` bails out instead of re-parsing markdown for every visible row.
+    const dep = computeConversionDep(msg, toolResultMap, toolUseIds, workflowToolUseIds);
+    const cached = conversionCache.get(msg);
+    if (cached && cached.dep === dep) {
+      for (const c of cached.produced) converted.push(c);
+      continue;
+    }
+
+    const msgOut: ChatMessage[] = [];
     const sharedMetadata = {
       id: msg.id,
       displayText: msg.displayText,
@@ -103,13 +163,13 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
       case 'text': {
         const content = msg.content || '';
         const images = Array.isArray(msg.images) && msg.images.length > 0 ? msg.images : undefined;
-        if (!content.trim() && !images) continue;
+        if (!content.trim() && !images) break;
 
         if (msg.role === 'user') {
           // Parse task notifications
           const taskNotif = parseTaskNotification(content);
           if (taskNotif) {
-            converted.push({
+            msgOut.push({
               type: 'assistant',
               content: taskNotif.summary,
               timestamp: msg.timestamp,
@@ -120,7 +180,7 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
             // Render the agent's result as a normal assistant message so its
             // markdown displays correctly instead of leaking raw XML.
             if (taskNotif.result) {
-              converted.push({
+              msgOut.push({
                 type: 'assistant',
                 content: formatUsageLimitText(unescapeWithMathProtection(decodeHtmlEntities(taskNotif.result))),
                 timestamp: msg.timestamp,
@@ -128,7 +188,7 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
               });
             }
           } else {
-            converted.push({
+            msgOut.push({
               type: 'user',
               content: unescapeWithMathProtection(decodeHtmlEntities(content)),
               timestamp: msg.timestamp,
@@ -140,7 +200,7 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
           let text = decodeHtmlEntities(content);
           text = unescapeWithMathProtection(text);
           text = formatUsageLimitText(text);
-          converted.push({
+          msgOut.push({
             type: 'assistant',
             content: text,
             timestamp: msg.timestamp,
@@ -176,7 +236,7 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
             }
           : null;
 
-        converted.push({
+        msgOut.push({
           type: 'assistant',
           content: '',
           timestamp: msg.timestamp,
@@ -200,7 +260,7 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
 
       case 'thinking':
         if (msg.content?.trim()) {
-          converted.push({
+          msgOut.push({
             type: 'assistant',
             content: unescapeWithMathProtection(msg.content),
             timestamp: msg.timestamp,
@@ -211,7 +271,7 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
         break;
 
       case 'error':
-        converted.push({
+        msgOut.push({
           type: 'error',
           content: msg.content || 'Unknown error',
           timestamp: msg.timestamp,
@@ -220,7 +280,7 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
         break;
 
       case 'interactive_prompt':
-        converted.push({
+        msgOut.push({
           type: 'assistant',
           content: msg.content || '',
           timestamp: msg.timestamp,
@@ -237,7 +297,7 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
         if (nToolUseId && workflowToolUseIds.has(nToolUseId)) {
           break;
         }
-        converted.push({
+        msgOut.push({
           type: 'assistant',
           content: msg.summary || 'Background task update',
           timestamp: msg.timestamp,
@@ -250,7 +310,7 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
 
       case 'stream_delta':
         if (msg.content) {
-          converted.push({
+          msgOut.push({
             type: 'assistant',
             content: msg.content,
             timestamp: msg.timestamp,
@@ -291,7 +351,7 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
           break;
         }
 
-        converted.push({
+        msgOut.push({
           type: msg.isError ? 'error' : 'assistant',
           content,
           timestamp: msg.timestamp,
@@ -304,6 +364,9 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
       default:
         break;
     }
+
+    conversionCache.set(msg, { produced: msgOut, dep });
+    for (const c of msgOut) converted.push(c);
   }
 
   return converted;

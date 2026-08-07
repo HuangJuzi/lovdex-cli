@@ -30,14 +30,6 @@ type WebSocketContextType = {
    * dropped the way a single "latest message" state slot could.
    */
   subscribe: (listener: ServerEventListener) => () => void;
-  /**
-   * Legacy state-based access to the most recent frame.
-   *
-   * Kept only for low-frequency consumers (TaskMaster broadcasts). High-rate
-   * chat streams must use `subscribe` — React may batch state updates, which
-   * makes `latestMessage` lossy under load.
-   */
-  latestMessage: ServerEvent | null;
   isConnected: boolean;
 };
 
@@ -73,7 +65,6 @@ const useWebSocketProviderState = (): WebSocketContextType => {
    * re-renders of the provider tree.
    */
   const listenersRef = useRef(new Set<ServerEventListener>());
-  const [latestMessage, setLatestMessage] = useState<ServerEvent | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   /**
@@ -94,7 +85,6 @@ const useWebSocketProviderState = (): WebSocketContextType => {
         console.error('WebSocket listener error:', error);
       }
     }
-    setLatestMessage(event);
   }, []);
 
   useEffect(() => {
@@ -201,9 +191,8 @@ const useWebSocketProviderState = (): WebSocketContextType => {
     ws: wsRef.current,
     sendMessage,
     subscribe,
-    latestMessage,
     isConnected
-  }), [sendMessage, subscribe, latestMessage, isConnected]);
+  }), [sendMessage, subscribe, isConnected]);
 
   return value;
 };

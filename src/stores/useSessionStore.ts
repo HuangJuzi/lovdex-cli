@@ -118,6 +118,13 @@ export interface SessionSlot {
   _appliedFetchSeq: number;
   status: SessionStatus;
   fetchedAt: number;
+  /**
+   * @internal Wall-clock of the last read/activate for this slot. Drives LRU
+   * eviction so long-lived tabs that open many sessions don't grow the store
+   * without bound. Evicted slots are transparently re-fetched on next view
+   * (the load guard requires `has(id)`), so eviction never loses data.
+   */
+  lastAccess: number;
   total: number;
   hasMore: boolean;
   offset: number;
@@ -135,6 +142,7 @@ function createEmptySlot(): SessionSlot {
     _lastRealtimeRef: EMPTY,
     status: 'idle',
     fetchedAt: 0,
+    lastAccess: 0,
     total: 0,
     hasMore: false,
     offset: 0,
@@ -434,6 +442,47 @@ const STALE_THRESHOLD_MS = 30_000;
 
 const MAX_REALTIME_MESSAGES = 500;
 
+/**
+ * Max session slots kept in memory. Beyond this, the least-recently-accessed
+ * slots are evicted — except the active session and any that are still
+ * streaming/loading (their realtime rows aren't persisted server-side yet, so
+ * dropping them would lose in-flight content). Evicted sessions are re-fetched
+ * transparently the next time they're viewed. 20 comfortably covers normal
+ * back-and-forth navigation while capping growth on long-lived tabs.
+ */
+const MAX_SESSION_SLOTS = 20;
+
+/**
+ * Max Workflow progress trees retained, keyed by Workflow tool_use id. Each run
+ * adds one entry that is never otherwise removed; without a cap a long session
+ * that launches many workflows grows this map (and re-spreads it on every live
+ * event) unboundedly. Oldest-inserted entries are dropped first.
+ */
+const MAX_WORKFLOW_STATES = 200;
+
+/**
+ * Evict least-recently-accessed session slots down to MAX_SESSION_SLOTS.
+ * Never evicts the active session or any slot still streaming/loading (their
+ * realtime rows are not yet persisted server-side). Mutates `store` in place.
+ */
+function evictSessionSlots(store: Map<string, SessionSlot>, activeSessionId: string | null): void {
+  if (store.size <= MAX_SESSION_SLOTS) return;
+  const candidates: Array<{ id: string; lastAccess: number }> = [];
+  for (const [id, slot] of store) {
+    if (id === activeSessionId) continue;
+    if (slot.status === 'streaming' || slot.status === 'loading') continue;
+    candidates.push({ id, lastAccess: slot.lastAccess });
+  }
+  // Oldest first; drop only as many as needed to reach the cap.
+  candidates.sort((a, b) => a.lastAccess - b.lastAccess);
+  let toRemove = store.size - MAX_SESSION_SLOTS;
+  for (const c of candidates) {
+    if (toRemove <= 0) break;
+    store.delete(c.id);
+    toRemove -= 1;
+  }
+}
+
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
 export function useSessionStore() {
@@ -477,14 +526,26 @@ export function useSessionStore() {
 
   const setActiveSession = useCallback((sessionId: string | null) => {
     activeSessionIdRef.current = sessionId;
+    if (sessionId) {
+      const slot = storeRef.current.get(sessionId);
+      if (slot) slot.lastAccess = Date.now();
+    }
   }, []);
 
   const getSlot = useCallback((sessionId: string): SessionSlot => {
     const store = storeRef.current;
-    if (!store.has(sessionId)) {
-      store.set(sessionId, createEmptySlot());
+    let slot = store.get(sessionId);
+    if (!slot) {
+      slot = createEmptySlot();
+      slot.lastAccess = Date.now();
+      store.set(sessionId, slot);
+      // Only new insertions can push the store over the cap. Stamp lastAccess
+      // first so the freshly-created slot is the newest, never its own victim.
+      evictSessionSlots(store, activeSessionIdRef.current);
+      return slot;
     }
-    return store.get(sessionId)!;
+    slot.lastAccess = Date.now();
+    return slot;
   }, []);
 
   const has = useCallback((sessionId: string) => {
@@ -789,10 +850,24 @@ export function useSessionStore() {
     const prev = workflowStateByToolUseIdRef.current[toolUseId];
     const next = applyWorkflowEventReducer(prev, event);
     if (next === prev || !next) return;
-    workflowStateByToolUseIdRef.current = {
+    const isNewKey = prev === undefined;
+    let map = {
       ...workflowStateByToolUseIdRef.current,
       [toolUseId]: next,
     };
+    // Cap the map: each new workflow adds a key that is otherwise never removed.
+    // Drop oldest-inserted keys (object key order ≈ insertion order) once over.
+    if (isNewKey) {
+      const keys = Object.keys(map);
+      if (keys.length > MAX_WORKFLOW_STATES) {
+        const pruned: Record<string, WorkflowState> = {};
+        for (const k of keys.slice(keys.length - MAX_WORKFLOW_STATES)) {
+          pruned[k] = map[k];
+        }
+        map = pruned;
+      }
+    }
+    workflowStateByToolUseIdRef.current = map;
     notifyAll(); // bump tick to re-render consumers
   }, [notifyAll]);
 

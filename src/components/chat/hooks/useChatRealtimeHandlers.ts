@@ -21,6 +21,18 @@ const hasActionablePermissionRequests = (requests: Array<{ toolName?: unknown }>
 const WORKFLOW_KINDS = ['task_started', 'task_progress', 'tool_progress', 'task_notification', 'background_tasks_changed'] as const;
 const isWorkflowEventKind = (k: unknown): boolean => typeof k === 'string' && (WORKFLOW_KINDS as readonly string[]).includes(k);
 
+/**
+ * How often (ms) accumulated stream deltas are flushed to the store during a
+ * live response. This throttles UI re-renders / merge-sorts, NOT text capture:
+ * every delta is unconditionally appended to `accumulatedStreamRef`, and each
+ * flush replaces the streaming row with the full accumulated text, so no
+ * characters are ever dropped regardless of this value. `stream_end` /
+ * `complete` always flush the tail. Higher = fewer merges/sec (cheaper on long
+ * sessions), at the cost of slightly chunkier text reveal. 120ms ≈ 8 flushes/s,
+ * still visually smooth.
+ */
+const STREAM_FLUSH_INTERVAL_MS = 120;
+
 interface UseChatRealtimeHandlersArgs {
   subscribe: (listener: (event: ServerEvent) => void) => () => void;
   provider: LLMProvider;
@@ -215,7 +227,7 @@ export function useChatRealtimeHandlers({
             if (sid) {
               sessionStore.updateStreaming(sid, accumulatedStreamRef.current, provider);
             }
-          }, 50);
+          }, STREAM_FLUSH_INTERVAL_MS);
         }
         // Also route to store for non-active sessions
         if (sid && sid !== activeViewSessionId) {
