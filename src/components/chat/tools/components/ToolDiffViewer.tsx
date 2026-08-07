@@ -64,7 +64,7 @@ export const ToolDiffViewer: React.FC<ToolDiffViewerProps> = ({
       </div>
 
       {/* Diff lines */}
-      <div className="font-mono text-[11px] leading-[18px]">
+      <div className="overflow-x-auto font-mono text-[11px] leading-[18px]">
         {diffLines.map((diffLine, i) => (
           <div key={i} className="flex">
             <span

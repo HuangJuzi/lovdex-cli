@@ -42,7 +42,7 @@ export const TextContent: React.FC<TextContentProps> = ({
 
   // Plain text
   return (
-    <div className={`mt-1 whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 ${className}`}>
+    <div className={`mt-1 whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-300 ${className}`}>
       {content}
     </div>
   );

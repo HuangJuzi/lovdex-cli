@@ -64,7 +64,7 @@ export default function GithubAuthenticationCard({
 
       {!loadingTokens && availableTokens.length > 0 && (
         <>
-          <div className="mb-4 grid grid-cols-3 gap-2">
+          <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
             <button
               onClick={() => onTokenModeChange('stored')}
               className={getModeClassName(tokenMode, 'stored')}

@@ -204,10 +204,10 @@ export default function FolderBrowserModal({
                   <div key={folder.path} className="flex items-center gap-2">
                     <button
                       onClick={() => loadFolders(folder.path)}
-                      className="flex flex-1 items-center gap-3 rounded-lg px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700"
+                      className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       <FolderPlus className="h-5 w-5 text-blue-500" />
-                      <span className="font-medium text-gray-900 dark:text-white">
+                      <span className="truncate font-medium text-gray-900 dark:text-white">
                         {folder.name}
                       </span>
                     </button>

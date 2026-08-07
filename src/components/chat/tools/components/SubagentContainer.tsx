@@ -80,7 +80,7 @@ export const SubagentContainer: React.FC<SubagentContainerProps> = ({
             {getCompactToolDisplay(currentTool.toolName, currentTool.toolInput) && (
               <>
                 <span className="text-muted-foreground/40">/</span>
-                <span className="truncate font-mono text-muted-foreground">
+                <span className="min-w-0 flex-1 truncate font-mono text-muted-foreground">
                   {getCompactToolDisplay(currentTool.toolName, currentTool.toolInput)}
                 </span>
               </>
@@ -119,7 +119,7 @@ export const SubagentContainer: React.FC<SubagentContainerProps> = ({
                     <span className="w-4 flex-shrink-0 text-right text-muted-foreground/60">{index + 1}.</span>
                     <span className="font-medium text-foreground">{child.toolName}</span>
                     {getCompactToolDisplay(child.toolName, child.toolInput) && (
-                      <span className="truncate font-mono text-muted-foreground/70">
+                      <span className="min-w-0 flex-1 truncate font-mono text-muted-foreground/70">
                         {getCompactToolDisplay(child.toolName, child.toolInput)}
                       </span>
                     )}
