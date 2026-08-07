@@ -10,6 +10,7 @@ type TaskCardProps = {
   onStart?: () => void;
   onStatusChange?: (status: TaskStatus) => void;
   onOpenSession?: () => void;
+  waitingApproval?: boolean;
 };
 
 export const TaskCard = memo(function TaskCard({
@@ -17,6 +18,7 @@ export const TaskCard = memo(function TaskCard({
   onStart,
   onStatusChange,
   onOpenSession,
+  waitingApproval = false,
 }: TaskCardProps) {
   const navigate = useNavigate();
   const sessionState = taskSessionState(task);
@@ -61,9 +63,15 @@ export const TaskCard = memo(function TaskCard({
 
       {/* Session/approval indicator */}
       {task.session_id && sessionState === 'running' && (
-        <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-primary">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" /> 会话运行中
-        </div>
+        waitingApproval ? (
+          <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-amber-500">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" /> 等你批准
+          </div>
+        ) : (
+          <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-primary">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" /> 会话运行中
+          </div>
+        )
       )}
       {task.session_id && sessionState === 'review' && (
         <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-purple-500 dark:text-purple-400">

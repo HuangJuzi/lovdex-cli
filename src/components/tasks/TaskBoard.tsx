@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { useWebSocket } from '../../contexts/WebSocketContext';
 import { useTasks } from '../../hooks/useTasks';
 import { Button } from '../../shared/view/ui';
 import type { Task } from '../../types/app';
@@ -11,8 +12,39 @@ import { STATUS_META, STATUS_ORDER, groupByStatus } from './taskStatus';
 
 export function TaskBoardPage() {
   const navigate = useNavigate();
-  const { tasks, loading, refresh, upsert } = useTasks();
+  const { subscribe } = useWebSocket();
+  const { tasks, loading, refresh, upsert } = useTasks({}, subscribe);
+  const [approvalTaskIds, setApprovalTaskIds] = useState<Set<string>>(new Set());
   const groups = useMemo(() => groupByStatus(tasks), [tasks]);
+
+  // Mirror the live `approval.pending` flag so cards waiting on engine
+  // approval show the amber "等你批准" marker. Cleared on pending:false or when
+  // the task is deleted.
+  useEffect(() => {
+    if (!subscribe) return;
+    return subscribe((event) => {
+      if (event.kind === 'task_upserted') {
+        const task = event.task as Task | undefined;
+        if (!task) return;
+        const approval = event.approval as { pending?: boolean } | undefined;
+        setApprovalTaskIds(prev => {
+          const next = new Set(prev);
+          if (approval?.pending === true) next.add(task.task_id);
+          else if (approval?.pending === false) next.delete(task.task_id);
+          return next;
+        });
+      } else if (event.kind === 'task_deleted') {
+        const taskId = typeof event.taskId === 'string' ? event.taskId : undefined;
+        if (!taskId) return;
+        setApprovalTaskIds(prev => {
+          if (!prev.has(taskId)) return prev;
+          const next = new Set(prev);
+          next.delete(taskId);
+          return next;
+        });
+      }
+    });
+  }, [subscribe]);
 
   async function startExecution(task: Task) {
     try {
@@ -83,6 +115,7 @@ export function TaskBoardPage() {
                   <TaskCard
                     key={task.task_id}
                     task={task}
+                    waitingApproval={approvalTaskIds.has(task.task_id)}
                     onStart={() => startExecution(task)}
                     onStatusChange={(s) => updateStatus(task, s)}
                     onOpenSession={() => task.session_id && navigate(`/session/${task.session_id}`)}
