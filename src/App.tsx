@@ -4,6 +4,7 @@ import { I18nextProvider } from 'react-i18next';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
 import AppContent from './components/app/AppContent';
+import { TaskBoardPage, TaskDetailPage } from './components/tasks';
 import i18n from './i18n/config.js';
 
 const DEPLOYMENT_ASSET_DIRECTORIES = new Set(['assets', 'static', 'icons', 'images']);
@@ -107,6 +108,8 @@ export default function App() {
             <Routes>
               <Route path="/" element={<AppContent />} />
               <Route path="/session/:sessionId" element={<AppContent />} />
+              <Route path="/tasks" element={<TaskBoardPage />} />
+              <Route path="/task/:taskId" element={<TaskDetailPage />} />
             </Routes>
           </Router>
         </WebSocketProvider>

@@ -130,7 +130,10 @@ dev-debug.log
 
 # Task files
 tasks.json
-tasks/ 
+tasks/
+# The task board UI lives under src/components/tasks/ — keep it trackable.
+!src/components/tasks/
+!src/components/tasks/**
 
 # Translations
 !src/i18n/locales/en/tasks.json
