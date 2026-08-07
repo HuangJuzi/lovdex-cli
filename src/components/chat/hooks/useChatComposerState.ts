@@ -458,6 +458,21 @@ export function useChatComposerState({
     );
   }, [executeCommand]);
 
+  // Opens the same model picker as typing `/model`, so the composer's model
+  // indicator is a click-through shortcut with no duplicated logic.
+  const showModelsModal = useCallback(() => {
+    executeCommand(
+      {
+        name: '/model',
+        description: 'Browse available models for the active provider.',
+        namespace: 'builtin',
+        metadata: { type: 'builtin' },
+      } as SlashCommand,
+      '/model',
+      { preserveInput: true },
+    );
+  }, [executeCommand]);
+
   const {
     slashCommands,
     slashCommandsCount,
@@ -1274,5 +1289,6 @@ export function useChatComposerState({
     commandModalPayload,
     closeCommandModal,
     showCostModal,
+    showModelsModal,
   };
 }

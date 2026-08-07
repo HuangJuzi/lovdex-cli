@@ -11,7 +11,7 @@ import type {
   RefObject,
   TouchEvent,
 } from 'react';
-import { ImageIcon, MessageSquareIcon, XIcon, Loader2, ChevronDown, Check, ArrowUpIcon } from 'lucide-react';
+import { ImageIcon, MessageSquareIcon, XIcon, Loader2, ChevronDown, Check, ArrowUpIcon, Cpu } from 'lucide-react';
 
 import type { QueuedDraft } from '../../hooks/useChatComposerState';
 import type { SessionActivity } from '../../../../hooks/useSessionProtection';
@@ -67,6 +67,10 @@ interface ChatComposerProps {
   onSelectEffort: (effort: string) => void;
   tokenBudget: Record<string, unknown> | null;
   onShowTokenUsage: () => void;
+  /** Human label of the current model, shown in the click-to-change indicator. */
+  modelLabel?: string;
+  /** Opens the model picker (same panel as the `/model` command). */
+  onShowModelPicker?: () => void;
   slashCommandsCount: number;
   onToggleCommandMenu: () => void;
   hasInput: boolean;
@@ -125,6 +129,8 @@ export default function ChatComposer({
   onSelectEffort,
   tokenBudget,
   onShowTokenUsage,
+  modelLabel,
+  onShowModelPicker,
   slashCommandsCount,
   onToggleCommandMenu,
   hasInput,
@@ -467,6 +473,19 @@ export default function ChatComposer({
                 </span>
               </div>
             </button>
+
+            {modelLabel && onShowModelPicker && (
+              <button
+                type="button"
+                onClick={onShowModelPicker}
+                className="flex h-8 items-center gap-1.5 rounded-lg border border-border/60 bg-muted/40 px-2 text-xs font-medium text-foreground transition-all duration-200 hover:bg-muted"
+                aria-label={t('input.changeModel', { defaultValue: 'Change model' })}
+                title={t('input.changeModel', { defaultValue: 'Change model' })}
+              >
+                <Cpu className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span className="max-w-24 truncate sm:max-w-32">{modelLabel}</span>
+              </button>
+            )}
 
             {availableEffortOptions.length > 0 && (
               <div ref={effortDropdownRef} className="relative">

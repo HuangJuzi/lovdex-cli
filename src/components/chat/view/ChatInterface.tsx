@@ -203,6 +203,7 @@ function ChatInterface({
     commandModalPayload,
     closeCommandModal,
     showCostModal,
+    showModelsModal,
   } = useChatComposerState({
     selectedProject,
     selectedSession,
@@ -371,6 +372,25 @@ function ChatInterface({
     [chatMessages],
   );
 
+  // The currently-selected model for the active provider, resolved to its
+  // human label from the live catalog (falls back to the raw value before the
+  // catalog loads). Drives the composer's click-to-change model indicator.
+  const currentModelValue =
+    provider === 'codex'
+      ? codexModel
+      : provider === 'cursor'
+        ? cursorModel
+        : provider === 'opencode'
+          ? opencodeModel
+          : claudeModel;
+  const currentModelLabel = useMemo(() => {
+    const option = providerModelCatalog[provider]?.OPTIONS.find((o) => o.value === currentModelValue);
+    const label = option?.label || currentModelValue;
+    // The Claude "default" pseudo-model reads oddly as a bare word; give it a
+    // friendlier surface label without touching the stored value.
+    return label === 'default' ? 'Default' : label;
+  }, [providerModelCatalog, provider, currentModelValue]);
+
   if (!selectedProject) {
     const selectedProviderLabel =
       provider === 'cursor'
@@ -479,6 +499,8 @@ function ChatInterface({
           onSelectEffort={(nextEffort) => setStoredProviderEffort(provider, nextEffort)}
           tokenBudget={tokenBudget}
           onShowTokenUsage={showCostModal}
+          modelLabel={currentModelLabel}
+          onShowModelPicker={showModelsModal}
           slashCommandsCount={slashCommandsCount}
           onToggleCommandMenu={handleToggleCommandMenu}
           hasInput={Boolean(input.trim())}
