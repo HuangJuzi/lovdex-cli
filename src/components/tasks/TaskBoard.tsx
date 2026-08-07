@@ -1,11 +1,30 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useWebSocket } from '../../contexts/WebSocketContext';
 import { useTasks } from '../../hooks/useTasks';
 import { Button, Input } from '../../shared/view/ui';
-import type { Project, Task, TaskDeletedEvent, TaskEngine, TaskUpsertedEvent } from '../../types/app';
-import { api } from '../../utils/api';
+import type {
+  Project,
+  ProviderModelOption,
+  Task,
+  TaskDeletedEvent,
+  TaskEngine,
+  TaskUpsertedEvent,
+} from '../../types/app';
+import { api, authenticatedFetch } from '../../utils/api';
+
+// Matches the `/api/providers/:provider/models` response consumed by
+// useChatProviderState: `{ success, data: { models: { OPTIONS, DEFAULT } } }`.
+type ProviderModelsApiResponse = {
+  success?: boolean;
+  data?: {
+    models?: {
+      OPTIONS?: ProviderModelOption[];
+      DEFAULT?: string;
+    };
+  };
+};
 
 import { TaskCard } from './TaskCard';
 import { openExecutionSession } from './taskNavigation';
@@ -26,6 +45,11 @@ export function TaskBoardPage() {
   const [newProjectPath, setNewProjectPath] = useState('');
   const [newEngine, setNewEngine] = useState<TaskEngine>('claude');
   const [projects, setProjects] = useState<Project[]>([]);
+  const [models, setModels] = useState<ProviderModelOption[]>([]);
+  const [newModel, setNewModel] = useState('');
+  // Monotonic token so a slow response for a previous engine can't overwrite a
+  // newer engine's model list when the user switches quickly.
+  const modelsRequestRef = useRef(0);
 
   // Load the project list once for the create form. The `/api/projects`
   // response JSON is an array of projects; the display name lives in
@@ -52,6 +76,38 @@ export function TaskBoardPage() {
     };
   }, []);
 
+  // Load models for the selected engine whenever the form is open or the engine
+  // changes. A Claude model isn't valid for Codex, so the list reloads per
+  // provider. Falls back to an empty list (=> default model) on any failure.
+  useEffect(() => {
+    if (!creating) return;
+    const requestId = modelsRequestRef.current + 1;
+    modelsRequestRef.current = requestId;
+    const engine = newEngine;
+    authenticatedFetch(`/api/providers/${engine}/models`)
+      .then(async (res) => {
+        if (!res.ok) {
+          console.error('load models for task create failed', res.status);
+          return [] as ProviderModelOption[];
+        }
+        const body = (await res.json()) as ProviderModelsApiResponse;
+        const options = body.success ? body.data?.models?.OPTIONS : undefined;
+        return Array.isArray(options) ? options : [];
+      })
+      .then((list) => {
+        // Ignore stale responses from a superseded engine selection.
+        if (modelsRequestRef.current !== requestId) return;
+        setModels(list);
+        setNewModel(list.length > 0 ? list[0].value : '');
+      })
+      .catch((err) => {
+        if (modelsRequestRef.current !== requestId) return;
+        console.error('load models for task create failed', err);
+        setModels([]);
+        setNewModel('');
+      });
+  }, [creating, newEngine]);
+
   function toggleCreateForm() {
     setNewTitle('');
     setCreating((prev) => !prev);
@@ -65,6 +121,7 @@ export function TaskBoardPage() {
         projectPath,
         title: newTitle.trim(),
         executorProvider: newEngine,
+        executorModel: newModel || null,
         status: 'backlog',
       });
       if (!res.ok) {
@@ -192,6 +249,22 @@ export function TaskBoardPage() {
           >
             <option value="claude">Claude</option>
             <option value="codex">Codex</option>
+          </select>
+          <select
+            className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-auto"
+            value={newModel}
+            onChange={(e) => setNewModel(e.target.value)}
+            disabled={models.length === 0}
+          >
+            {models.length === 0 ? (
+              <option value="">默认模型 (default)</option>
+            ) : (
+              models.map((model) => (
+                <option key={model.value} value={model.value}>
+                  {model.label || model.value}
+                </option>
+              ))
+            )}
           </select>
           <Button size="sm" disabled={!newTitle.trim()} onClick={() => void createTask()}>
             创建
