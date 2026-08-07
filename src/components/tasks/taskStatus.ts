@@ -24,11 +24,13 @@ export function groupByStatus(tasks: Task[]): Record<TaskStatus, Task[]> {
   return groups;
 }
 
-// The `approval` state is reserved for the WS-driven "等你批准" marker that
-// Task 16 will wire up; today it is never produced.
+// The "等你批准" (awaiting approval) marker is a live WS overlay tracked
+// separately via TaskBoard's `waitingApproval` prop (backed by the
+// `approvalTaskIds` set), not a value of `taskSessionState` — a task waiting on
+// approval is still `in_progress` here.
 export function taskSessionState(
   t: Task,
-): 'none' | 'running' | 'approval' | 'review' | 'done' {
+): 'none' | 'running' | 'review' | 'done' {
   if (!t.session_id) return 'none';
   switch (t.status) {
     case 'in_progress':

@@ -47,4 +47,9 @@ test('taskSessionState maps status + session_id', () => {
   assert.equal(taskSessionState(mk({ status: 'in_progress', session_id: 's' }) as Task), 'running');
   assert.equal(taskSessionState(mk({ status: 'in_review', session_id: 's' }) as Task), 'review');
   assert.equal(taskSessionState(mk({ status: 'done', session_id: 's' }) as Task), 'done');
+  // Default branch: a session without a running/review/done status is 'none',
+  // and the awaiting-approval overlay is NOT a session state (status stays
+  // in_progress → 'running').
+  assert.equal(taskSessionState(mk({ status: 'todo', session_id: 's' }) as Task), 'none');
+  assert.equal(taskSessionState(mk({ status: 'backlog', session_id: 's' }) as Task), 'none');
 });

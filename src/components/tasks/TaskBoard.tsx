@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useWebSocket } from '../../contexts/WebSocketContext';
 import { useTasks } from '../../hooks/useTasks';
 import { Button } from '../../shared/view/ui';
-import type { Task } from '../../types/app';
+import type { Task, TaskDeletedEvent, TaskUpsertedEvent } from '../../types/app';
 import { api } from '../../utils/api';
 
 import { TaskCard } from './TaskCard';
@@ -24,17 +24,21 @@ export function TaskBoardPage() {
     if (!subscribe) return;
     return subscribe((event) => {
       if (event.kind === 'task_upserted') {
-        const task = event.task as Task | undefined;
+        const upserted = event as unknown as TaskUpsertedEvent;
+        const task = upserted.task;
         if (!task) return;
-        const approval = event.approval as { pending?: boolean } | undefined;
         setApprovalTaskIds(prev => {
+          const pending = upserted.approval?.pending;
+          // No-op when the approval field is absent or the set already reflects it.
+          if (pending === undefined || pending === prev.has(task.task_id)) return prev;
           const next = new Set(prev);
-          if (approval?.pending === true) next.add(task.task_id);
-          else if (approval?.pending === false) next.delete(task.task_id);
+          if (pending) next.add(task.task_id);
+          else next.delete(task.task_id);
           return next;
         });
       } else if (event.kind === 'task_deleted') {
-        const taskId = typeof event.taskId === 'string' ? event.taskId : undefined;
+        const deleted = event as unknown as TaskDeletedEvent;
+        const taskId = deleted.taskId;
         if (!taskId) return;
         setApprovalTaskIds(prev => {
           if (!prev.has(taskId)) return prev;
