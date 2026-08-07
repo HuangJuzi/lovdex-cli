@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useTasks } from '../../hooks/useTasks';
+import { Button } from '../../shared/view/ui';
 import type { Task } from '../../types/app';
 import { api } from '../../utils/api';
 
@@ -16,6 +17,12 @@ export function TaskBoardPage() {
   async function startExecution(task: Task) {
     try {
       const res = await api.tasks.startExecution(task.task_id);
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        console.error('startExecution failed', err?.error?.message ?? res.status);
+        void refresh();
+        return;
+      }
       const data = (await res.json()) as { sessionId?: unknown };
       if (data?.sessionId) navigate(`/session/${data.sessionId}`);
       else void refresh();
@@ -27,6 +34,11 @@ export function TaskBoardPage() {
   async function updateStatus(task: Task, status: Task['status']) {
     try {
       const res = await api.tasks.update(task.task_id, { status });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        console.error('updateStatus failed', err?.error?.message ?? res.status);
+        return;
+      }
       const updated = (await res.json()) as Task;
       upsert(updated);
     } catch (err) {
@@ -38,12 +50,9 @@ export function TaskBoardPage() {
     <div className="flex h-dvh flex-col bg-background">
       <header className="flex items-center gap-4 px-6 py-4">
         <h1 className="text-lg font-bold text-foreground">任务面板</h1>
-        <button
-          className="rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-          onClick={() => navigate('/tasks/new')}
-        >
+        <Button size="sm" disabled title="创建任务即将上线">
           ＋ 新建任务
-        </button>
+        </Button>
       </header>
       {loading ? (
         <div className="px-6 text-sm text-muted-foreground">加载中…</div>

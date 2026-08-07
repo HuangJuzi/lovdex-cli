@@ -16,6 +16,7 @@ export function useTasks(options: { projectPath?: string; status?: TaskStatus } 
   const refresh = useCallback(async () => {
     try {
       const res = await api.tasks.list({ projectPath: options.projectPath, status: options.status });
+      if (!res.ok) throw new Error(`tasks.list failed: ${res.status}`);
       const data = (await res.json()) as Task[];
       if (mounted.current) setTasks(Array.isArray(data) ? data : []);
     } catch (error) {
