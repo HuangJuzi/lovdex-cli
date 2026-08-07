@@ -215,13 +215,6 @@ export function useChatComposerState({
   setIsUserScrolledUp,
   setPendingPermissionRequests,
 }: UseChatComposerStateArgs) {
-  // Task-board "start execution" handoff: the router state carries the task
-  // title/description. It is prepended to the first chat message once, then
-  // the ref and history state are cleared so later sends are untouched. The
-  // context is read from the LIVE history state (the same source the consume
-  // clears) so the one-shot guarantee survives a composer remount.
-  const taskContextConsumedRef = useRef(false);
-
   const [input, setInput] = useState(() => {
     if (typeof window !== 'undefined' && selectedProject) {
       // Draft inputs are keyed by the DB projectId so per-project drafts
@@ -782,22 +775,7 @@ export function useChatComposerState({
         }
       }
 
-      // Task-board "start execution" handoff: prepend the task title and
-      // description to the first message so the agent can act on the task
-      // without the user re-explaining it. Read from the LIVE history state
-      // (the same source the consume below clears) so a composer remount
-      // cannot resurrect a stale location.state and inject twice.
-      const taskContext = (
-        window.history.state?.usr as { taskContext?: { title?: string; description?: string } } | undefined
-      )?.taskContext;
-      const injectTaskContext = Boolean(taskContext && !taskContextConsumedRef.current);
-
-      let messageContent = currentInput;
-      if (injectTaskContext && taskContext && (taskContext.title || taskContext.description)) {
-        const title = taskContext.title?.trim() ?? '';
-        const description = taskContext.description?.trim() ?? '';
-        messageContent = `请完成以下任务：\n${title}\n${description}\n\n${currentInput}`;
-      }
+      const messageContent = currentInput;
 
       let uploadedImages: unknown[] = [];
       if (attachedImages.length > 0) {
@@ -898,20 +876,6 @@ export function useChatComposerState({
 
       setIsUserScrolledUp(false);
       setTimeout(() => scrollToBottom(), 100);
-
-      // Consume the task context only now that the send is guaranteed to go
-      // through (image upload and session creation already succeeded), so a
-      // failed first attempt still injects on retry. Clearing the live history
-      // state is what makes the one-shot survive a composer remount.
-      if (injectTaskContext) {
-        taskContextConsumedRef.current = true;
-        try {
-          const historyState = window.history.state;
-          window.history.replaceState(historyState ? { ...historyState, usr: undefined } : {}, '');
-        } catch {
-          // Best-effort cleanup; the ref guard already prevents double injection.
-        }
-      }
 
       // One message shape for every provider. The backend resolves the
       // provider, project path, and provider-native resume id from the

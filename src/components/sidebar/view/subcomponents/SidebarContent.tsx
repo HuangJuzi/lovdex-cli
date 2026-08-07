@@ -1,6 +1,5 @@
 import { type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ClipboardList, Folder, MessageSquare, Search } from 'lucide-react';
+import { Folder, MessageSquare, Search } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
 import { ScrollArea } from '../../../../shared/view/ui';
@@ -107,7 +106,6 @@ export default function SidebarContent({
 }: SidebarContentProps) {
   const showConversationSearch = searchFilter.trim().length >= 2;
   const hasPartialResults = Boolean(conversationResults && conversationResults.results.length > 0);
-  const navigate = useNavigate();
 
   return (
     <div
@@ -131,17 +129,6 @@ export default function SidebarContent({
         onCollapseSidebar={onCollapseSidebar}
         t={t}
       />
-
-      {/* Primary nav: task board */}
-      <div className="flex-shrink-0 px-3 pt-2 md:px-1.5 md:pt-1.5">
-        <button
-          onClick={() => navigate('/tasks')}
-          className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-normal text-foreground transition-colors hover:bg-accent/80"
-        >
-          <ClipboardList className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-          <span>{t('navigation.tasks')}</span>
-        </button>
-      </div>
 
       <ScrollArea className="flex-1 overflow-y-auto overscroll-contain md:px-1.5 md:py-2">
         {showConversationSearch && (

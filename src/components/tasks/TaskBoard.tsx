@@ -27,21 +27,26 @@ type ProviderModelsApiResponse = {
 };
 
 import { TaskCard } from './TaskCard';
-import { openExecutionSession } from './taskNavigation';
+import { ViewSwitcher } from './ViewSwitcher';
+import { buildTaskChatSend } from './taskExecution';
+import { deriveTaskName } from './taskName';
 import { STATUS_META, STATUS_ORDER, groupByStatus } from './taskStatus';
 
 const projectPathOf = (project: Project): string => project.fullPath || project.path || '';
 
 export function TaskBoardPage() {
   const navigate = useNavigate();
-  const { subscribe } = useWebSocket();
+  const { subscribe, sendMessage } = useWebSocket();
   const { tasks, loading, loadError, refresh, upsert } = useTasks({}, subscribe);
   const [approvalTaskIds, setApprovalTaskIds] = useState<Set<string>>(new Set());
   const groups = useMemo(() => groupByStatus(tasks), [tasks]);
 
   // Create-task form state.
   const [creating, setCreating] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
+  // The prompt is the actual content executed by the agent; the name is only a
+  // board label. A blank name is distilled from the prompt at submit time.
+  const [newPrompt, setNewPrompt] = useState('');
+  const [newName, setNewName] = useState('');
   const [newProjectPath, setNewProjectPath] = useState('');
   const [newEngine, setNewEngine] = useState<TaskEngine>('claude');
   const [projects, setProjects] = useState<Project[]>([]);
@@ -50,6 +55,22 @@ export function TaskBoardPage() {
   // Monotonic token so a slow response for a previous engine can't overwrite a
   // newer engine's model list when the user switches quickly.
   const modelsRequestRef = useRef(0);
+
+  // `displayName` can collide across projects while the path stays unique (it is
+  // what a task stores as `project_path`). Disambiguate only the names that
+  // actually repeat, so the dropdown stays clean when names are unique.
+  const duplicateProjectNames = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const project of projects) {
+      const name = project.displayName || projectPathOf(project);
+      counts.set(name, (counts.get(name) ?? 0) + 1);
+    }
+    return new Set(
+      Array.from(counts.entries())
+        .filter(([, count]) => count > 1)
+        .map(([name]) => name),
+    );
+  }, [projects]);
 
   // Load the project list once for the create form. The `/api/projects`
   // response JSON is an array of projects; the display name lives in
@@ -109,17 +130,22 @@ export function TaskBoardPage() {
   }, [creating, newEngine]);
 
   function toggleCreateForm() {
-    setNewTitle('');
+    setNewPrompt('');
+    setNewName('');
     setCreating((prev) => !prev);
   }
 
   async function createTask() {
     const projectPath = newProjectPath;
-    if (!projectPath || !newTitle.trim()) return;
+    const prompt = newPrompt.trim();
+    if (!projectPath || !prompt) return;
+    // Name is optional: fall back to a locally distilled label from the prompt.
+    const title = newName.trim() || deriveTaskName(prompt);
     try {
       const res = await api.tasks.create({
         projectPath,
-        title: newTitle.trim(),
+        title,
+        description: prompt,
         executorProvider: newEngine,
         executorModel: newModel || null,
         status: 'backlog',
@@ -130,7 +156,8 @@ export function TaskBoardPage() {
         return;
       }
       setCreating(false);
-      setNewTitle('');
+      setNewPrompt('');
+      setNewName('');
       void refresh();
     } catch (err) {
       console.error('createTask failed', err);
@@ -180,11 +207,16 @@ export function TaskBoardPage() {
         return;
       }
       const data = (await res.json()) as { sessionId?: unknown };
-      if (data?.sessionId) {
-        openExecutionSession(navigate, String(data.sessionId), task);
-      } else {
+      const sessionId = data?.sessionId ? String(data.sessionId) : null;
+      if (!sessionId) {
         void refresh();
+        return;
       }
+      // Kick off the agent over the board's existing socket and stay on the
+      // board; the run streams/persists server-side and the card flips to
+      // in_progress via the task↔session status linkage. Open it later with
+      // "打开会话" to watch or answer an approval prompt.
+      sendMessage(buildTaskChatSend(sessionId, task));
     } catch (err) {
       console.error('startExecution failed', err);
     }
@@ -208,13 +240,7 @@ export function TaskBoardPage() {
   return (
     <div className="flex h-dvh flex-col bg-background">
       <header className="flex items-center gap-2 px-3 py-3 sm:gap-4 sm:px-6 sm:py-4">
-        <button
-          className="text-sm text-muted-foreground hover:text-foreground"
-          onClick={() => navigate('/')}
-        >
-          ← 返回
-        </button>
-        <h1 className="min-w-0 flex-1 truncate text-lg font-bold text-foreground">任务面板</h1>
+        <ViewSwitcher active="tasks" className="w-44 flex-shrink-0 sm:w-48" />
         <div className="ml-auto">
           <Button size="sm" onClick={toggleCreateForm}>
             ＋ 新建任务
@@ -223,12 +249,19 @@ export function TaskBoardPage() {
       </header>
       {creating && (
         <div className="flex flex-col gap-2 border-b border-border bg-card/50 px-3 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:px-6 sm:py-4">
+          <textarea
+            className="min-h-[64px] w-full resize-y rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/60"
+            placeholder="任务提示词（发给 agent 执行的内容）"
+            value={newPrompt}
+            onChange={(e) => setNewPrompt(e.target.value)}
+            rows={2}
+            autoFocus
+          />
           <Input
             className="w-full sm:w-64"
-            placeholder="任务标题"
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            autoFocus
+            placeholder="名称（可选，留空自动从提示词提炼）"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
           />
           <select
             className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-auto"
@@ -236,11 +269,17 @@ export function TaskBoardPage() {
             onChange={(e) => setNewProjectPath(e.target.value)}
           >
             {projects.length === 0 && <option value="">选择项目</option>}
-            {projects.map((project) => (
-              <option key={project.projectId} value={projectPathOf(project)}>
-                {project.displayName || projectPathOf(project)}
-              </option>
-            ))}
+            {projects.map((project) => {
+              const path = projectPathOf(project);
+              const name = project.displayName || path;
+              const label =
+                duplicateProjectNames.has(name) && name !== path ? `${name} — ${path}` : name;
+              return (
+                <option key={project.projectId} value={path} title={path}>
+                  {label}
+                </option>
+              );
+            })}
           </select>
           <select
             className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-auto"
@@ -266,7 +305,7 @@ export function TaskBoardPage() {
               ))
             )}
           </select>
-          <Button size="sm" disabled={!newTitle.trim()} onClick={() => void createTask()}>
+          <Button size="sm" disabled={!newPrompt.trim()} onClick={() => void createTask()}>
             创建
           </Button>
           <Button size="sm" variant="ghost" onClick={toggleCreateForm}>

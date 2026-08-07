@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { useWebSocket } from '../../contexts/WebSocketContext';
 import { api } from '../../utils/api';
 import type { Task, TaskStatus } from '../../types/app';
 
-import { openExecutionSession } from './taskNavigation';
+import { buildTaskChatSend } from './taskExecution';
 import { STATUS_META, STATUS_ORDER } from './taskStatus';
 
 export function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
+  const { sendMessage } = useWebSocket();
   const [task, setTask] = useState<Task | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -105,11 +107,13 @@ export function TaskDetailPage() {
         return;
       }
       const data = (await res.json()) as { sessionId?: unknown };
-      if (data?.sessionId) {
-        openExecutionSession(navigate, String(data.sessionId), task);
-        return;
+      const sessionId = data?.sessionId ? String(data.sessionId) : null;
+      if (sessionId) {
+        // Run the agent over the shared socket and stay on the detail page; the
+        // button flips to "打开会话" once the refetch picks up the linkage.
+        sendMessage(buildTaskChatSend(sessionId, task));
       }
-      // No session linked yet — refetch so status/session linkage refreshes.
+      // Refetch so status/session linkage refreshes.
       const refreshed = await api.tasks.get(task.task_id);
       if (!refreshed.ok) {
         const err = await refreshed.json().catch(() => null);

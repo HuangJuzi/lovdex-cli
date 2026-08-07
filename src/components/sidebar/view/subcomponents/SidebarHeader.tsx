@@ -6,6 +6,7 @@ import { Button, Input } from '../../../../shared/view/ui';
 import { LOVDEXCLI_WORDMARK_FONT_FAMILY } from '../../../../constants/branding';
 import { IS_PLATFORM } from '../../../../constants/config';
 import { cn } from '../../../../lib/utils';
+import { ViewSwitcher } from '../../../tasks/ViewSwitcher';
 import type { SidebarProjectFilter } from '../../types/types';
 
 const MOD_KEY =
@@ -159,6 +160,11 @@ export default function SidebarHeader({
           </div>
         </div>
 
+        {/* Primary view switch: chat workspace vs task board */}
+        <div className="mt-2.5">
+          <ViewSwitcher active="chat" />
+        </div>
+
         {/* Search bar */}
         {showSearchTools && (
           <div className="mt-2.5 space-y-2">
@@ -232,6 +238,11 @@ export default function SidebarHeader({
               <FolderPlus className="h-4 w-4" />
             </button>
           </div>
+        </div>
+
+        {/* Primary view switch: chat workspace vs task board */}
+        <div className="mt-2.5">
+          <ViewSwitcher active="chat" />
         </div>
 
         {/* Mobile search */}
