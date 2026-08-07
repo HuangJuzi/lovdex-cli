@@ -14,7 +14,7 @@ import { STATUS_META, STATUS_ORDER, groupByStatus } from './taskStatus';
 export function TaskBoardPage() {
   const navigate = useNavigate();
   const { subscribe } = useWebSocket();
-  const { tasks, loading, refresh, upsert } = useTasks({}, subscribe);
+  const { tasks, loading, loadError, refresh, upsert } = useTasks({}, subscribe);
   const [approvalTaskIds, setApprovalTaskIds] = useState<Set<string>>(new Set());
   const groups = useMemo(() => groupByStatus(tasks), [tasks]);
 
@@ -96,6 +96,16 @@ export function TaskBoardPage() {
       </header>
       {loading ? (
         <div className="px-6 text-sm text-muted-foreground">加载中…</div>
+      ) : loadError ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-3">
+          <div className="text-sm text-muted-foreground">加载任务失败</div>
+          <button
+            className="rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            onClick={() => void refresh()}
+          >
+            重试
+          </button>
+        </div>
       ) : (
         <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto px-4 pb-4">
           {STATUS_ORDER.map((status) => (

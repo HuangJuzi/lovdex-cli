@@ -25,6 +25,7 @@ export function useTasks(
 ) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const mounted = useRef(true);
 
   const refresh = useCallback(async () => {
@@ -32,9 +33,13 @@ export function useTasks(
       const res = await api.tasks.list({ projectPath: options.projectPath, status: options.status });
       if (!res.ok) throw new Error(`tasks.list failed: ${res.status}`);
       const data = (await res.json()) as Task[];
-      if (mounted.current) setTasks(Array.isArray(data) ? data : []);
+      if (mounted.current) {
+        setTasks(Array.isArray(data) ? data : []);
+        setLoadError(false);
+      }
     } catch (error) {
       console.error('Error fetching tasks:', error);
+      if (mounted.current) setLoadError(true);
     } finally {
       if (mounted.current) setLoading(false);
     }
@@ -65,14 +70,18 @@ export function useTasks(
 
   // Live updates: when a `subscribe` source is provided, mirror task_upserted
   // / task_deleted frames into the local list so the board refreshes without a
-  // manual reload. `upsert`/`remove` are stable so this registers once.
+  // manual reload. The synthetic `websocket_reconnected` frame is emitted when
+  // the socket re-opens after a drop, so refetch the whole list to replay any
+  // events missed while disconnected. `upsert`/`remove`/`refresh` are stable so
+  // this registers once.
   useEffect(() => {
     if (!subscribe) return;
     return subscribe((event) => {
       if (event.kind === 'task_upserted' && event.task) upsert(event.task);
       else if (event.kind === 'task_deleted' && event.taskId) remove(event.taskId);
+      else if (event.kind === 'websocket_reconnected') void refresh();
     });
-  }, [subscribe, upsert, remove]);
+  }, [subscribe, upsert, remove, refresh]);
 
-  return { tasks, loading, refresh, upsert, remove };
+  return { tasks, loading, loadError, refresh, upsert, remove };
 }
