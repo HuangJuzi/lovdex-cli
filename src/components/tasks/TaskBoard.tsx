@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom';
 
 import { useWebSocket } from '../../contexts/WebSocketContext';
 import { useTasks } from '../../hooks/useTasks';
-import { Button } from '../../shared/view/ui';
-import type { Task, TaskDeletedEvent, TaskUpsertedEvent } from '../../types/app';
+import { Button, Input } from '../../shared/view/ui';
+import type { Project, Task, TaskDeletedEvent, TaskEngine, TaskUpsertedEvent } from '../../types/app';
 import { api } from '../../utils/api';
 
 import { TaskCard } from './TaskCard';
 import { openExecutionSession } from './taskNavigation';
 import { STATUS_META, STATUS_ORDER, groupByStatus } from './taskStatus';
+
+const projectPathOf = (project: Project): string => project.fullPath || project.path || '';
 
 export function TaskBoardPage() {
   const navigate = useNavigate();
@@ -17,6 +19,66 @@ export function TaskBoardPage() {
   const { tasks, loading, loadError, refresh, upsert } = useTasks({}, subscribe);
   const [approvalTaskIds, setApprovalTaskIds] = useState<Set<string>>(new Set());
   const groups = useMemo(() => groupByStatus(tasks), [tasks]);
+
+  // Create-task form state.
+  const [creating, setCreating] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newProjectPath, setNewProjectPath] = useState('');
+  const [newEngine, setNewEngine] = useState<TaskEngine>('claude');
+  const [projects, setProjects] = useState<Project[]>([]);
+
+  // Load the project list once for the create form. The `/api/projects`
+  // response JSON is an array of projects; the display name lives in
+  // `displayName` and the path in `fullPath` (with `path` as a fallback).
+  useEffect(() => {
+    let cancelled = false;
+    api.projects()
+      .then(async (res) => {
+        if (!res.ok) {
+          console.error('load projects for task create failed', res.status);
+          return [];
+        }
+        const data = (await res.json()) as Project[];
+        return Array.isArray(data) ? data : [];
+      })
+      .then((list) => {
+        if (cancelled) return;
+        setProjects(list);
+        if (list.length > 0) setNewProjectPath(projectPathOf(list[0]));
+      })
+      .catch((err) => console.error('load projects for task create failed', err));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function toggleCreateForm() {
+    setNewTitle('');
+    setCreating((prev) => !prev);
+  }
+
+  async function createTask() {
+    const projectPath = newProjectPath;
+    if (!projectPath || !newTitle.trim()) return;
+    try {
+      const res = await api.tasks.create({
+        projectPath,
+        title: newTitle.trim(),
+        executorProvider: newEngine,
+        status: 'backlog',
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        console.error('createTask failed', err?.error?.message ?? res.status);
+        return;
+      }
+      setCreating(false);
+      setNewTitle('');
+      void refresh();
+    } catch (err) {
+      console.error('createTask failed', err);
+    }
+  }
 
   // Mirror the live `approval.pending` flag so cards waiting on engine
   // approval show the amber "等你批准" marker. Cleared on pending:false or when
@@ -89,11 +151,56 @@ export function TaskBoardPage() {
   return (
     <div className="flex h-dvh flex-col bg-background">
       <header className="flex items-center gap-4 px-6 py-4">
+        <button
+          className="text-sm text-muted-foreground hover:text-foreground"
+          onClick={() => navigate('/')}
+        >
+          ← 返回
+        </button>
         <h1 className="text-lg font-bold text-foreground">任务面板</h1>
-        <Button size="sm" disabled title="创建任务即将上线">
-          ＋ 新建任务
-        </Button>
+        <div className="ml-auto">
+          <Button size="sm" onClick={toggleCreateForm}>
+            ＋ 新建任务
+          </Button>
+        </div>
       </header>
+      {creating && (
+        <div className="flex flex-wrap items-center gap-3 border-b border-border bg-card/50 px-6 py-4">
+          <Input
+            className="w-64"
+            placeholder="任务标题"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            autoFocus
+          />
+          <select
+            className="h-9 rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+            value={newProjectPath}
+            onChange={(e) => setNewProjectPath(e.target.value)}
+          >
+            {projects.length === 0 && <option value="">选择项目</option>}
+            {projects.map((project) => (
+              <option key={project.projectId} value={projectPathOf(project)}>
+                {project.displayName || projectPathOf(project)}
+              </option>
+            ))}
+          </select>
+          <select
+            className="h-9 rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+            value={newEngine}
+            onChange={(e) => setNewEngine(e.target.value as TaskEngine)}
+          >
+            <option value="claude">Claude</option>
+            <option value="codex">Codex</option>
+          </select>
+          <Button size="sm" disabled={!newTitle.trim()} onClick={() => void createTask()}>
+            创建
+          </Button>
+          <Button size="sm" variant="ghost" onClick={toggleCreateForm}>
+            取消
+          </Button>
+        </div>
+      )}
       {loading ? (
         <div className="px-6 text-sm text-muted-foreground">加载中…</div>
       ) : loadError ? (

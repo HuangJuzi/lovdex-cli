@@ -141,12 +141,21 @@ export function TaskDetailPage() {
   return (
     <div className="h-dvh overflow-y-auto bg-background">
       <div className="mx-auto max-w-3xl p-8">
-        <button
-          className="text-sm text-muted-foreground hover:text-foreground"
-          onClick={() => navigate('/tasks')}
-        >
-          ← 返回任务面板
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            className="text-sm text-muted-foreground hover:text-foreground"
+            onClick={() => navigate('/tasks')}
+          >
+            ← 返回任务面板
+          </button>
+          <span className="text-xs text-muted-foreground/50">·</span>
+          <button
+            className="text-sm text-muted-foreground hover:text-foreground"
+            onClick={() => navigate('/')}
+          >
+            返回主页
+          </button>
+        </div>
         <div className="mt-4 flex items-start gap-3">
           <span
             className="mt-2 h-3 w-3 shrink-0 rounded-full"
