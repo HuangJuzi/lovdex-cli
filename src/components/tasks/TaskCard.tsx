@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Task, TaskStatus } from '../../types/app';
 
 import { STATUS_META, taskSessionState } from './taskStatus';
+import { formatAbsoluteTime, formatRelativeTime, taskTimeLabel } from './taskTimestamp';
 
 type TaskCardProps = {
   task: Task;
@@ -23,6 +24,8 @@ export const TaskCard = memo(function TaskCard({
   const navigate = useNavigate();
   const sessionState = taskSessionState(task);
   const isClaude = task.executor_provider === 'claude';
+  const timeLabel = taskTimeLabel(task);
+  const now = new Date();
 
   return (
     <div
@@ -59,6 +62,10 @@ export const TaskCard = memo(function TaskCard({
             {task.executor_model}
           </span>
         )}
+      </div>
+
+      <div className="mt-1 text-[11px] text-muted-foreground/80" title={formatAbsoluteTime(timeLabel.iso)}>
+        {timeLabel.label} {formatRelativeTime(timeLabel.iso, now)}
       </div>
 
       {/* Session/approval indicator */}
