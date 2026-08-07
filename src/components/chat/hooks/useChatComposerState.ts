@@ -11,7 +11,6 @@ import type {
   TouchEvent,
 } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { useLocation } from 'react-router-dom';
 
 import { authenticatedFetch } from '../../../utils/api';
 import { resolveSessionTitle } from '../../../utils/sessionTitle';
@@ -216,10 +215,11 @@ export function useChatComposerState({
   setIsUserScrolledUp,
   setPendingPermissionRequests,
 }: UseChatComposerStateArgs) {
-  const location = useLocation();
   // Task-board "start execution" handoff: the router state carries the task
   // title/description. It is prepended to the first chat message once, then
-  // the ref and history state are cleared so later sends are untouched.
+  // the ref and history state are cleared so later sends are untouched. The
+  // context is read from the LIVE history state (the same source the consume
+  // clears) so the one-shot guarantee survives a composer remount.
   const taskContextConsumedRef = useRef(false);
 
   const [input, setInput] = useState(() => {
@@ -784,21 +784,13 @@ export function useChatComposerState({
 
       // Task-board "start execution" handoff: prepend the task title and
       // description to the first message so the agent can act on the task
-      // without the user re-explaining it. Consumed once (ref guard + history
-      // state cleared) so later messages send exactly what the user typed.
+      // without the user re-explaining it. Read from the LIVE history state
+      // (the same source the consume below clears) so a composer remount
+      // cannot resurrect a stale location.state and inject twice.
       const taskContext = (
-        location.state as { taskContext?: { title?: string; description?: string } } | null
+        window.history.state?.usr as { taskContext?: { title?: string; description?: string } } | undefined
       )?.taskContext;
       const injectTaskContext = Boolean(taskContext && !taskContextConsumedRef.current);
-      if (injectTaskContext) {
-        taskContextConsumedRef.current = true;
-        try {
-          const historyState = window.history.state;
-          window.history.replaceState(historyState ? { ...historyState, usr: undefined } : {}, '');
-        } catch {
-          // Best-effort cleanup; the ref guard already prevents double injection.
-        }
-      }
 
       let messageContent = currentInput;
       if (injectTaskContext && taskContext && (taskContext.title || taskContext.description)) {
@@ -907,6 +899,20 @@ export function useChatComposerState({
       setIsUserScrolledUp(false);
       setTimeout(() => scrollToBottom(), 100);
 
+      // Consume the task context only now that the send is guaranteed to go
+      // through (image upload and session creation already succeeded), so a
+      // failed first attempt still injects on retry. Clearing the live history
+      // state is what makes the one-shot survive a composer remount.
+      if (injectTaskContext) {
+        taskContextConsumedRef.current = true;
+        try {
+          const historyState = window.history.state;
+          window.history.replaceState(historyState ? { ...historyState, usr: undefined } : {}, '');
+        } catch {
+          // Best-effort cleanup; the ref guard already prevents double injection.
+        }
+      }
+
       // One message shape for every provider. The backend resolves the
       // provider, project path, and provider-native resume id from the
       // session row; `options` only carries composer-level preferences.
@@ -942,7 +948,6 @@ export function useChatComposerState({
       currentSessionId,
       executeCommand,
       isLoading,
-      location,
       onSessionProcessing,
       onSessionEstablished,
       provider,

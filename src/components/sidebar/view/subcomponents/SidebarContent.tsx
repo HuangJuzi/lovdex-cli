@@ -139,7 +139,7 @@ export default function SidebarContent({
           className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-normal text-foreground transition-colors hover:bg-accent/80"
         >
           <ClipboardList className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-          <span>任务面板</span>
+          <span>{t('navigation.tasks')}</span>
         </button>
       </div>
 

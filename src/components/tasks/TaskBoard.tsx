@@ -8,6 +8,7 @@ import type { Task, TaskDeletedEvent, TaskUpsertedEvent } from '../../types/app'
 import { api } from '../../utils/api';
 
 import { TaskCard } from './TaskCard';
+import { openExecutionSession } from './taskNavigation';
 import { STATUS_META, STATUS_ORDER, groupByStatus } from './taskStatus';
 
 export function TaskBoardPage() {
@@ -61,14 +62,7 @@ export function TaskBoardPage() {
       }
       const data = (await res.json()) as { sessionId?: unknown };
       if (data?.sessionId) {
-        // Carry the task context to the new session so the first chat message
-        // can be prefilled with the task title/description (see the composer's
-        // taskContext handling in useChatComposerState).
-        navigate(`/session/${data.sessionId}`, {
-          state: {
-            taskContext: { title: task.title, description: task.description ?? '' },
-          },
-        });
+        openExecutionSession(navigate, String(data.sessionId), task);
       } else {
         void refresh();
       }
