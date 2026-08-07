@@ -11,6 +11,7 @@ import type {
   TouchEvent,
 } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useLocation } from 'react-router-dom';
 
 import { authenticatedFetch } from '../../../utils/api';
 import { resolveSessionTitle } from '../../../utils/sessionTitle';
@@ -215,6 +216,12 @@ export function useChatComposerState({
   setIsUserScrolledUp,
   setPendingPermissionRequests,
 }: UseChatComposerStateArgs) {
+  const location = useLocation();
+  // Task-board "start execution" handoff: the router state carries the task
+  // title/description. It is prepended to the first chat message once, then
+  // the ref and history state are cleared so later sends are untouched.
+  const taskContextConsumedRef = useRef(false);
+
   const [input, setInput] = useState(() => {
     if (typeof window !== 'undefined' && selectedProject) {
       // Draft inputs are keyed by the DB projectId so per-project drafts
@@ -775,7 +782,30 @@ export function useChatComposerState({
         }
       }
 
-      const messageContent = currentInput;
+      // Task-board "start execution" handoff: prepend the task title and
+      // description to the first message so the agent can act on the task
+      // without the user re-explaining it. Consumed once (ref guard + history
+      // state cleared) so later messages send exactly what the user typed.
+      const taskContext = (
+        location.state as { taskContext?: { title?: string; description?: string } } | null
+      )?.taskContext;
+      const injectTaskContext = Boolean(taskContext && !taskContextConsumedRef.current);
+      if (injectTaskContext) {
+        taskContextConsumedRef.current = true;
+        try {
+          const historyState = window.history.state;
+          window.history.replaceState(historyState ? { ...historyState, usr: undefined } : {}, '');
+        } catch {
+          // Best-effort cleanup; the ref guard already prevents double injection.
+        }
+      }
+
+      let messageContent = currentInput;
+      if (injectTaskContext && taskContext && (taskContext.title || taskContext.description)) {
+        const title = taskContext.title?.trim() ?? '';
+        const description = taskContext.description?.trim() ?? '';
+        messageContent = `请完成以下任务：\n${title}\n${description}\n\n${currentInput}`;
+      }
 
       let uploadedImages: unknown[] = [];
       if (attachedImages.length > 0) {
@@ -860,7 +890,7 @@ export function useChatComposerState({
 
       const userMessage: ChatMessage = {
         type: 'user',
-        content: currentInput,
+        content: messageContent,
         images: uploadedImages as any,
         timestamp: new Date(),
       };
@@ -912,6 +942,7 @@ export function useChatComposerState({
       currentSessionId,
       executeCommand,
       isLoading,
+      location,
       onSessionProcessing,
       onSessionEstablished,
       provider,

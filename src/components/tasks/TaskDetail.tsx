@@ -105,7 +105,14 @@ export function TaskDetailPage() {
       }
       const data = (await res.json()) as { sessionId?: unknown };
       if (data?.sessionId) {
-        navigate(`/session/${data.sessionId}`);
+        // Carry the task context to the new session so the first chat message
+        // can be prefilled with the task title/description (see the composer's
+        // taskContext handling in useChatComposerState).
+        navigate(`/session/${data.sessionId}`, {
+          state: {
+            taskContext: { title: task.title, description: task.description ?? '' },
+          },
+        });
         return;
       }
       // No session linked yet — refetch so status/session linkage refreshes.
