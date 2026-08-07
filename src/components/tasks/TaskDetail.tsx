@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { api } from '../../utils/api';
-import type { Task } from '../../types/app';
+import type { Task, TaskStatus } from '../../types/app';
 
 import { STATUS_META, STATUS_ORDER } from './taskStatus';
 
@@ -12,59 +12,127 @@ export function TaskDetailPage() {
   const [task, setTask] = useState<Task | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [loadError, setLoadError] = useState(false);
+  const loadSeq = useRef(0);
+  const savingRef = useRef(false);
+
+  const load = useCallback(async () => {
+    if (!taskId) return;
+    const seq = ++loadSeq.current;
+    try {
+      const res = await api.tasks.get(taskId);
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        console.error('load task failed', err?.error?.message ?? res.status);
+        if (seq === loadSeq.current) setLoadError(true);
+        return;
+      }
+      const data = (await res.json()) as Task;
+      if (seq !== loadSeq.current) return;
+      setTask(data);
+      setTitle(data.title);
+      setDescription(data.description ?? '');
+      setLoadError(false);
+    } catch (err) {
+      console.error('load task failed', err);
+      if (seq === loadSeq.current) setLoadError(true);
+    }
+  }, [taskId]);
 
   useEffect(() => {
-    if (!taskId) return;
-    let cancelled = false;
-    void api.tasks
-      .get(taskId)
-      .then((r) => r.json())
-      .then((data: Task) => {
-        if (cancelled) return;
-        setTask(data);
-        setTitle(data.title);
-        setDescription(data.description ?? '');
-      })
-      .catch((err) => console.error('load task failed', err));
-    return () => {
-      cancelled = true;
-    };
-  }, [taskId]);
+    void load();
+  }, [load]);
 
   const saveFields = useCallback(async () => {
     if (!task) return;
-    const res = await api.tasks.update(task.task_id, { title, description });
-    if (!res.ok) {
-      const err = await res.json().catch(() => null);
-      console.error('save task failed', err?.error?.message ?? res.status);
-      return;
+    // Guard against concurrent title/description blur saves racing each other.
+    if (savingRef.current) return;
+    savingRef.current = true;
+    try {
+      const res = await api.tasks.update(task.task_id, { title, description });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        console.error('save task failed', err?.error?.message ?? res.status);
+        return;
+      }
+      setTask(await res.json());
+    } catch (err) {
+      console.error('save task failed', err);
+    } finally {
+      savingRef.current = false;
     }
-    setTask(await res.json());
   }, [task, title, description]);
 
-  async function updateStatus(status: Task['status']) {
+  async function updateStatus(status: TaskStatus) {
     if (!task) return;
-    const res = await api.tasks.update(task.task_id, { status });
-    if (!res.ok) {
-      const err = await res.json().catch(() => null);
-      console.error('updateStatus failed', err?.error?.message ?? res.status);
-      return;
+    try {
+      const res = await api.tasks.update(task.task_id, { status });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        console.error('updateStatus failed', err?.error?.message ?? res.status);
+        return;
+      }
+      setTask(await res.json());
+    } catch (err) {
+      console.error('updateStatus failed', err);
     }
-    setTask(await res.json());
   }
 
   async function remove() {
     if (!task) return;
-    await api.tasks.remove(task.task_id);
-    navigate('/tasks');
+    if (!window.confirm('确定删除该任务？')) return;
+    try {
+      const res = await api.tasks.remove(task.task_id);
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        console.error('remove failed', err?.error?.message ?? res.status);
+        return;
+      }
+      navigate('/tasks');
+    } catch (err) {
+      console.error('remove failed', err);
+    }
   }
 
   async function startExecution() {
     if (!task) return;
-    const res = await api.tasks.startExecution(task.task_id);
-    if (!res.ok) return;
-    const data = await res.json();
-    if (data?.sessionId) navigate(`/session/${data.sessionId}`);
+    try {
+      const res = await api.tasks.startExecution(task.task_id);
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        console.error('startExecution failed', err?.error?.message ?? res.status);
+        return;
+      }
+      const data = (await res.json()) as { sessionId?: unknown };
+      if (data?.sessionId) {
+        navigate(`/session/${data.sessionId}`);
+        return;
+      }
+      // No session linked yet — refetch so status/session linkage refreshes.
+      const refreshed = await api.tasks.get(task.task_id);
+      if (!refreshed.ok) {
+        const err = await refreshed.json().catch(() => null);
+        console.error('startExecution refetch failed', err?.error?.message ?? refreshed.status);
+        return;
+      }
+      setTask(await refreshed.json());
+    } catch (err) {
+      console.error('startExecution failed', err);
+    }
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex h-dvh flex-col items-center justify-center gap-3 bg-background">
+        <div className="text-sm text-muted-foreground">加载任务失败</div>
+        <button
+          className="rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          onClick={() => void load()}
+        >
+          重试
+        </button>
+      </div>
+    );
   }
 
   if (!task) return <div className="p-8 text-sm text-muted-foreground">加载中…</div>;
@@ -134,7 +202,7 @@ export function TaskDetailPage() {
                 <select
                   className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
                   value={task.status}
-                  onChange={(e) => updateStatus(e.target.value as Task['status'])}
+                  onChange={(e) => updateStatus(e.target.value as TaskStatus)}
                 >
                   {STATUS_ORDER.map((s) => (
                     <option key={s} value={s}>
