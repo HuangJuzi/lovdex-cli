@@ -214,11 +214,11 @@ export function TaskBoardPage() {
           </button>
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 gap-2 overflow-x-auto px-2 pb-3 sm:gap-3 sm:px-4 sm:pb-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-2 pb-3 sm:flex-row sm:gap-3 sm:overflow-x-auto sm:overflow-y-hidden sm:px-4 sm:pb-4">
           {STATUS_ORDER.map((status) => (
             <div
               key={status}
-              className="flex w-64 shrink-0 flex-col rounded-xl border border-border bg-muted/30"
+              className="flex w-full flex-col rounded-xl border border-border bg-muted/30 sm:w-64 sm:shrink-0"
             >
               <div className="flex items-center gap-2 px-3 py-2.5">
                 <span
@@ -232,7 +232,7 @@ export function TaskBoardPage() {
                   {groups[status].length}
                 </span>
               </div>
-              <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">
+              <div className="flex flex-col gap-2 px-2 pb-2 sm:min-h-0 sm:flex-1 sm:overflow-y-auto">
                 {groups[status].length === 0 && (
                   <div className="py-8 text-center text-xs text-muted-foreground">暂无任务</div>
                 )}
