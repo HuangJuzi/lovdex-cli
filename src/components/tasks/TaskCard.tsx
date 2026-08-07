@@ -80,14 +80,14 @@ export const TaskCard = memo(function TaskCard({
       )}
 
       {/* Actions */}
-      <div className="mt-2 flex gap-2">
+      <div className="mt-2 flex flex-wrap gap-2">
         {task.status === 'todo' && onStart && (
           <button
             onClick={(e) => {
               e.stopPropagation();
               onStart();
             }}
-            className="flex-1 rounded-md bg-primary py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            className="min-h-9 min-w-0 flex-1 rounded-md bg-primary py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:min-h-0"
           >
             ▶ 开始执行
           </button>
@@ -99,7 +99,7 @@ export const TaskCard = memo(function TaskCard({
                 e.stopPropagation();
                 onStatusChange?.('done');
               }}
-              className="flex-1 rounded-md bg-green-500/10 py-1.5 text-xs font-semibold text-green-600 transition-colors hover:bg-green-500/20 dark:text-green-400"
+              className="min-h-9 min-w-0 flex-1 rounded-md bg-green-500/10 py-1.5 text-xs font-semibold text-green-600 transition-colors hover:bg-green-500/20 dark:text-green-400 sm:min-h-0"
             >
               ✓ 标记完成
             </button>
@@ -109,7 +109,7 @@ export const TaskCard = memo(function TaskCard({
                   e.stopPropagation();
                   onOpenSession();
                 }}
-                className="flex-1 rounded-md bg-primary/10 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"
+                className="min-h-9 min-w-0 flex-1 rounded-md bg-primary/10 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20 sm:min-h-0"
               >
                 打开会话
               </button>
@@ -122,7 +122,7 @@ export const TaskCard = memo(function TaskCard({
               e.stopPropagation();
               onOpenSession();
             }}
-            className="flex-1 rounded-md bg-primary/10 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"
+            className="min-h-9 min-w-0 flex-1 rounded-md bg-primary/10 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20 sm:min-h-0"
           >
             打开会话
           </button>

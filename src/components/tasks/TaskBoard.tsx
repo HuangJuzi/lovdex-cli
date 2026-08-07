@@ -150,14 +150,14 @@ export function TaskBoardPage() {
 
   return (
     <div className="flex h-dvh flex-col bg-background">
-      <header className="flex items-center gap-4 px-6 py-4">
+      <header className="flex items-center gap-2 px-3 py-3 sm:gap-4 sm:px-6 sm:py-4">
         <button
           className="text-sm text-muted-foreground hover:text-foreground"
           onClick={() => navigate('/')}
         >
           ← 返回
         </button>
-        <h1 className="text-lg font-bold text-foreground">任务面板</h1>
+        <h1 className="min-w-0 flex-1 truncate text-lg font-bold text-foreground">任务面板</h1>
         <div className="ml-auto">
           <Button size="sm" onClick={toggleCreateForm}>
             ＋ 新建任务
@@ -165,16 +165,16 @@ export function TaskBoardPage() {
         </div>
       </header>
       {creating && (
-        <div className="flex flex-wrap items-center gap-3 border-b border-border bg-card/50 px-6 py-4">
+        <div className="flex flex-col gap-2 border-b border-border bg-card/50 px-3 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:px-6 sm:py-4">
           <Input
-            className="w-64"
+            className="w-full sm:w-64"
             placeholder="任务标题"
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             autoFocus
           />
           <select
-            className="h-9 rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+            className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-auto"
             value={newProjectPath}
             onChange={(e) => setNewProjectPath(e.target.value)}
           >
@@ -186,7 +186,7 @@ export function TaskBoardPage() {
             ))}
           </select>
           <select
-            className="h-9 rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+            className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-auto"
             value={newEngine}
             onChange={(e) => setNewEngine(e.target.value as TaskEngine)}
           >
@@ -202,7 +202,7 @@ export function TaskBoardPage() {
         </div>
       )}
       {loading ? (
-        <div className="px-6 text-sm text-muted-foreground">加载中…</div>
+        <div className="px-3 text-sm text-muted-foreground sm:px-6">加载中…</div>
       ) : loadError ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3">
           <div className="text-sm text-muted-foreground">加载任务失败</div>
@@ -214,7 +214,7 @@ export function TaskBoardPage() {
           </button>
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto px-4 pb-4">
+        <div className="flex min-h-0 flex-1 gap-2 overflow-x-auto px-2 pb-3 sm:gap-3 sm:px-4 sm:pb-4">
           {STATUS_ORDER.map((status) => (
             <div
               key={status}

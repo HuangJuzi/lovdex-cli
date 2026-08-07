@@ -140,8 +140,8 @@ export function TaskDetailPage() {
 
   return (
     <div className="h-dvh overflow-y-auto bg-background">
-      <div className="mx-auto max-w-3xl p-8">
-        <div className="flex items-center gap-3">
+      <div className="mx-auto max-w-3xl px-4 py-6 sm:p-8">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             className="text-sm text-muted-foreground hover:text-foreground"
             onClick={() => navigate('/tasks')}
@@ -156,12 +156,12 @@ export function TaskDetailPage() {
             返回主页
           </button>
         </div>
-        <div className="mt-4 flex items-start gap-3">
+        <div className="mt-4 flex flex-wrap items-start gap-3">
           <span
             className="mt-2 h-3 w-3 shrink-0 rounded-full"
             style={{ background: STATUS_META[task.status].color }}
           />
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <input
               className="w-full bg-transparent text-xl font-bold text-foreground outline-none"
               value={title}
@@ -174,17 +174,17 @@ export function TaskDetailPage() {
               {task.project_path} · {task.task_id.slice(0, 8)}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex w-full gap-2 sm:w-auto">
             {task.status !== 'done' && (
               <button
-                className="rounded-md bg-green-500/15 px-3 py-1.5 text-sm font-semibold text-green-500 hover:bg-green-500/25 dark:text-green-400"
+                className="flex-1 rounded-md bg-green-500/15 px-3 py-1.5 text-sm font-semibold text-green-500 hover:bg-green-500/25 dark:text-green-400 sm:flex-none"
                 onClick={() => updateStatus('done')}
               >
                 ✓ 标记完成
               </button>
             )}
             <button
-              className="rounded-md bg-red-500/10 px-3 py-1.5 text-sm text-red-500 hover:bg-red-500/20 dark:text-red-400"
+              className="flex-1 rounded-md bg-red-500/10 px-3 py-1.5 text-sm text-red-500 hover:bg-red-500/20 dark:text-red-400 sm:flex-none"
               onClick={remove}
             >
               删除
