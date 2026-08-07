@@ -225,6 +225,23 @@ export const api = {
       }),
   },
 
+  // Task endpoints — the task board (columns: backlog/todo/in_progress/in_review/done).
+  tasks: {
+    list: (params = {}) => {
+      const qs = new URLSearchParams();
+      if (params.projectPath) qs.set('projectPath', params.projectPath);
+      if (params.status) qs.set('status', params.status);
+      const s = qs.toString();
+      return authenticatedFetch(`/api/tasks${s ? `?${s}` : ''}`);
+    },
+    create: (body) => authenticatedFetch('/api/tasks', { method: 'POST', body: JSON.stringify(body) }),
+    get: (taskId) => authenticatedFetch(`/api/tasks/${encodeURIComponent(taskId)}`),
+    update: (taskId, body) => authenticatedFetch(`/api/tasks/${encodeURIComponent(taskId)}`, { method: 'PATCH', body: JSON.stringify(body) }),
+    startExecution: (taskId) => authenticatedFetch(`/api/tasks/${encodeURIComponent(taskId)}/start-execution`, { method: 'POST' }),
+    move: (taskId, body) => authenticatedFetch(`/api/tasks/${encodeURIComponent(taskId)}/move`, { method: 'POST', body: JSON.stringify(body) }),
+    remove: (taskId) => authenticatedFetch(`/api/tasks/${encodeURIComponent(taskId)}`, { method: 'DELETE' }),
+  },
+
   // Browse filesystem for project suggestions
   browseFilesystem: (dirPath = null) => {
     const params = new URLSearchParams();

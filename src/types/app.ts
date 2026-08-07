@@ -73,6 +73,38 @@ export interface Project {
   [key: string]: unknown;
 }
 
+export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'done';
+export type TaskEngine = 'claude' | 'codex';
+
+export interface Task {
+  task_id: string;
+  project_path: string;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  executor_provider: TaskEngine;
+  executor_model: string | null;
+  position: number;
+  session_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TaskUpsertedEvent {
+  kind: 'task_upserted';
+  task: Task;
+  actor: 'user' | 'engine';
+  approval?: { pending: boolean };
+  timestamp: string;
+}
+
+export interface TaskDeletedEvent {
+  kind: 'task_deleted';
+  taskId: string;
+  actor: 'user' | 'engine';
+  timestamp: string;
+}
+
 export interface LoadingProgress {
   kind?: 'loading_progress';
   phase?: string;
