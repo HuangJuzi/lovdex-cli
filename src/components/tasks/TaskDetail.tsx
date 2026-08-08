@@ -260,23 +260,24 @@ export function TaskDetailPage() {
           </div>
         </div>
 
-        <TaskResultPanel
-          state={resultState}
-          content={resultContent}
-          onRefresh={() => {
-            if (task?.session_id) void loadResult(task.session_id);
-          }}
-        />
-
         <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-[1fr_280px]">
-          <div className="rounded-lg border border-border bg-card p-4">
-            <textarea
-              className="min-h-[160px] w-full resize-y bg-transparent text-sm text-muted-foreground outline-none"
-              value={description}
-              placeholder="暂无描述"
-              onChange={(e) => setDescription(e.target.value)}
-              onBlur={() => {
-                if (description !== (task.description ?? '')) void saveFields();
+          <div className="flex flex-col gap-6">
+            <div className="rounded-lg border border-border bg-card p-4">
+              <textarea
+                className="min-h-[160px] w-full resize-y bg-transparent text-sm text-muted-foreground outline-none"
+                value={description}
+                placeholder="暂无描述"
+                onChange={(e) => setDescription(e.target.value)}
+                onBlur={() => {
+                  if (description !== (task.description ?? '')) void saveFields();
+                }}
+              />
+            </div>
+            <TaskResultPanel
+              state={resultState}
+              content={resultContent}
+              onRefresh={() => {
+                if (task?.session_id) void loadResult(task.session_id);
               }}
             />
           </div>

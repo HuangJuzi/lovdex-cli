@@ -14,7 +14,7 @@ interface TaskResultPanelProps {
 export function TaskResultPanel({ state, content, onRefresh }: TaskResultPanelProps) {
   const showRefresh = state === 'ready' || state === 'empty';
   return (
-    <div className="mt-6 rounded-lg border border-border bg-card p-4">
+    <div className="rounded-lg border border-border bg-card p-4">
       <div className="mb-3 flex items-center justify-between">
         <h4 className="text-xs uppercase tracking-wide text-muted-foreground">执行结果</h4>
         {showRefresh && (
