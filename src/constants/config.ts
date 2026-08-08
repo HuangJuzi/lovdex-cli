@@ -2,7 +2,12 @@
  * Environment Flag: Is Platform
  * Indicates if the app is running in Platform mode (hosted) or OSS mode (self-hosted)
  */
-export const IS_PLATFORM = import.meta.env.VITE_IS_PLATFORM === 'true';
+// Guard `import.meta.env` so this module loads safely outside a Vite context
+// (e.g. under plain `node:test` via tsx, where `import.meta.env` is undefined).
+// In Vite this is the real env object; outside Vite it falls back to `{}`,
+// preserving the OSS defaults (IS_PLATFORM=false, API_BASE_URL='').
+const ENV = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
+export const IS_PLATFORM = ENV.VITE_IS_PLATFORM === 'true';
 
 /**
  * Base URL of the backend API. When non-empty, all `/api/*` requests and the
@@ -14,7 +19,7 @@ export const IS_PLATFORM = import.meta.env.VITE_IS_PLATFORM === 'true';
  *   VITE_API_BASE_URL=http://localhost:3007
  * Trailing slash is stripped so concatenation with `/api/...` is safe.
  */
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+export const API_BASE_URL = (ENV.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
 /**
  * For empty shell instances where no project is provided,
