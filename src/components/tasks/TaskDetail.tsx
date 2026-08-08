@@ -3,22 +3,28 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useWebSocket } from '../../contexts/WebSocketContext';
 import { api } from '../../utils/api';
-import type { Task, TaskStatus } from '../../types/app';
+import type { Task, TaskStatus, TaskUpsertedEvent } from '../../types/app';
 
 import { buildTaskChatSend } from './taskExecution';
+import { TaskResultPanel } from './TaskResultPanel';
+import { pickLastAssistantText } from './taskResult';
+import type { TaskResultState } from './taskResult';
 import { STATUS_META, STATUS_ORDER } from './taskStatus';
 import { formatAbsoluteTime } from './taskTimestamp';
 
 export function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
-  const { sendMessage } = useWebSocket();
+  const { sendMessage, subscribe } = useWebSocket();
   const [task, setTask] = useState<Task | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [loadError, setLoadError] = useState(false);
   const loadSeq = useRef(0);
   const savingRef = useRef(false);
+  const [resultState, setResultState] = useState<TaskResultState>('idle');
+  const [resultContent, setResultContent] = useState('');
+  const resultSeq = useRef(0);
 
   const load = useCallback(async () => {
     if (!taskId) return;
@@ -43,9 +49,66 @@ export function TaskDetailPage() {
     }
   }, [taskId]);
 
+  const loadResult = useCallback(async (sessionId: string) => {
+    const seq = ++resultSeq.current;
+    setResultState('loading');
+    try {
+      const res = await api.unifiedSessionMessages(sessionId, 'claude', {});
+      if (seq !== resultSeq.current) return;
+      if (!res.ok) {
+        setResultState('error');
+        return;
+      }
+      const body = (await res.json()) as { data?: { messages?: unknown[] } } | { messages?: unknown[] };
+      const messages = Array.isArray((body as { data?: { messages?: unknown[] } })?.data?.messages)
+        ? (body as { data: { messages: unknown[] } }).data.messages
+        : Array.isArray((body as { messages?: unknown[] }).messages)
+          ? (body as { messages: unknown[] }).messages
+          : [];
+      const text = pickLastAssistantText(messages as { kind: string; role?: string; content?: string }[]);
+      if (text) {
+        setResultContent(text);
+        setResultState('ready');
+      } else {
+        setResultContent('');
+        setResultState('empty');
+      }
+    } catch (err) {
+      console.error('load task result failed', err);
+      if (seq === resultSeq.current) setResultState('error');
+    }
+  }, []);
+
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Fetch the result whenever the linked session changes.
+  useEffect(() => {
+    if (!task?.session_id) {
+      setResultState('idle');
+      setResultContent('');
+      return;
+    }
+    void loadResult(task.session_id);
+  }, [task?.session_id, loadResult]);
+
+  // Live-refresh the result when the engine advances this task's session
+  // (running → in_progress, completed → in_review). We deliberately do NOT
+  // setTask here, to avoid clobbering in-flight title/description edits.
+  useEffect(() => {
+    if (!subscribe || !taskId) return;
+    return subscribe((event) => {
+      if (event.kind !== 'task_upserted') return;
+      const upserted = event as unknown as TaskUpsertedEvent;
+      if (!upserted.task || upserted.task.task_id !== taskId) return;
+      const sid = upserted.task.session_id;
+      if (!sid) return;
+      if (upserted.task.status === 'in_progress' || upserted.task.status === 'in_review' || upserted.task.status === 'done') {
+        void loadResult(sid);
+      }
+    });
+  }, [subscribe, taskId, loadResult]);
 
   const saveFields = useCallback(async () => {
     if (!task) return;
@@ -278,6 +341,13 @@ export function TaskDetailPage() {
             </div>
           </div>
         </div>
+        <TaskResultPanel
+          state={resultState}
+          content={resultContent}
+          onRefresh={() => {
+            if (task?.session_id) void loadResult(task.session_id);
+          }}
+        />
       </div>
     </div>
   );
