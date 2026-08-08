@@ -240,6 +240,7 @@ export const api = {
     startExecution: (taskId) => authenticatedFetch(`/api/tasks/${encodeURIComponent(taskId)}/start-execution`, { method: 'POST' }),
     move: (taskId, body) => authenticatedFetch(`/api/tasks/${encodeURIComponent(taskId)}/move`, { method: 'POST', body: JSON.stringify(body) }),
     remove: (taskId) => authenticatedFetch(`/api/tasks/${encodeURIComponent(taskId)}`, { method: 'DELETE' }),
+    bySession: (sessionId) => authenticatedFetch(`/api/tasks/by-session/${encodeURIComponent(sessionId)}`),
   },
 
   // Browse filesystem for project suggestions
