@@ -260,6 +260,14 @@ export function TaskDetailPage() {
           </div>
         </div>
 
+        <TaskResultPanel
+          state={resultState}
+          content={resultContent}
+          onRefresh={() => {
+            if (task?.session_id) void loadResult(task.session_id);
+          }}
+        />
+
         <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-[1fr_280px]">
           <div className="rounded-lg border border-border bg-card p-4">
             <textarea
@@ -341,13 +349,6 @@ export function TaskDetailPage() {
             </div>
           </div>
         </div>
-        <TaskResultPanel
-          state={resultState}
-          content={resultContent}
-          onRefresh={() => {
-            if (task?.session_id) void loadResult(task.session_id);
-          }}
-        />
       </div>
     </div>
   );
