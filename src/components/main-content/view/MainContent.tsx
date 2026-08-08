@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import ChatInterface from '../../chat/view/ChatInterface';
 import type { MainContentProps } from '../types/types';
 import { useFileOpenResolver } from '../../../hooks/useFileOpenResolver';
+import { useLinkedTask } from '../../../hooks/useLinkedTask';
 import { FilePreviewModal } from '../../file-preview/FilePreviewModal';
 import { useUiPreferences } from '../../../hooks/useUiPreferences';
+import { STATUS_META } from '../../tasks/taskStatus';
 
 import MobileMenuButton from './subcomponents/MobileMenuButton';
 import MainContentTitle from './subcomponents/MainContentTitle';
@@ -39,6 +42,9 @@ function MainContent({
 
   const [preview, setPreview] = useState<{ filePath: string; line?: number } | null>(null);
 
+  const navigate = useNavigate();
+  const { task: linkedTask } = useLinkedTask(selectedSession?.id ?? null);
+
   // Resolve bare/partial refs (e.g. `foo.ts`) against the project file tree,
   // then open the read-only preview modal.
   const handleFileOpen = useFileOpenResolver(selectedProject, (filePath: string) => {
@@ -66,6 +72,20 @@ function MainContent({
               shouldShowTasksTab={false}
             />
           </div>
+          {linkedTask && (
+            <button
+              type="button"
+              onClick={() => navigate(`/task/${linkedTask.task_id}`)}
+              className="flex flex-shrink-0 items-center gap-1.5 rounded-md border border-border/60 bg-card px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-accent"
+              title="查看任务"
+            >
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ background: STATUS_META[linkedTask.status].color }}
+              />
+              查看任务
+            </button>
+          )}
         </div>
       </div>
 
