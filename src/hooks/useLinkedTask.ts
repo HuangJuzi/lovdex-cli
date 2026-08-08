@@ -61,12 +61,12 @@ export function useLinkedTask(sessionId: string | null | undefined): { task: Tas
       });
   }, []);
 
-  // Initial / on-session-change fetch.
+  // Initial / on-session-change fetch. Clear first so switching from a
+  // task-linked session to a plain one doesn't briefly leave the previous
+  // task's button pointing at the wrong task while the 404 resolves.
   useEffect(() => {
-    if (!sessionId) {
-      setTask(null);
-      return;
-    }
+    setTask(null);
+    if (!sessionId) return;
     refetch(sessionId);
   }, [sessionId, refetch]);
 
