@@ -8,9 +8,7 @@ import type {
   Project,
   ProviderModelOption,
   Task,
-  TaskDeletedEvent,
   TaskEngine,
-  TaskUpsertedEvent,
 } from '../../types/app';
 import { api, authenticatedFetch } from '../../utils/api';
 
@@ -38,7 +36,16 @@ export function TaskBoardPage() {
   const navigate = useNavigate();
   const { subscribe, sendMessage } = useWebSocket();
   const { tasks, loading, loadError, refresh, upsert } = useTasks({}, subscribe);
-  const [approvalTaskIds, setApprovalTaskIds] = useState<Set<string>>(new Set());
+  // The "等你批准" overlay is derived straight from each task row's
+  // `approval_pending` flag — server-decorated from the run registry's pending
+  // set, so it is reconstructed on list load AND on WS-reconnect refresh, not
+  // just from one-shot `task_upserted` events that fire while this tab may be
+  // closed. `useTasks` already upserts live task rows (carrying the flag), so a
+  // memo is all that's needed here — no separate approval event listener.
+  const approvalTaskIds = useMemo(
+    () => new Set(tasks.filter((t) => t.approval_pending).map((t) => t.task_id)),
+    [tasks],
+  );
   const groups = useMemo(() => groupByStatus(tasks), [tasks]);
 
   // Create-task form state.
@@ -163,39 +170,6 @@ export function TaskBoardPage() {
       console.error('createTask failed', err);
     }
   }
-
-  // Mirror the live `approval.pending` flag so cards waiting on engine
-  // approval show the amber "等你批准" marker. Cleared on pending:false or when
-  // the task is deleted.
-  useEffect(() => {
-    if (!subscribe) return;
-    return subscribe((event) => {
-      if (event.kind === 'task_upserted') {
-        const upserted = event as unknown as TaskUpsertedEvent;
-        const task = upserted.task;
-        if (!task) return;
-        setApprovalTaskIds(prev => {
-          const pending = upserted.approval?.pending;
-          // No-op when the approval field is absent or the set already reflects it.
-          if (pending === undefined || pending === prev.has(task.task_id)) return prev;
-          const next = new Set(prev);
-          if (pending) next.add(task.task_id);
-          else next.delete(task.task_id);
-          return next;
-        });
-      } else if (event.kind === 'task_deleted') {
-        const deleted = event as unknown as TaskDeletedEvent;
-        const taskId = deleted.taskId;
-        if (!taskId) return;
-        setApprovalTaskIds(prev => {
-          if (!prev.has(taskId)) return prev;
-          const next = new Set(prev);
-          next.delete(taskId);
-          return next;
-        });
-      }
-    });
-  }, [subscribe]);
 
   async function startExecution(task: Task) {
     try {

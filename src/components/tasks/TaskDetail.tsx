@@ -95,16 +95,32 @@ export function TaskDetailPage() {
 
   // Live-refresh the result when the engine advances this task's session
   // (running → in_progress, completed → in_review). We deliberately do NOT
-  // setTask here, to avoid clobbering in-flight title/description edits.
+  // replace title/description here, to avoid clobbering in-flight edits — but
+  // we DO patch the engine-owned fields (status, session_id, approval_pending,
+  // lifecycle timestamps) so the "等你批准" overlay and status badge stay live.
   useEffect(() => {
     if (!subscribe || !taskId) return;
     return subscribe((event) => {
       if (event.kind !== 'task_upserted') return;
       const upserted = event as unknown as TaskUpsertedEvent;
       if (!upserted.task || upserted.task.task_id !== taskId) return;
-      const sid = upserted.task.session_id;
+      const next = upserted.task;
+      setTask((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: next.status,
+              session_id: next.session_id,
+              approval_pending: next.approval_pending,
+              started_at: next.started_at,
+              completed_at: next.completed_at,
+              updated_at: next.updated_at,
+            }
+          : prev,
+      );
+      const sid = next.session_id;
       if (!sid) return;
-      if (upserted.task.status === 'in_progress' || upserted.task.status === 'in_review' || upserted.task.status === 'done') {
+      if (next.status === 'in_progress' || next.status === 'in_review' || next.status === 'done') {
         void loadResult(sid);
       }
     });
@@ -332,6 +348,22 @@ export function TaskDetailPage() {
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <h4 className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">执行</h4>
+              {task.approval_pending && task.session_id && (
+                <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
+                  <div className="flex items-center gap-1.5 text-sm font-semibold text-amber-500">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" /> 等你批准
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    关联会话有一个待审批的权限请求，需要你处理。
+                  </p>
+                  <button
+                    className="mt-2 w-full rounded-md bg-amber-500/15 py-1.5 text-xs font-semibold text-amber-600 transition-colors hover:bg-amber-500/25 dark:text-amber-400"
+                    onClick={() => navigate(`/session/${task.session_id}`)}
+                  >
+                    去批准
+                  </button>
+                </div>
+              )}
               {task.session_id ? (
                 <button
                   className="w-full rounded-md border border-primary/40 bg-primary/10 py-2 text-sm font-semibold text-primary hover:bg-primary/20"

@@ -90,6 +90,13 @@ export interface Task {
   completed_at: string | null;
   created_at: string;
   updated_at: string;
+  /**
+   * Realtime-only flag (server-decorated, never persisted): true when the linked
+   * session currently has a pending tool-approval. Drives the board/detail
+   * "等你批准" overlay and is reconstructed on list load and WS reconnect, so a
+   * marker that fired while this tab was closed still reappears.
+   */
+  approval_pending?: boolean;
 }
 
 export interface TaskUpsertedEvent {
