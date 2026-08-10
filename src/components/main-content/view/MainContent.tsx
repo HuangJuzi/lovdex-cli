@@ -8,6 +8,7 @@ import { useLinkedTask } from '../../../hooks/useLinkedTask';
 import { FilePreviewModal } from '../../file-preview/FilePreviewModal';
 import { useUiPreferences } from '../../../hooks/useUiPreferences';
 import { STATUS_META } from '../../tasks/taskStatus';
+import { ViewSwitcher } from '../../tasks/ViewSwitcher';
 
 import MobileMenuButton from './subcomponents/MobileMenuButton';
 import MainContentTitle from './subcomponents/MainContentTitle';
@@ -65,6 +66,7 @@ function MainContent({
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             {isMobile && <MobileMenuButton onMenuClick={onMenuClick} />}
+            <ViewSwitcher active="chat" className="w-40 flex-shrink-0 sm:w-44" />
             <MainContentTitle
               activeTab={activeTab}
               selectedProject={selectedProject}
@@ -76,7 +78,7 @@ function MainContent({
             <button
               type="button"
               onClick={() => navigate(`/task/${linkedTask.task_id}`)}
-              className="flex flex-shrink-0 items-center gap-1.5 rounded-md border border-border/60 bg-card px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-accent"
+              className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-md border border-border/60 bg-card px-3 text-sm text-foreground transition-colors hover:bg-accent"
               title="查看任务"
             >
               <span
