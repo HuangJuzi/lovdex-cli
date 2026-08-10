@@ -41,7 +41,6 @@ export const TaskCard = memo(function TaskCard({
         <span className="min-w-0 flex-1 break-words text-sm font-semibold text-card-foreground">
           {task.title}
         </span>
-        <VerdictBadge verdict={task.verdict} />
       </div>
       {task.description && (
         <p className="mt-1 line-clamp-2 break-words text-xs text-muted-foreground">{task.description}</p>
@@ -94,9 +93,15 @@ export const TaskCard = memo(function TaskCard({
         )
       )}
       {task.session_id && sessionState === 'review' && (
-        <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-purple-500 dark:text-purple-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-purple-500 dark:bg-purple-400" /> 待你验收
-        </div>
+        task.verdict ? (
+          <div className="mt-2">
+            <VerdictBadge verdict={task.verdict} />
+          </div>
+        ) : (
+          <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-purple-500 dark:text-purple-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-purple-500 dark:bg-purple-400" /> 待你验收
+          </div>
+        )
       )}
 
       {/* Actions */}
