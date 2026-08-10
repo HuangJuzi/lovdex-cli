@@ -1,4 +1,4 @@
-import { Settings, ArrowUpCircle, Bug, AlertTriangle } from 'lucide-react';
+import { Settings, ArrowUpCircle, Bug, AlertTriangle, MessageSquare } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import { useNavigate } from 'react-router-dom';
 import { IS_PLATFORM } from '../../../../constants/config';
@@ -105,11 +105,20 @@ export default function SidebarFooter({
         </>
       )}
 
-      {/* Community + Settings */}
+      {/* Operator Agent assistant + settings entries */}
       <div className="nav-divider" />
 
-      {/* Operator Agent settings entry */}
       <div className="px-2 py-1.5 md:px-2 md:py-1.5">
+        <button
+          className="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-primary/10"
+          onClick={() => navigate('/assistant')}
+          title="Operator 助手"
+        >
+          <MessageSquare className="h-4 w-4 flex-shrink-0 text-primary" />
+          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-primary">
+            助手
+          </span>
+        </button>
         <button
           className="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-muted/60"
           onClick={() => navigate('/settings/operator')}

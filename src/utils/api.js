@@ -251,6 +251,14 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(body),
       }),
+    // List operator assistant sessions (is_operator = 1, not archived).
+    listSessions: () => authenticatedFetch('/api/providers/sessions/operator'),
+    // Create an operator assistant session bound to the operator workspace.
+    createSession: (projectPath) =>
+      authenticatedFetch('/api/providers/sessions', {
+        method: 'POST',
+        body: JSON.stringify({ provider: 'claude', projectPath, isOperator: true }),
+      }),
   },
 
   // Browse filesystem for project suggestions

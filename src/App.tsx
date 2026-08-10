@@ -6,6 +6,7 @@ import { WebSocketProvider } from './contexts/WebSocketContext';
 import AppContent from './components/app/AppContent';
 import { TaskBoardPage, TaskDetailPage } from './components/tasks';
 import { OperatorSettingsPage } from './components/operators/OperatorSettingsPage';
+import { AssistantPanel } from './components/operators/AssistantPanel';
 import i18n from './i18n/config.js';
 
 const DEPLOYMENT_ASSET_DIRECTORIES = new Set(['assets', 'static', 'icons', 'images']);
@@ -111,6 +112,7 @@ export default function App() {
               <Route path="/session/:sessionId" element={<AppContent />} />
               <Route path="/tasks" element={<TaskBoardPage />} />
               <Route path="/task/:taskId" element={<TaskDetailPage />} />
+              <Route path="/assistant" element={<AssistantPanel />} />
               <Route path="/settings/operator" element={<OperatorSettingsPage />} />
             </Routes>
           </Router>
