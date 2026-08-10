@@ -540,10 +540,17 @@ export function useChatProviderState({ selectedSession, selectedProject: _select
       throw new Error('Unable to change the active model for this session.');
     }
 
+    const resolvedModel = body.data.model || model;
+    // Keep the composer's model indicator in sync. The indicator reads the
+    // provider model state (claudeModel etc.), which a session-scoped change
+    // otherwise leaves untouched — only the backend's pending model was updated,
+    // so the input box kept showing the old model after the modal switched.
+    setStoredProviderModel(targetProvider, resolvedModel);
+
     return {
       scope: 'session' as const,
       changed: body.data.changed === true,
-      model: body.data.model || model,
+      model: resolvedModel,
     };
   }, [setStoredProviderModel]);
 
