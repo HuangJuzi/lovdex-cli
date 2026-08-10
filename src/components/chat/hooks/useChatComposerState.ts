@@ -658,6 +658,13 @@ export function useChatComposerState({
       toolsSettings,
       skipPermissions: toolsSettings?.skipPermissions || false,
       sessionSummary: getNotificationSessionSummary(selectedSession, currentInput),
+      // Per-token streaming: have the backend (claude-sdk) opt the SDK into
+      // SDKPartialAssistantMessage so it emits stream_delta frames during
+      // generation. Without this the run produces zero live frames — the UI
+      // shows nothing until the turn completes and the transcript is refreshed
+      // over REST, which is exactly the "message doesn't move until I refresh"
+      // symptom. The backend only enables partials when this flag is set.
+      includePartialMessages: true,
     };
   }, [
     claudeModel,

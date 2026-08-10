@@ -355,7 +355,11 @@ function pruneRealtimeSupersededByServer(
       return false;
     }
 
-    if (message.id.startsWith('local_') && hasServerEchoForLocalUser(message, serverMessages)) {
+    // Optimistic user rows use `local_*` ids; a missing id (a few gateway /
+    // replay frames carry none) must not crash the merge — without this guard a
+    // single id-less frame poisons every subsequent recomputeMergedIfNeeded and
+    // the whole chat pane silently stops updating (the "no streaming" bug).
+    if ((message.id || '').startsWith('local_') && hasServerEchoForLocalUser(message, serverMessages)) {
       return false;
     }
 
@@ -403,7 +407,7 @@ function computeMerged(server: NormalizedMessage[], realtime: NormalizedMessage[
     // Optimistic user rows use `local_*` ids; once the same text exists on the
     // server-backed copy from the same send window, drop the realtime echo to
     // avoid duplicate bubbles without hiding repeated prompts from history.
-    if (message.id.startsWith('local_')) {
+    if ((message.id || '').startsWith('local_')) {
       if (hasServerEchoForLocalUser(message, server)) {
         return false;
       }
@@ -670,15 +674,31 @@ export function useSessionStore() {
   }, [getSlot, notify, seedWorkflowStateFromMessages]);
 
   /**
+   * Assigns a stable id to a realtime frame that arrived without one (a few
+   * gateway / replay frames carry no `id`). Without this the row would poison
+   * `computeMerged`, whose `message.id.startsWith('local_')` guard crashes on
+   * undefined and silently freezes the whole chat pane.
+   */
+  const ensureRealtimeId = useCallback((msg: NormalizedMessage, sessionId: string): NormalizedMessage => {
+    if (msg.id) {
+      return msg;
+    }
+    const seq = (msg as { seq?: unknown }).seq;
+    const stamp = (msg as { timestamp?: unknown }).timestamp;
+    const suffix = seq != null ? String(seq) : (stamp != null ? String(stamp) : Math.random().toString(36).slice(2, 8));
+    return { ...msg, id: `ws_${sessionId}_${suffix}` };
+  }, []);
+
+  /**
    * Append a realtime (WebSocket) message to the correct session slot.
    * This works regardless of which session is actively viewed.
    */
   const appendRealtime = useCallback((sessionId: string, msg: NormalizedMessage) => {
     const slot = getSlot(sessionId);
-    const normalizedMessage =
-      msg.sessionId === sessionId
-        ? msg
-        : { ...msg, sessionId };
+    const normalizedMessage = ensureRealtimeId(
+      msg.sessionId === sessionId ? msg : { ...msg, sessionId },
+      sessionId,
+    );
     let updated = [...slot.realtimeMessages, normalizedMessage];
     if (updated.length > MAX_REALTIME_MESSAGES) {
       updated = updated.slice(-MAX_REALTIME_MESSAGES);
@@ -686,7 +706,7 @@ export function useSessionStore() {
     slot.realtimeMessages = updated;
     recomputeMergedIfNeeded(slot);
     notify(sessionId);
-  }, [getSlot, notify]);
+  }, [getSlot, notify, ensureRealtimeId]);
 
   /**
    * Append multiple realtime messages at once (batch).
@@ -694,11 +714,10 @@ export function useSessionStore() {
   const appendRealtimeBatch = useCallback((sessionId: string, msgs: NormalizedMessage[]) => {
     if (msgs.length === 0) return;
     const slot = getSlot(sessionId);
-    const normalizedMessages = msgs.map((msg) =>
-      msg.sessionId === sessionId
-        ? msg
-        : { ...msg, sessionId },
-    );
+    const normalizedMessages = msgs.map((msg) => ensureRealtimeId(
+      msg.sessionId === sessionId ? msg : { ...msg, sessionId },
+      sessionId,
+    ));
     let updated = [...slot.realtimeMessages, ...normalizedMessages];
     if (updated.length > MAX_REALTIME_MESSAGES) {
       updated = updated.slice(-MAX_REALTIME_MESSAGES);
@@ -706,7 +725,7 @@ export function useSessionStore() {
     slot.realtimeMessages = updated;
     recomputeMergedIfNeeded(slot);
     notify(sessionId);
-  }, [getSlot, notify]);
+  }, [getSlot, notify, ensureRealtimeId]);
 
   /**
    * Re-fetch serverMessages from the provider sessions endpoint.
