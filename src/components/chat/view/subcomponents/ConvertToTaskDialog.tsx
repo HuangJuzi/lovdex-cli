@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button, Dialog, DialogContent, Input } from '../../../../shared/view/ui';
 import { STATUS_META, STATUS_ORDER } from '../../../tasks/taskStatus';
@@ -28,10 +28,15 @@ export function ConvertToTaskDialog({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Seed form state whenever the dialog opens (fresh conversion or a different
-  // session). Status defaults from the running rule but is user-editable.
+  // Seed form state only when the dialog transitions to open (fresh conversion
+  // or a different session). Mid-open changes to `isRunning` / `session`
+  // (e.g. the session completes while the user is typing) must not clobber the
+  // user's edits, so this does NOT re-seed on those dep changes while open.
+  const wasOpen = useRef(false);
   useEffect(() => {
-    if (!open) return;
+    const opening = open && !wasOpen.current;
+    wasOpen.current = open;
+    if (!opening) return;
     const defaults = buildSessionToTaskPayload({ session, isRunning });
     setTitle(defaults.title);
     setDescription(defaults.description);
@@ -56,14 +61,15 @@ export function ConvertToTaskDialog({
         sessionId: session.id,
       });
       if (!res.ok) {
-        // 409 = the session is already linked (concurrent double-click /
-        // another tab). The existing link surfaces via useLinkedTask, so just
-        // close. Other errors keep the form open with a message.
-        if (res.status === 409) {
+        const body = (await res.json().catch(() => null)) as { error?: { code?: string; message?: string } } | null;
+        // 409 + SESSION_ALREADY_LINKED = the session is already linked
+        // (concurrent double-click / another tab). The existing link surfaces
+        // via useLinkedTask, so just close. Any other error (including
+        // SESSION_PROJECT_MISMATCH, also 409) keeps the form open with a message.
+        if (body?.error?.code === 'SESSION_ALREADY_LINKED') {
           onOpenChange(false);
           return;
         }
-        const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
         setError(body?.error?.message ?? `创建失败 (${res.status})`);
         return;
       }
