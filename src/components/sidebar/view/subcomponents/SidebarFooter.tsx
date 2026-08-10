@@ -1,6 +1,5 @@
-import { Settings, ArrowUpCircle, Bug, AlertTriangle, MessageSquare } from 'lucide-react';
+import { ArrowUpCircle, Bug, AlertTriangle } from 'lucide-react';
 import type { TFunction } from 'i18next';
-import { useNavigate } from 'react-router-dom';
 import { IS_PLATFORM } from '../../../../constants/config';
 import type { ReleaseInfo } from '../../../../types/sharedTypes';
 
@@ -38,7 +37,6 @@ export default function SidebarFooter({
   onShowSettings,
   t,
 }: SidebarFooterProps) {
-  const navigate = useNavigate();
   return (
     <div className="flex-shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0)' }}>
       {/* Restart-required banner: the running server version differs from the
@@ -105,31 +103,8 @@ export default function SidebarFooter({
         </>
       )}
 
-      {/* Operator Agent assistant + settings entries */}
-      <div className="nav-divider" />
-
-      <div className="px-2 py-1.5 md:px-2 md:py-1.5">
-        <button
-          className="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-primary/10"
-          onClick={() => navigate('/assistant')}
-          title="Operator 助手"
-        >
-          <MessageSquare className="h-4 w-4 flex-shrink-0 text-primary" />
-          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-primary">
-            助手
-          </span>
-        </button>
-        <button
-          className="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-muted/60"
-          onClick={() => navigate('/settings/operator')}
-          title="Operator Agent 设置"
-        >
-          <Settings className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-          <span className="min-w-0 flex-1 truncate text-sm font-normal text-foreground">
-            Operator 设置
-          </span>
-        </button>
-      </div>
+      {/* Operator Agent assistant + settings now live at the top of the sidebar
+          (SidebarAssistant), so the footer is back to version banners only. */}
 
       {/* Desktop version brand line (OSS mode only) */}
       {!IS_PLATFORM && (

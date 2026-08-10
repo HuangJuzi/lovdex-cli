@@ -14,7 +14,11 @@ import { Button } from '../../shared/view/ui';
  *  - enabled / auto_verdict_enabled / auto_move_enabled
  *  - auto_move_done（done verdict → done 列，激进）/ auto_move_only_plan_to_todo
  *  - interactive_chat_enabled
- *  - model / workspace / max_concurrent / verdict_prompt_override
+ *  - model / max_concurrent / verdict_prompt_override
+ *
+ * 工作区（workspace）由后端绑定（operator config + 环境变量默认），不在此
+ * 暴露：助手读取任务状态/进度走 operator 工具集（list_tasks 等）查 DB，
+ * 与 cwd 无关。
  */
 
 type OperatorConfig = {
@@ -24,7 +28,6 @@ type OperatorConfig = {
   auto_move_done: boolean;
   auto_move_only_plan_to_todo: boolean;
   model: string;
-  workspace: string;
   max_concurrent: number;
   verdict_prompt_override: string | null;
   interactive_chat_enabled: boolean;
@@ -37,7 +40,6 @@ const EMPTY: OperatorConfig = {
   auto_move_done: false,
   auto_move_only_plan_to_todo: true,
   model: '',
-  workspace: '',
   max_concurrent: 2,
   verdict_prompt_override: null,
   interactive_chat_enabled: true,
@@ -225,18 +227,6 @@ export function OperatorSettingsPage() {
                   placeholder="留空用默认 Claude 模型"
                   onChange={(e) => patch({ model: e.target.value })}
                 />
-              </div>
-              <div className="mb-3">
-                <label className="mb-1 block text-xs text-muted-foreground">工作区路径</label>
-                <input
-                  className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
-                  value={config.workspace}
-                  placeholder="~/.lovdex/operator-workspace"
-                  onChange={(e) => patch({ workspace: e.target.value })}
-                />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Operator session 的 cwd，应是 scratch 目录而非业务项目。
-                </p>
               </div>
               <div>
                 <label className="mb-1 block text-xs text-muted-foreground">头跑并发上限</label>

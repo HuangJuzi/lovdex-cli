@@ -8,6 +8,7 @@ import type { ReleaseInfo } from '../../../../types/sharedTypes';
 import type { ConversationSearchResults, SearchProgress } from '../../hooks/useSidebarController';
 import type { SidebarProjectFilter } from '../../types/types';
 
+import SidebarAssistant from './SidebarAssistant';
 import SidebarFooter from './SidebarFooter';
 import SidebarHeader from './SidebarHeader';
 import SidebarProjectList, { type SidebarProjectListProps } from './SidebarProjectList';
@@ -129,6 +130,8 @@ export default function SidebarContent({
         onCollapseSidebar={onCollapseSidebar}
         t={t}
       />
+
+      <SidebarAssistant />
 
       <ScrollArea className="flex-1 overflow-y-auto overscroll-contain md:px-1.5 md:py-2">
         {showConversationSearch && (
