@@ -213,10 +213,10 @@ export function TaskBoardPage() {
 
   return (
     <div className="flex h-dvh flex-col bg-background">
-      <header className="flex items-center gap-2 px-3 py-3 sm:gap-4 sm:px-6 sm:py-4">
-        <ViewSwitcher active="tasks" className="w-44 flex-shrink-0 sm:w-48" />
+      <header className="pwa-header-safe flex flex-shrink-0 items-center gap-2 border-b border-border/60 bg-background px-3 py-1.5 sm:px-4 sm:py-2">
+        <ViewSwitcher active="tasks" className="w-40 flex-shrink-0 sm:w-44" />
         <div className="ml-auto">
-          <Button size="sm" onClick={toggleCreateForm}>
+          <Button size="sm" className="h-8 px-3 text-sm" onClick={toggleCreateForm}>
             ＋ 新建任务
           </Button>
         </div>
