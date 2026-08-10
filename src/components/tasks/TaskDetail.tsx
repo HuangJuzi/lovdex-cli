@@ -113,6 +113,7 @@ export function TaskDetailPage() {
               status: next.status,
               session_id: next.session_id,
               approval_pending: next.approval_pending,
+              failed: next.failed,
               started_at: next.started_at,
               completed_at: next.completed_at,
               updated_at: next.updated_at,
@@ -352,6 +353,22 @@ export function TaskDetailPage() {
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <h4 className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">执行</h4>
+              {task.failed && task.session_id && (
+                <div className="mb-3 rounded-md border border-red-500/40 bg-red-500/10 p-3">
+                  <div className="flex items-center gap-1.5 text-sm font-semibold text-red-500">
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> 执行失败
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    任务执行出错，可以重试或打开会话查看原因。
+                  </p>
+                  <button
+                    className="mt-2 w-full rounded-md bg-primary py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                    onClick={() => void startExecution()}
+                  >
+                    ↻ 重试
+                  </button>
+                </div>
+              )}
               {task.approval_pending && task.session_id && (
                 <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
                   <div className="flex items-center gap-1.5 text-sm font-semibold text-amber-500">

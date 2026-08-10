@@ -97,6 +97,13 @@ export interface Task {
    * marker that fired while this tab was closed still reappears.
    */
   approval_pending?: boolean;
+  /**
+   * Realtime-only flag (server-decorated, never persisted): true when the task
+   * reads as in_progress but its linked session has no live run (failed /
+   * orphaned run). Drives the board/detail "失败" badge + retry, reconstructed
+   * on list load and WS reconnect like `approval_pending`.
+   */
+  failed?: boolean;
 }
 
 export interface TaskUpsertedEvent {

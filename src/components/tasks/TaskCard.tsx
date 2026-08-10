@@ -68,9 +68,15 @@ export const TaskCard = memo(function TaskCard({
         {timeLabel.label} {formatRelativeTime(timeLabel.iso, now)}
       </div>
 
-      {/* Session/approval indicator */}
+      {/* Session/approval/failure indicator. A failed task keeps its
+          in_progress slot but swaps the running/approval badges for a red
+          "执行失败" badge so it never reads as actively running. */}
       {task.session_id && sessionState === 'running' && (
-        waitingApproval ? (
+        task.failed ? (
+          <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-red-500">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> 执行失败
+          </div>
+        ) : waitingApproval ? (
           <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-amber-500">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" /> 等你批准
           </div>
@@ -97,6 +103,17 @@ export const TaskCard = memo(function TaskCard({
             className="min-h-9 min-w-0 flex-1 rounded-md bg-primary py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:min-h-0"
           >
             ▶ 开始执行
+          </button>
+        )}
+        {task.failed && onStart && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onStart();
+            }}
+            className="min-h-9 min-w-0 flex-1 rounded-md bg-primary py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:min-h-0"
+          >
+            ↻ 重试
           </button>
         )}
         {task.status === 'in_review' && (
