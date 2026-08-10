@@ -373,7 +373,13 @@ export function useChatComposerState({
         const context = {
           projectPath: selectedProject.fullPath || selectedProject.path,
           projectId: selectedProject.projectId,
-          sessionId: currentSessionId,
+          // Same effective-session resolution as sendMessage below: an opened
+          // session from the sidebar has its id on `selectedSession`, not on
+          // `currentSessionId` (which is only set for a just-established one).
+          // Passing only currentSessionId made /model etc. fall into the
+          // no-session branch and report the default model instead of the
+          // session's active model.
+          sessionId: selectedSession?.id || currentSessionId || null,
           provider,
           model: provider === 'cursor'
             ? cursorModel
@@ -440,6 +446,7 @@ export function useChatComposerState({
       input,
       provider,
       selectedProject,
+      selectedSession?.id,
       addMessage,
       tokenBudget,
     ],
