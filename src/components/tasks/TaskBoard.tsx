@@ -46,6 +46,26 @@ export function TaskBoardPage() {
     () => new Set(tasks.filter((t) => t.approval_pending).map((t) => t.task_id)),
     [tasks],
   );
+
+  // Whether the Operator Agent is enabled — gates the classified wait-reason
+  // display (等你回答/等你确认计划/等你批准) vs the generic 待审批. Fetched once;
+  // if the request fails the board falls back to the generic label, which is
+  // the pre-operator behavior.
+  const [operatorEnabled, setOperatorEnabled] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    api.operator
+      .settings()
+      .then(async (res) => {
+        if (!res.ok) return;
+        const cfg = (await res.json()) as { enabled?: boolean };
+        if (!cancelled) setOperatorEnabled(Boolean(cfg.enabled));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const groups = useMemo(() => groupByStatus(tasks), [tasks]);
 
   // Create-task form state.
@@ -341,6 +361,7 @@ export function TaskBoardPage() {
                     key={task.task_id}
                     task={task}
                     waitingApproval={approvalTaskIds.has(task.task_id)}
+                    operatorEnabled={operatorEnabled}
                     onStart={() => runTask(task)}
                     onStatusChange={(s) => updateStatus(task, s)}
                     onOpenSession={() => task.session_id && navigate(`/session/${task.session_id}`)}

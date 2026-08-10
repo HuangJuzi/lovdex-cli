@@ -31,6 +31,7 @@ export function TaskDetailPage() {
   // cancel/failure).
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectPath, setProjectPath] = useState('');
+  const [operatorEnabled, setOperatorEnabled] = useState(false);
   const resultSeq = useRef(0);
 
   const load = useCallback(async () => {
@@ -90,6 +91,23 @@ export function TaskDetailPage() {
         if (!cancelled) setProjects(list);
       })
       .catch((err) => console.error('load projects for task detail failed', err));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Whether the Operator Agent is enabled — gates the classified wait-reason
+  // label (等你回答/等你确认计划/等你批准) vs the generic 待审批 in the approval block.
+  useEffect(() => {
+    let cancelled = false;
+    api.operator
+      .settings()
+      .then(async (res) => {
+        if (!res.ok) return;
+        const cfg = (await res.json()) as { enabled?: boolean };
+        if (!cancelled) setOperatorEnabled(Boolean(cfg.enabled));
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -158,6 +176,7 @@ export function TaskDetailPage() {
               status: next.status,
               session_id: next.session_id,
               approval_pending: next.approval_pending,
+              pending_tool: next.pending_tool,
               failed: next.failed,
               started_at: next.started_at,
               completed_at: next.completed_at,
@@ -499,22 +518,37 @@ export function TaskDetailPage() {
                   </button>
                 </div>
               )}
-              {task.approval_pending && task.session_id && (
-                <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
-                  <div className="flex items-center gap-1.5 text-sm font-semibold text-amber-500">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" /> 等你批准
+              {task.approval_pending && task.session_id && (() => {
+                const tool = task.pending_tool;
+                let label = '待审批';
+                let desc = '关联会话有一个待审批的权限请求，需要你处理。';
+                if (operatorEnabled) {
+                  if (tool === 'AskUserQuestion') {
+                    label = '等你回答';
+                    desc = '助手在等你回答一个问题，去会话里回复它即可继续。';
+                  } else if (tool === 'ExitPlanMode' || tool === 'exit_plan_mode') {
+                    label = '等你确认计划';
+                    desc = '助手已出 plan，等你确认后才会开始执行。';
+                  } else {
+                    label = '等你批准';
+                    desc = '关联会话有一个待审批的权限请求，需要你处理。';
+                  }
+                }
+                return (
+                  <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
+                    <div className="flex items-center gap-1.5 text-sm font-semibold text-amber-500">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" /> {label}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{desc}</p>
+                    <button
+                      className="mt-2 w-full rounded-md bg-amber-500/15 py-1.5 text-xs font-semibold text-amber-600 transition-colors hover:bg-amber-500/25 dark:text-amber-400"
+                      onClick={() => navigate(`/session/${task.session_id}`)}
+                    >
+                      去处理
+                    </button>
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    关联会话有一个待审批的权限请求，需要你处理。
-                  </p>
-                  <button
-                    className="mt-2 w-full rounded-md bg-amber-500/15 py-1.5 text-xs font-semibold text-amber-600 transition-colors hover:bg-amber-500/25 dark:text-amber-400"
-                    onClick={() => navigate(`/session/${task.session_id}`)}
-                  >
-                    去批准
-                  </button>
-                </div>
-              )}
+                );
+              })()}
               {task.session_id ? (
                 <button
                   className="w-full rounded-md border border-primary/40 bg-primary/10 py-2 text-sm font-semibold text-primary hover:bg-primary/20"

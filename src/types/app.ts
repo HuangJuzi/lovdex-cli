@@ -103,6 +103,13 @@ export interface Task {
    */
   approval_pending?: boolean;
   /**
+   * Realtime-only (server-decorated, never persisted): the toolName the linked
+   * session is currently waiting on when `approval_pending` is true. Lets the
+   * board classify the wait reason: AskUserQuestion→"等你回答",
+   * ExitPlanMode→"等你确认计划", other→"等你批准". Null when not pending.
+   */
+  pending_tool?: string | null;
+  /**
    * Realtime-only flag (server-decorated, never persisted): true when the task
    * reads as in_progress but its linked session has no live run (failed /
    * orphaned run). Drives the board/detail "失败" badge + retry, reconstructed

@@ -13,7 +13,35 @@ type TaskCardProps = {
   onStatusChange?: (status: TaskStatus) => void;
   onOpenSession?: () => void;
   waitingApproval?: boolean;
+  /**
+   * Whether the Operator Agent is enabled. When true, the "waiting for you"
+   * indicator is classified by the pending tool (AskUserQuestion→等你回答,
+   * ExitPlanMode→等你确认计划, other→等你批准). When false, falls back to the
+   * generic "待审批" so the board reads as before the agent existed.
+   */
+  operatorEnabled?: boolean;
 };
+
+/**
+ * Classifies what the session is waiting on, by toolName. Only used when the
+ * operator agent is enabled — without it the card shows the generic 待审批.
+ */
+function waitReasonLabel(
+  pendingTool: string | null | undefined,
+  operatorEnabled: boolean,
+): { label: string; className: string; dot: string } | null {
+  if (!pendingTool) return null;
+  if (!operatorEnabled) {
+    return { label: '待审批', className: 'text-amber-500', dot: 'bg-amber-500' };
+  }
+  if (pendingTool === 'AskUserQuestion') {
+    return { label: '等你回答', className: 'text-amber-500', dot: 'bg-amber-500' };
+  }
+  if (pendingTool === 'ExitPlanMode' || pendingTool === 'exit_plan_mode') {
+    return { label: '等你确认计划', className: 'text-indigo-500 dark:text-indigo-400', dot: 'bg-indigo-500 dark:bg-indigo-400' };
+  }
+  return { label: '等你批准', className: 'text-amber-500', dot: 'bg-amber-500' };
+}
 
 export const TaskCard = memo(function TaskCard({
   task,
@@ -21,12 +49,14 @@ export const TaskCard = memo(function TaskCard({
   onStatusChange,
   onOpenSession,
   waitingApproval = false,
+  operatorEnabled = false,
 }: TaskCardProps) {
   const navigate = useNavigate();
   const sessionState = taskSessionState(task);
   const isClaude = task.executor_provider === 'claude';
   const timeLabel = taskTimeLabel(task);
   const now = new Date();
+  const waitReason = waitingApproval ? waitReasonLabel(task.pending_tool, operatorEnabled) : null;
 
   return (
     <div
@@ -82,9 +112,9 @@ export const TaskCard = memo(function TaskCard({
           <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-red-500">
             <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> 执行失败
           </div>
-        ) : waitingApproval ? (
-          <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-amber-500">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" /> 等你批准
+        ) : waitReason ? (
+          <div className={`mt-2 flex items-center gap-1.5 text-[11px] font-semibold ${waitReason.className}`}>
+            <span className={`h-1.5 w-1.5 animate-pulse rounded-full ${waitReason.dot}`} /> {waitReason.label}
           </div>
         ) : (
           <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-primary">
