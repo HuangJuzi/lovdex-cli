@@ -244,10 +244,13 @@ function ModelsContent({
 }) {
   const [query, setQuery] = useState('');
   const [changingModel, setChangingModel] = useState<string | null>(null);
-  const [pendingSessionModel, setPendingSessionModel] = useState<string | null>(null);
+  // The model the panel treats as active. Init from the snapshot but update it
+  // immediately on a successful selection, so the modal reflects the switch
+  // right away instead of waiting for the next response to run and the
+  // transcript to catch up.
+  const [activeModel, setActiveModel] = useState<string>(data?.current?.model || 'Unknown');
   const [selectionNotice, setSelectionNotice] = useState<string | null>(null);
   const currentProvider = (data?.current?.provider || 'claude') as LLMProvider;
-  const currentModel = data?.current?.model || 'Unknown';
   const providerLabel = data?.current?.providerLabel || getProviderLabel(currentProvider);
   const liveDefinition = providerModelCatalog[currentProvider];
   const availableOptions = useMemo<ModelOption[]>(() => {
@@ -281,14 +284,16 @@ function ModelsContent({
     setChangingModel(model);
     try {
       const result = await onSelectProviderModel(currentProvider, model, currentSessionId);
-      if (result.scope === 'session') {
-        setPendingSessionModel(result.model);
-        setSelectionNotice(`Next response will resume with ${result.model}.`);
-        return;
-      }
-
-      setPendingSessionModel(null);
-      setSelectionNotice(`Default ${providerLabel} model set to ${result.model}.`);
+      // The backend has accepted the change (wrote it to the session's pending
+      // model) — promote it to "active" in this panel immediately. It will
+      // take effect on the next response; the notice says so without keeping
+      // the selection in a "pending" state.
+      setActiveModel(result.model);
+      setSelectionNotice(
+        result.scope === 'session'
+          ? `Switched to ${result.model} — will apply from the next response.`
+          : `Default ${providerLabel} model set to ${result.model}.`,
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to change the model right now.';
       setSelectionNotice(message);
@@ -306,12 +311,7 @@ function ModelsContent({
             Active model · {providerLabel}
           </p>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-            <span className="break-all font-mono text-sm font-semibold text-foreground">{currentModel}</span>
-            {pendingSessionModel && pendingSessionModel !== currentModel && (
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-500 dark:text-emerald-400">
-                → {pendingSessionModel} next
-              </span>
-            )}
+            <span className="break-all font-mono text-sm font-semibold text-foreground">{activeModel}</span>
           </p>
         </div>
         <Button
@@ -336,8 +336,7 @@ function ModelsContent({
         <div className="scrollbar-thin -mr-1 min-h-0 flex-1 overflow-y-auto pr-1">
           <div className="grid gap-2 md:grid-cols-2">
             {filteredOptions.map((option, index) => {
-              const isCurrent = option.value === currentModel;
-              const isPendingSelection = option.value === pendingSessionModel;
+              const isCurrent = option.value === activeModel;
               const isChanging = option.value === changingModel;
               return (
                 <button
@@ -349,9 +348,7 @@ function ModelsContent({
                   className={`settings-content-enter group flex min-h-[4rem] flex-col rounded-2xl border p-3 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:opacity-60 ${
                     isCurrent
                       ? 'border-primary/45 bg-primary/10'
-                      : isPendingSelection
-                        ? 'border-emerald-500/35 bg-emerald-500/10'
-                        : 'border-border/70 bg-background/80 hover:border-primary/30 hover:bg-background'
+                      : 'border-border/70 bg-background/80 hover:border-primary/30 hover:bg-background'
                   }`}
                   style={{ animationDelay: `${Math.min(index * 14, 180)}ms` }}
                 >
@@ -371,11 +368,6 @@ function ModelsContent({
                   )}
                   {isCurrent && (
                     <span className="mt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">Current selection</span>
-                  )}
-                  {isPendingSelection && !isCurrent && (
-                    <span className="mt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-500 dark:text-emerald-400">
-                      Applies next response
-                    </span>
                   )}
                 </button>
               );
