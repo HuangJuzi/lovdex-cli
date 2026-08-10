@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useWebSocket } from '../../contexts/WebSocketContext';
 import { api } from '../../utils/api';
-import type { Task, TaskStatus, TaskUpsertedEvent } from '../../types/app';
+import type { Project, Task, TaskStatus, TaskUpsertedEvent } from '../../types/app';
 
 import { buildTaskChatSend } from './taskExecution';
 import { TaskResultPanel } from './TaskResultPanel';
@@ -25,6 +25,11 @@ export function TaskDetailPage() {
   const savingRef = useRef(false);
   const [resultState, setResultState] = useState<TaskResultState>('idle');
   const [resultContent, setResultContent] = useState('');
+  // Project selector for backlog/todo tasks. `projects` mirrors the TaskBoard
+  // create-form dropdown; `projectPath` is the pending selection (reverted on
+  // cancel/failure).
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [projectPath, setProjectPath] = useState('');
   const resultSeq = useRef(0);
 
   const load = useCallback(async () => {
@@ -49,6 +54,45 @@ export function TaskDetailPage() {
       if (seq === loadSeq.current) setLoadError(true);
     }
   }, [taskId]);
+
+  const projectPathOf = (project: Project): string => project.fullPath || project.path || '';
+
+  // `displayName` can collide across projects while the path stays unique — the
+  // same disambiguation the TaskBoard create form uses.
+  const duplicateProjectNames = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const project of projects) {
+      const name = project.displayName || projectPathOf(project);
+      counts.set(name, (counts.get(name) ?? 0) + 1);
+    }
+    return new Set(
+      Array.from(counts.entries())
+        .filter(([, count]) => count > 1)
+        .map(([name]) => name),
+    );
+  }, [projects]);
+
+  // Keep the pending selection in sync with the task's actual project.
+  useEffect(() => {
+    if (task) setProjectPath(task.project_path);
+  }, [task?.project_path]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.projects()
+      .then(async (res) => {
+        if (!res.ok) return [];
+        const data = (await res.json()) as Project[];
+        return Array.isArray(data) ? data : [];
+      })
+      .then((list) => {
+        if (!cancelled) setProjects(list);
+      })
+      .catch((err) => console.error('load projects for task detail failed', err));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const loadResult = useCallback(async (sessionId: string) => {
     const seq = ++resultSeq.current;
@@ -208,6 +252,32 @@ export function TaskDetailPage() {
     }
   }
 
+  async function changeProject(nextPath: string) {
+    if (!task || nextPath === task.project_path) return;
+    const previous = task.project_path;
+    if (task.session_id) {
+      const ok = window.confirm('修改项目将删除当前会话及其全部对话记录，此操作不可恢复。是否继续？');
+      if (!ok) {
+        setProjectPath(previous);
+        return;
+      }
+    }
+    setProjectPath(nextPath);
+    try {
+      const res = await api.tasks.update(task.task_id, { projectPath: nextPath });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        console.error('changeProject failed', err?.error?.message ?? res.status);
+        setProjectPath(previous);
+        return;
+      }
+      setTask(await res.json());
+    } catch (err) {
+      console.error('changeProject failed', err);
+      setProjectPath(previous);
+    }
+  }
+
   if (loadError) {
     return (
       <div className="flex h-dvh flex-col items-center justify-center gap-3 bg-background">
@@ -321,7 +391,27 @@ export function TaskDetailPage() {
               </div>
               <div className="mb-3">
                 <div className="mb-1 text-xs text-muted-foreground">所属项目</div>
-                <div className="text-sm text-foreground">{task.project_path}</div>
+                {task.status === 'backlog' || task.status === 'todo' ? (
+                  <select
+                    className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                    value={projectPath}
+                    onChange={(e) => void changeProject(e.target.value)}
+                  >
+                    {projects.map((project) => {
+                      const path = projectPathOf(project);
+                      const name = project.displayName || path;
+                      const label =
+                        duplicateProjectNames.has(name) && name !== path ? `${name} — ${path}` : name;
+                      return (
+                        <option key={project.projectId} value={path} title={path}>
+                          {label}
+                        </option>
+                      );
+                    })}
+                  </select>
+                ) : (
+                  <div className="text-sm text-foreground">{task.project_path}</div>
+                )}
               </div>
               <div>
                 <div className="mb-1 text-xs text-muted-foreground">执行引擎</div>
