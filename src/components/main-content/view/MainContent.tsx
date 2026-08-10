@@ -9,6 +9,7 @@ import { FilePreviewModal } from '../../file-preview/FilePreviewModal';
 import { useUiPreferences } from '../../../hooks/useUiPreferences';
 import { STATUS_META } from '../../tasks/taskStatus';
 import { ViewSwitcher } from '../../tasks/ViewSwitcher';
+import { ConvertToTaskDialog } from '../../chat/view/subcomponents/ConvertToTaskDialog';
 
 import MobileMenuButton from './subcomponents/MobileMenuButton';
 import MainContentTitle from './subcomponents/MainContentTitle';
@@ -45,6 +46,8 @@ function MainContent({
 
   const navigate = useNavigate();
   const { task: linkedTask } = useLinkedTask(selectedSession?.id ?? null);
+  const [convertOpen, setConvertOpen] = useState(false);
+  const sessionRunning = selectedSession ? processingSessions.has(selectedSession.id) : false;
 
   // Resolve bare/partial refs (e.g. `foo.ts`) against the project file tree,
   // then open the read-only preview modal.
@@ -64,6 +67,16 @@ function MainContent({
             selectedSession={selectedSession}
             shouldShowTasksTab={false}
           />
+        )}
+        {selectedProject && selectedSession && !linkedTask && (
+          <button
+            type="button"
+            onClick={() => setConvertOpen(true)}
+            className="ml-auto flex h-8 flex-shrink-0 items-center gap-1.5 rounded-md border border-border/60 bg-card px-3 text-sm text-foreground transition-colors hover:bg-accent"
+            title="转为任务"
+          >
+            转为任务
+          </button>
         )}
         {selectedProject && linkedTask && (
           <button
@@ -128,6 +141,14 @@ function MainContent({
         projectId={selectedProject?.projectId}
         filePath={preview?.filePath}
         line={preview?.line}
+      />
+
+      <ConvertToTaskDialog
+        session={selectedSession}
+        projectPath={selectedProject?.fullPath ?? ''}
+        isRunning={sessionRunning}
+        open={convertOpen}
+        onOpenChange={setConvertOpen}
       />
     </div>
   );
