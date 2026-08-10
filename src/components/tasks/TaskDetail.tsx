@@ -330,7 +330,7 @@ export function TaskDetailPage() {
           </button>
         </div>
       </header>
-      <div className="mx-auto max-w-3xl px-4 py-6 sm:p-8">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:p-8">
         <div className="mt-4 flex flex-wrap items-start gap-3">
           <span
             className="mt-2 h-3 w-3 shrink-0 rounded-full"

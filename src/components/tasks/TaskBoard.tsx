@@ -252,7 +252,7 @@ export function TaskBoardPage() {
             onChange={(e) => setNewName(e.target.value)}
           />
           <select
-            className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-auto"
+            className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-64"
             value={newProjectPath}
             onChange={(e) => setNewProjectPath(e.target.value)}
           >
@@ -270,15 +270,15 @@ export function TaskBoardPage() {
             })}
           </select>
           <select
-            className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-auto"
+            className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-40"
             value={newEngine}
             onChange={(e) => setNewEngine(e.target.value as TaskEngine)}
           >
-            <option value="claude">Claude</option>
+            <option value="claude">Claude Code</option>
             <option value="codex">Codex</option>
           </select>
           <select
-            className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-auto"
+            className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-56"
             value={newModel}
             onChange={(e) => setNewModel(e.target.value)}
             disabled={models.length === 0}
@@ -314,11 +314,11 @@ export function TaskBoardPage() {
           </button>
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-2 pb-3 sm:flex-row sm:gap-3 sm:overflow-x-auto sm:overflow-y-hidden sm:px-4 sm:pb-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-2 pb-3 sm:flex-row sm:justify-[safe_center] sm:gap-3 sm:overflow-x-auto sm:overflow-y-hidden sm:px-4 sm:pb-4">
           {STATUS_ORDER.map((status) => (
             <div
               key={status}
-              className="flex w-full flex-col rounded-xl border border-border bg-muted/30 sm:w-64 sm:shrink-0"
+              className="flex w-full flex-col rounded-xl border border-border bg-muted/30 sm:min-w-64 sm:flex-1 sm:max-w-md"
             >
               <div className="flex items-center gap-2 px-3 py-2.5">
                 <span
