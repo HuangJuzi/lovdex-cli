@@ -259,7 +259,7 @@ function ChatInterface({
       type: 'chat.send',
       sessionId: sid,
       content: `请用 scriptPath \`${scriptPath}\` 重跑这个 workflow(不带 resumeFromRunId)。`,
-      options: {},
+      options: { includePartialMessages: true },
     });
   }, [currentSessionId, selectedSession, sendMessage]);
 
@@ -270,7 +270,7 @@ function ChatInterface({
       type: 'chat.send',
       sessionId: sid,
       content: `请用 scriptPath \`${scriptPath}\` 和 resumeFromRunId \`${runId}\` 续跑这个 workflow。`,
-      options: {},
+      options: { includePartialMessages: true },
     });
   }, [currentSessionId, selectedSession, sendMessage]);
 
@@ -293,7 +293,7 @@ function ChatInterface({
         type: 'chat.send',
         sessionId: sid,
         content: `请编辑 workflow 脚本 \`${scriptPath}\` 并(如合理)用 scriptPath 重跑。${snippet}`,
-        options: {},
+        options: { includePartialMessages: true },
       });
     })();
   }, [currentSessionId, selectedSession, sendMessage]);

@@ -22,6 +22,13 @@ export type TaskChatSend = {
     toolsSettings: ToolsSettings;
     skipPermissions: boolean;
     sessionSummary: string;
+    /**
+     * Opt the provider runtime into per-token streaming (SDKPartialAssistantMessage)
+     * exactly like the chat composer's `buildSendOptions`. Without this a task run
+     * produces ZERO `stream_delta` frames — the session looks frozen ("消息不会动")
+     * until the turn completes and the transcript is re-fetched over REST.
+     */
+    includePartialMessages: boolean;
   };
 };
 
@@ -93,6 +100,7 @@ export function buildTaskChatSend(sessionId: string, task: Task, content?: strin
       toolsSettings,
       skipPermissions: toolsSettings.skipPermissions ?? false,
       sessionSummary: task.title,
+      includePartialMessages: true,
     },
   };
 }

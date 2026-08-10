@@ -60,6 +60,24 @@ const useWebSocketProviderState = (): WebSocketContextType => {
   const unmountedRef = useRef(false); // Track if component is unmounted
   const hasConnectedRef = useRef(false); // Track if we've ever connected (to detect reconnects)
   /**
+   * The most recently created socket. Unlike `wsRef` (only set once the socket
+   * is OPEN), this is assigned synchronously when a socket is constructed, so
+   * the effect cleanup can close a socket that is still CONNECTING.
+   *
+   * Why this matters: React.StrictMode in dev double-mounts this provider
+   * (mount -> cleanup -> mount). The first mount's `connect()` constructs a
+   * socket, but `wsRef.current` is only assigned in `onopen` — which fires
+   * *after* the synchronous cleanup. So the old cleanup's `wsRef.current.close()`
+   * was a no-op and the first socket leaked, remaining connected forever.
+   *
+   * A leaked socket that stays subscribed to a running chat session keeps the
+   * backend's fan-out Set attached to it instead of the live socket the user is
+   * actually looking at. The visible tab then misses every `stream_delta` (text
+   * never moves) and the terminal `complete` (the session stays "processing", so
+   * the composer queues input until a manual refresh) — exactly the two symptoms.
+   */
+  const activeSocketRef = useRef<WebSocket | null>(null);
+  /**
    * Listener registry for the subscribe API. A ref (not state) because the
    * set must be readable synchronously inside `onmessage` and never trigger
    * re-renders of the provider tree.
@@ -88,9 +106,9 @@ const useWebSocketProviderState = (): WebSocketContextType => {
   }, []);
 
   useEffect(() => {
-    // The cleanup below sets unmountedRef = true. Without this reset, a re-run
-    // of the effect would short-circuit connect() at its unmounted guard and
-    // leave the socket permanently disconnected.
+    // The cleanup below closes the socket for this effect run. Without this
+    // reset, a re-run of the effect would short-circuit connect() at its
+    // unmounted guard and leave the socket permanently disconnected.
     unmountedRef.current = false;
     connect();
 
@@ -99,8 +117,12 @@ const useWebSocketProviderState = (): WebSocketContextType => {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
-      if (wsRef.current) {
-        wsRef.current.close();
+      // Close the socket for THIS effect run, even if it is still CONNECTING
+      // (wsRef is only set in onopen, so it can be null here). See the
+      // activeSocketRef comment — this is what stops the StrictMode leak.
+      if (activeSocketRef.current) {
+        activeSocketRef.current.close();
+        activeSocketRef.current = null;
       }
     };
   }, []);
@@ -111,8 +133,17 @@ const useWebSocketProviderState = (): WebSocketContextType => {
       const wsUrl = buildWebSocketUrl();
 
       const websocket = new WebSocket(wsUrl);
+      activeSocketRef.current = websocket;
 
       websocket.onopen = () => {
+        // A newer socket superseded this one (StrictMode remount, or a
+        // reconnect raced an existing socket). Never activate a stale socket —
+        // activating it would make sends go to a socket the backend no longer
+        // associates with this view, and leak the extra connection.
+        if (activeSocketRef.current !== websocket) {
+          try { websocket.close(); } catch { /* ignore */ }
+          return;
+        }
         dbg('WS onopen');
         setIsConnected(true);
         wsRef.current = websocket;
@@ -143,9 +174,16 @@ const useWebSocketProviderState = (): WebSocketContextType => {
       };
 
       websocket.onclose = () => {
+        // A stale socket closing (e.g. this one was superseded by a remount)
+        // must not tear down the live connection or schedule a redundant
+        // reconnect — only the current socket owns the lifecycle.
+        if (activeSocketRef.current !== websocket) {
+          return;
+        }
         dbg('WS onclose -> reconnect in 3s');
         setIsConnected(false);
         wsRef.current = null;
+        activeSocketRef.current = null;
 
         // Attempt to reconnect after 3 seconds
         reconnectTimeoutRef.current = setTimeout(() => {

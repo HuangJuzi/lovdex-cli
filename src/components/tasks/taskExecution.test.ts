@@ -44,6 +44,14 @@ test('buildTaskChatSend defaults content to the task prompt', () => {
   assert.equal(frame.content, '把登录页 500 报错修好');
 });
 
+test('buildTaskChatSend opts into live stream_delta streaming', () => {
+  const frame = buildTaskChatSend('s1', task);
+  // Without this flag the backend never emits stream_delta frames, so a task run
+  // shows no live progress in the chat view until it completes and the transcript
+  // is re-fetched over REST — the "消息不会动" symptom.
+  assert.equal(frame.options.includePartialMessages, true);
+});
+
 test('buildTaskChatSend sends TASK_RETRY_MESSAGE when provided as content', () => {
   const frame = buildTaskChatSend('s1', task, TASK_RETRY_MESSAGE);
   assert.equal(frame.sessionId, 's1');
