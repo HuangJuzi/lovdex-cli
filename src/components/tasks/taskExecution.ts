@@ -61,19 +61,32 @@ export function taskPromptOf(task: Pick<Task, 'description' | 'title'>): string 
 }
 
 /**
- * Build the `chat.send` frame that starts a task's agent run on its linked
- * session. Sent over the board/detail's existing socket so execution begins in
- * place — the run streams and persists server-side exactly like an interactive
- * chat, and can be watched later by opening the session. Permission mode is the
- * default (ask): any prompt surfaces as the board's "等你批准" marker until the
- * user opens the session to decide.
+ * The message sent into an existing session when the user hits "重试" on a
+ * failed task. Deliberately does NOT re-send the task prompt — the session
+ * transcript already carries it and the prior attempt; the agent resumes with
+ * that context. Wording covers both "interrupted without an error in the
+ * transcript" (crash/kill/restart) and "errored with the error recorded".
  */
-export function buildTaskChatSend(sessionId: string, task: Task): TaskChatSend {
+export const TASK_RETRY_MESSAGE = '上次执行中断/出错了，请重试继续完成';
+
+/**
+ * Build the `chat.send` frame that runs a task on its linked session. Sent over
+ * the board/detail's existing socket so execution begins in place — the run
+ * streams and persists server-side exactly like an interactive chat, and can be
+ * watched later by opening the session. Permission mode is the default (ask):
+ * any prompt surfaces as the board's "等你批准" marker until the user opens the
+ * session to decide.
+ *
+ * `content` defaults to the task's execution prompt (`taskPromptOf`). Retry
+ * passes `TASK_RETRY_MESSAGE` instead so the agent continues the existing
+ * conversation rather than restarting from scratch.
+ */
+export function buildTaskChatSend(sessionId: string, task: Task, content?: string): TaskChatSend {
   const toolsSettings = readToolsSettings(task.executor_provider);
   return {
     type: 'chat.send',
     sessionId,
-    content: taskPromptOf(task),
+    content: content ?? taskPromptOf(task),
     options: {
       model: task.executor_model || undefined,
       permissionMode: 'default',
