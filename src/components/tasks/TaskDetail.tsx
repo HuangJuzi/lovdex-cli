@@ -11,6 +11,7 @@ import { pickLastAssistantText } from './taskResult';
 import type { TaskResultState } from './taskResult';
 import { STATUS_META, STATUS_ORDER } from './taskStatus';
 import { formatAbsoluteTime } from './taskTimestamp';
+import { ViewSwitcher } from './ViewSwitcher';
 
 export function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -224,8 +225,9 @@ export function TaskDetailPage() {
 
   return (
     <div className="h-dvh overflow-y-auto bg-background">
-      <div className="mx-auto max-w-3xl px-4 py-6 sm:p-8">
-        <div className="flex flex-wrap items-center gap-2">
+      <header className="pwa-header-safe sticky top-0 z-10 flex flex-shrink-0 items-center gap-2 border-b border-border/60 bg-background px-3 py-1.5 sm:px-4 sm:py-2">
+        <ViewSwitcher active="tasks" className="w-40 flex-shrink-0 sm:w-44" />
+        <div className="ml-auto flex flex-shrink-0 items-center gap-2">
           <button
             className="text-sm text-muted-foreground hover:text-foreground"
             onClick={() => navigate('/tasks')}
@@ -240,6 +242,8 @@ export function TaskDetailPage() {
             返回主页
           </button>
         </div>
+      </header>
+      <div className="mx-auto max-w-3xl px-4 py-6 sm:p-8">
         <div className="mt-4 flex flex-wrap items-start gap-3">
           <span
             className="mt-2 h-3 w-3 shrink-0 rounded-full"
