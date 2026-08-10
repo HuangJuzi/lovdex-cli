@@ -5,7 +5,7 @@ import { useWebSocket } from '../../contexts/WebSocketContext';
 import { api } from '../../utils/api';
 import type { Project, Task, TaskStatus, TaskUpsertedEvent } from '../../types/app';
 
-import { buildTaskChatSend } from './taskExecution';
+import { buildTaskChatSend, TASK_RETRY_MESSAGE } from './taskExecution';
 import { TaskResultPanel } from './TaskResultPanel';
 import { pickLastAssistantText } from './taskResult';
 import type { TaskResultState } from './taskResult';
@@ -252,6 +252,22 @@ export function TaskDetailPage() {
     }
   }
 
+  /**
+   * Retry a failed task in its existing session: send the retry message over
+   * the socket so the agent resumes with the full conversation context, instead
+   * of `startExecution` which would create a brand-new session and orphan the
+   * old one. Defensive fallback to `startExecution` if the task somehow has no
+   * session (the retry button only renders when `session_id` is set).
+   */
+  function retryTask() {
+    if (!task) return;
+    if (task.session_id) {
+      sendMessage(buildTaskChatSend(task.session_id, task, TASK_RETRY_MESSAGE));
+      return;
+    }
+    void startExecution();
+  }
+
   async function changeProject(nextPath: string) {
     if (!task || nextPath === task.project_path) return;
     const previous = task.project_path;
@@ -453,7 +469,7 @@ export function TaskDetailPage() {
                   </p>
                   <button
                     className="mt-2 w-full rounded-md bg-primary py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
-                    onClick={() => void startExecution()}
+                    onClick={() => retryTask()}
                   >
                     ↻ 重试
                   </button>
