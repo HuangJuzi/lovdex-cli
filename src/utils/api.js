@@ -243,6 +243,16 @@ export const api = {
     bySession: (sessionId) => authenticatedFetch(`/api/tasks/by-session/${encodeURIComponent(sessionId)}`),
   },
 
+  // Operator Agent configuration (auto-verdict, auto-move, model, concurrency).
+  operator: {
+    settings: () => authenticatedFetch('/api/operator/settings'),
+    updateSettings: (body) =>
+      authenticatedFetch('/api/operator/settings', {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      }),
+  },
+
   // Browse filesystem for project suggestions
   browseFilesystem: (dirPath = null) => {
     const params = new URLSearchParams();
