@@ -1,0 +1,32 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import { buildSessionToTaskPayload } from './convertToTaskPayload';
+import type { ProjectSession } from '../../../../types/app';
+
+function makeSession(overrides: Partial<ProjectSession> = {}): ProjectSession {
+  return { id: 's1', ...overrides };
+}
+
+test('running session defaults to in_progress, idle session to todo', () => {
+  assert.equal(buildSessionToTaskPayload({ session: makeSession(), isRunning: true }).status, 'in_progress');
+  assert.equal(buildSessionToTaskPayload({ session: makeSession(), isRunning: false }).status, 'todo');
+});
+
+test('title falls back through custom_name → summary', () => {
+  const p = buildSessionToTaskPayload({ session: makeSession({ custom_name: '自定义名', summary: '自动摘要' }), isRunning: false });
+  assert.equal(p.title, '自定义名');
+  const q = buildSessionToTaskPayload({ session: makeSession({ summary: '自动摘要' }), isRunning: false });
+  assert.equal(q.title, '自动摘要');
+});
+
+test('description defaults to summary', () => {
+  const p = buildSessionToTaskPayload({ session: makeSession({ summary: 's' }), isRunning: false });
+  assert.equal(p.description, 's');
+});
+
+test('provider kept when a task engine, else falls back to claude', () => {
+  assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'codex' }), isRunning: false }).executorProvider, 'codex');
+  assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'opencode' }), isRunning: false }).executorProvider, 'claude');
+  assert.equal(buildSessionToTaskPayload({ session: makeSession({}), isRunning: false }).executorProvider, 'claude');
+});
