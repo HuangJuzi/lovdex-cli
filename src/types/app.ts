@@ -74,6 +74,7 @@ export interface Project {
 }
 
 export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'done';
+export type TaskVerdict = 'done' | 'only_plan' | 'needs_review' | 'blocked';
 export type TaskEngine = 'claude' | 'codex';
 
 export interface Task {
@@ -88,6 +89,10 @@ export interface Task {
   session_id: string | null;
   started_at: string | null;
   completed_at: string | null;
+  ai_summary: string | null;
+  verdict: TaskVerdict | null;
+  verdict_reason: string | null;
+  verdict_at: string | null;
   created_at: string;
   updated_at: string;
   /**

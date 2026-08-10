@@ -11,6 +11,7 @@ import { pickLastAssistantText } from './taskResult';
 import type { TaskResultState } from './taskResult';
 import { STATUS_META, STATUS_ORDER } from './taskStatus';
 import { formatAbsoluteTime } from './taskTimestamp';
+import { VerdictBadge } from './VerdictBadge';
 import { ViewSwitcher } from './ViewSwitcher';
 
 export function TaskDetailPage() {
@@ -160,6 +161,10 @@ export function TaskDetailPage() {
               failed: next.failed,
               started_at: next.started_at,
               completed_at: next.completed_at,
+              ai_summary: next.ai_summary,
+              verdict: next.verdict,
+              verdict_reason: next.verdict_reason,
+              verdict_at: next.verdict_at,
               updated_at: next.updated_at,
             }
           : prev,
@@ -389,6 +394,25 @@ export function TaskDetailPage() {
             />
           </div>
           <div className="flex flex-col gap-3">
+            {task.verdict && (
+              <div className="rounded-lg border border-border bg-card p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <h4 className="text-xs uppercase tracking-wide text-muted-foreground">AI 判定</h4>
+                  <VerdictBadge verdict={task.verdict} />
+                </div>
+                {task.ai_summary && (
+                  <p className="text-sm text-foreground">{task.ai_summary}</p>
+                )}
+                {task.verdict_reason && (
+                  <p className="mt-1 text-xs text-muted-foreground">理由：{task.verdict_reason}</p>
+                )}
+                {task.verdict_at && (
+                  <p className="mt-2 text-xs text-muted-foreground/70">
+                    {formatAbsoluteTime(task.verdict_at)}
+                  </p>
+                )}
+              </div>
+            )}
             <div className="rounded-lg border border-border bg-card p-4">
               <h4 className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">属性</h4>
               <div className="mb-3">

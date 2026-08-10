@@ -5,6 +5,7 @@ import type { Task, TaskStatus } from '../../types/app';
 
 import { STATUS_META, taskSessionState } from './taskStatus';
 import { formatAbsoluteTime, formatRelativeTime, taskTimeLabel } from './taskTimestamp';
+import { VerdictBadge } from './VerdictBadge';
 
 type TaskCardProps = {
   task: Task;
@@ -40,9 +41,15 @@ export const TaskCard = memo(function TaskCard({
         <span className="min-w-0 flex-1 break-words text-sm font-semibold text-card-foreground">
           {task.title}
         </span>
+        <VerdictBadge verdict={task.verdict} />
       </div>
       {task.description && (
         <p className="mt-1 line-clamp-2 break-words text-xs text-muted-foreground">{task.description}</p>
+      )}
+      {task.ai_summary && (
+        <p className="mt-1 line-clamp-2 break-words text-xs text-muted-foreground/80">
+          {task.ai_summary}
+        </p>
       )}
       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
         <span className="max-w-full truncate rounded-full bg-muted px-2 py-0.5 font-medium text-muted-foreground">
