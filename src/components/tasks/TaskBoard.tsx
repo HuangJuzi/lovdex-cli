@@ -26,7 +26,7 @@ type ProviderModelsApiResponse = {
 
 import { TaskCard } from './TaskCard';
 import { ViewSwitcher } from './ViewSwitcher';
-import { buildTaskChatSend } from './taskExecution';
+import { buildTaskChatSend, TASK_RETRY_MESSAGE } from './taskExecution';
 import { deriveTaskName } from './taskName';
 import { STATUS_META, STATUS_ORDER, groupByStatus } from './taskStatus';
 
@@ -196,6 +196,20 @@ export function TaskBoardPage() {
     }
   }
 
+  /**
+   * Card "开始执行" / "重试" entry. A failed task with a linked session retries
+   * in-place: send the retry message so the agent resumes with the existing
+   * conversation context, instead of `startExecution` which would create a new
+   * session and orphan the old one. Fresh runs (no session) keep the old path.
+   */
+  function runTask(task: Task) {
+    if (task.failed && task.session_id) {
+      sendMessage(buildTaskChatSend(task.session_id, task, TASK_RETRY_MESSAGE));
+      return;
+    }
+    void startExecution(task);
+  }
+
   async function updateStatus(task: Task, status: Task['status']) {
     try {
       const res = await api.tasks.update(task.task_id, { status });
@@ -327,7 +341,7 @@ export function TaskBoardPage() {
                     key={task.task_id}
                     task={task}
                     waitingApproval={approvalTaskIds.has(task.task_id)}
-                    onStart={() => startExecution(task)}
+                    onStart={() => runTask(task)}
                     onStatusChange={(s) => updateStatus(task, s)}
                     onOpenSession={() => task.session_id && navigate(`/session/${task.session_id}`)}
                   />
