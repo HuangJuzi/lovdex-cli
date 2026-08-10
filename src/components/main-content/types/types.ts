@@ -79,7 +79,6 @@ export type MainContentHeaderProps = {
 export type MainContentStateViewProps = {
   mode: 'loading' | 'empty';
   isMobile: boolean;
-  onMenuClick: () => void;
 };
 
 export type MobileMenuButtonProps = {

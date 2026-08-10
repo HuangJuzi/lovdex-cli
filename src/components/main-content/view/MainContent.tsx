@@ -52,75 +52,71 @@ function MainContent({
     setPreview({ filePath });
   });
 
-  if (isLoading) {
-    return <MainContentStateView mode="loading" isMobile={isMobile} onMenuClick={onMenuClick} />;
-  }
-
-  if (!selectedProject) {
-    return <MainContentStateView mode="empty" isMobile={isMobile} onMenuClick={onMenuClick} />;
-  }
-
   return (
     <div className="flex h-full flex-col">
-      <div className="pwa-header-safe flex-shrink-0 border-b border-border/60 bg-background px-3 py-1.5 sm:px-4 sm:py-2">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            {isMobile && <MobileMenuButton onMenuClick={onMenuClick} />}
-            <ViewSwitcher active="chat" className="w-40 flex-shrink-0 sm:w-44" />
-            <MainContentTitle
-              activeTab={activeTab}
-              selectedProject={selectedProject}
-              selectedSession={selectedSession}
-              shouldShowTasksTab={false}
+      <header className="pwa-header-safe flex flex-shrink-0 items-center gap-2 border-b border-border/60 bg-background px-3 py-1.5 sm:px-4 sm:py-2">
+        {isMobile && <MobileMenuButton onMenuClick={onMenuClick} />}
+        <ViewSwitcher active="chat" className="w-40 flex-shrink-0 sm:w-44" />
+        {selectedProject && (
+          <MainContentTitle
+            activeTab={activeTab}
+            selectedProject={selectedProject}
+            selectedSession={selectedSession}
+            shouldShowTasksTab={false}
+          />
+        )}
+        {selectedProject && linkedTask && (
+          <button
+            type="button"
+            onClick={() => navigate(`/task/${linkedTask.task_id}`)}
+            className="ml-auto flex h-8 flex-shrink-0 items-center gap-1.5 rounded-md border border-border/60 bg-card px-3 text-sm text-foreground transition-colors hover:bg-accent"
+            title="查看任务"
+          >
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ background: STATUS_META[linkedTask.status].color }}
             />
-          </div>
-          {linkedTask && (
-            <button
-              type="button"
-              onClick={() => navigate(`/task/${linkedTask.task_id}`)}
-              className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-md border border-border/60 bg-card px-3 text-sm text-foreground transition-colors hover:bg-accent"
-              title="查看任务"
-            >
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ background: STATUS_META[linkedTask.status].color }}
-              />
-              查看任务
-            </button>
-          )}
-        </div>
-      </div>
+            查看任务
+          </button>
+        )}
+      </header>
 
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        <div className="flex min-h-0 min-w-[200px] flex-1 flex-col overflow-hidden">
-          <div className="h-full">
-            <ErrorBoundary showDetails>
-              <ChatInterface
-                selectedProject={selectedProject}
-                selectedSession={selectedSession}
-                ws={ws}
-                sendMessage={sendMessage}
-                onFileOpen={handleFileOpen}
-                onInputFocusChange={onInputFocusChange}
-                onSessionProcessing={onSessionProcessing}
-                onSessionIdle={onSessionIdle}
-                processingSessions={processingSessions}
-                onNavigateToSession={onNavigateToSession}
-                onSessionEstablished={onSessionEstablished}
-                onShowSettings={onShowSettings}
-                onResumeSession={onResumeSession}
-                onSwitchToNewSession={onSwitchToNewSession}
-                showRawParameters={showRawParameters}
-                showThinking={showThinking}
-                sendByCtrlEnter={sendByCtrlEnter}
-                externalMessageUpdate={externalMessageUpdate}
-                newSessionTrigger={newSessionTrigger}
-                onShowAllTasks={null}
-              />
-            </ErrorBoundary>
+      {isLoading ? (
+        <MainContentStateView mode="loading" isMobile={isMobile} />
+      ) : !selectedProject ? (
+        <MainContentStateView mode="empty" isMobile={isMobile} />
+      ) : (
+        <div className="flex min-h-0 flex-1 overflow-hidden">
+          <div className="flex min-h-0 min-w-[200px] flex-1 flex-col overflow-hidden">
+            <div className="h-full">
+              <ErrorBoundary showDetails>
+                <ChatInterface
+                  selectedProject={selectedProject}
+                  selectedSession={selectedSession}
+                  ws={ws}
+                  sendMessage={sendMessage}
+                  onFileOpen={handleFileOpen}
+                  onInputFocusChange={onInputFocusChange}
+                  onSessionProcessing={onSessionProcessing}
+                  onSessionIdle={onSessionIdle}
+                  processingSessions={processingSessions}
+                  onNavigateToSession={onNavigateToSession}
+                  onSessionEstablished={onSessionEstablished}
+                  onShowSettings={onShowSettings}
+                  onResumeSession={onResumeSession}
+                  onSwitchToNewSession={onSwitchToNewSession}
+                  showRawParameters={showRawParameters}
+                  showThinking={showThinking}
+                  sendByCtrlEnter={sendByCtrlEnter}
+                  externalMessageUpdate={externalMessageUpdate}
+                  newSessionTrigger={newSessionTrigger}
+                  onShowAllTasks={null}
+                />
+              </ErrorBoundary>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <FilePreviewModal
         open={preview !== null}
