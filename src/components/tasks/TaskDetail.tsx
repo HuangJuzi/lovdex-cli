@@ -397,7 +397,7 @@ export function TaskDetailPage() {
             {task.verdict && (
               <div className="rounded-lg border border-border bg-card p-4">
                 <div className="mb-2 flex items-center justify-between">
-                  <h4 className="text-xs uppercase tracking-wide text-muted-foreground">AI 判定</h4>
+                  <h4 className="text-xs uppercase tracking-wide text-muted-foreground">完成度</h4>
                   <VerdictBadge verdict={task.verdict} />
                 </div>
                 {task.ai_summary && (

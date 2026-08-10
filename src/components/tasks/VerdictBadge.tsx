@@ -5,22 +5,22 @@ const VERDICT_META: Record<
   { label: string; className: string; dot: string }
 > = {
   done: {
-    label: 'AI 判定：已完成',
+    label: '已完成',
     className: 'bg-green-500/10 text-green-600 dark:text-green-400',
     dot: 'bg-green-500',
   },
   only_plan: {
-    label: 'AI 判定：仅出计划',
+    label: '仅出计划',
     className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
     dot: 'bg-blue-500',
   },
   needs_review: {
-    label: 'AI 判定：待你判断',
+    label: '待你判断',
     className: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400',
     dot: 'bg-yellow-500',
   },
   blocked: {
-    label: 'AI 判定：已卡住',
+    label: '已卡住',
     className: 'bg-red-500/10 text-red-600 dark:text-red-400',
     dot: 'bg-red-500',
   },
