@@ -9,6 +9,8 @@ import type {
   ProviderModelOption,
   Task,
   TaskEngine,
+  TaskLabel,
+  TaskPriority,
 } from '../../types/app';
 import { api, authenticatedFetch } from '../../utils/api';
 
@@ -28,9 +30,8 @@ import { TaskCard } from './TaskCard';
 import { ViewSwitcher } from './ViewSwitcher';
 import { buildTaskChatSend, TASK_RETRY_MESSAGE } from './taskExecution';
 import { deriveTaskName } from './taskName';
-import { STATUS_META, STATUS_ORDER, groupByStatus } from './taskStatus';
-
-const projectPathOf = (project: Project): string => project.fullPath || project.path || '';
+import { ASSISTANT_OPTION_VALUE, projectPathOf, taskFormProjects } from './projectOptions';
+import { LABEL_META, LABEL_ORDER, PRIORITY_META, PRIORITY_ORDER, STATUS_META, STATUS_ORDER, groupByStatus } from './taskStatus';
 
 export function TaskBoardPage() {
   const navigate = useNavigate();
@@ -46,6 +47,10 @@ export function TaskBoardPage() {
   const [newName, setNewName] = useState('');
   const [newProjectPath, setNewProjectPath] = useState('');
   const [newEngine, setNewEngine] = useState<TaskEngine>('claude');
+  const [newPriority, setNewPriority] = useState<TaskPriority>('P2');
+  const [newDeadline, setNewDeadline] = useState('');
+  const [newLabel, setNewLabel] = useState<TaskLabel>('other');
+  const [newRemark, setNewRemark] = useState('');
   const [projects, setProjects] = useState<Project[]>([]);
   const [models, setModels] = useState<ProviderModelOption[]>([]);
   const [newModel, setNewModel] = useState('');
@@ -58,7 +63,7 @@ export function TaskBoardPage() {
   // actually repeat, so the dropdown stays clean when names are unique.
   const duplicateProjectNames = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const project of projects) {
+    for (const project of taskFormProjects(projects)) {
       const name = project.displayName || projectPathOf(project);
       counts.set(name, (counts.get(name) ?? 0) + 1);
     }
@@ -86,7 +91,8 @@ export function TaskBoardPage() {
       .then((list) => {
         if (cancelled) return;
         setProjects(list);
-        if (list.length > 0) setNewProjectPath(projectPathOf(list[0]));
+        const formProjects = taskFormProjects(list);
+        if (formProjects.length > 0) setNewProjectPath(projectPathOf(formProjects[0]));
       })
       .catch((err) => console.error('load projects for task create failed', err));
     return () => {
@@ -129,23 +135,34 @@ export function TaskBoardPage() {
   function toggleCreateForm() {
     setNewPrompt('');
     setNewName('');
+    setNewPriority('P2');
+    setNewDeadline('');
+    setNewLabel('other');
+    setNewRemark('');
     setCreating((prev) => !prev);
   }
 
   async function createTask() {
     const projectPath = newProjectPath;
     const prompt = newPrompt.trim();
-    if (!projectPath || !prompt) return;
+    const isAssistant = projectPath === ASSISTANT_OPTION_VALUE;
+    if (!isAssistant && !projectPath) return;
+    if (!prompt) return;
     // Name is optional: fall back to a locally distilled label from the prompt.
     const title = newName.trim() || deriveTaskName(prompt);
     try {
       const res = await api.tasks.create({
-        projectPath,
+        projectPath: isAssistant ? '' : projectPath,
         title,
         description: prompt,
-        executorProvider: newEngine,
-        executorModel: newModel || null,
+        executorProvider: isAssistant ? 'claude' : newEngine,
+        executorModel: isAssistant ? null : (newModel || null),
         status: 'todo',
+        priority: newPriority,
+        deadline: newDeadline || null,
+        isOperator: isAssistant,
+        label: newLabel,
+        remark: newRemark.trim() || null,
       });
       if (!res.ok) {
         const err = await res.json().catch(() => null);
@@ -155,6 +172,10 @@ export function TaskBoardPage() {
       setCreating(false);
       setNewPrompt('');
       setNewName('');
+      setNewPriority('P2');
+      setNewDeadline('');
+      setNewLabel('other');
+      setNewRemark('');
       void refresh();
     } catch (err) {
       console.error('createTask failed', err);
@@ -220,7 +241,7 @@ export function TaskBoardPage() {
       <header className="pwa-header-safe flex flex-shrink-0 items-center gap-2 border-b border-border/60 bg-background px-3 py-1.5 sm:px-4 sm:py-2">
         <ViewSwitcher active="tasks" className="w-40 flex-shrink-0 sm:w-44" />
         <div className="ml-auto">
-          <Button size="sm" className="h-8 px-3 text-sm" onClick={toggleCreateForm}>
+          <Button size="sm" className="h-8 px-3 text-sm" onClick={toggleCreateForm} disabled={creating}>
             ＋ 新建任务
           </Button>
         </div>
@@ -246,8 +267,8 @@ export function TaskBoardPage() {
             value={newProjectPath}
             onChange={(e) => setNewProjectPath(e.target.value)}
           >
-            {projects.length === 0 && <option value="">选择项目</option>}
-            {projects.map((project) => {
+            <option value={ASSISTANT_OPTION_VALUE}>🤖 Lovdex 助手</option>
+            {taskFormProjects(projects).map((project) => {
               const path = projectPathOf(project);
               const name = project.displayName || path;
               const label =
@@ -267,6 +288,36 @@ export function TaskBoardPage() {
             <option value="claude">Claude Code</option>
             <option value="codex">Codex</option>
           </select>
+          <select
+            className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-28"
+            value={newPriority}
+            onChange={(e) => setNewPriority(e.target.value as TaskPriority)}
+          >
+            {PRIORITY_ORDER.map((p) => (
+              <option key={p} value={p}>{PRIORITY_META[p].label}</option>
+            ))}
+          </select>
+          <Input
+            type="date"
+            className="h-9 w-full sm:w-40"
+            value={newDeadline}
+            onChange={(e) => setNewDeadline(e.target.value)}
+          />
+          <select
+            className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-32"
+            value={newLabel}
+            onChange={(e) => setNewLabel(e.target.value as TaskLabel)}
+          >
+            {LABEL_ORDER.map((l) => (
+              <option key={l} value={l}>{LABEL_META[l].label}</option>
+            ))}
+          </select>
+          <Input
+            className="h-9 w-full sm:w-56"
+            placeholder="备注（需求来源等，可选）"
+            value={newRemark}
+            onChange={(e) => setNewRemark(e.target.value)}
+          />
           <select
             className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-56"
             value={newModel}
