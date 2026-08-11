@@ -73,8 +73,18 @@ export interface Project {
   [key: string]: unknown;
 }
 
-export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'done';
-export type TaskVerdict = 'done' | 'only_plan' | 'needs_review' | 'blocked';
+export type TaskStatus = 'todo' | 'in_progress' | 'in_review' | 'done';
+export type SubStatus =
+  | 'running'
+  | 'failed'
+  | 'waiting_answer'
+  | 'waiting_plan'
+  | 'waiting_approval'
+  | 'pending_acceptance'
+  | 'done'
+  | 'only_plan'
+  | 'needs_review'
+  | 'blocked';
 export type TaskEngine = 'claude' | 'codex';
 
 export interface Task {
@@ -90,7 +100,11 @@ export interface Task {
   started_at: string | null;
   completed_at: string | null;
   ai_summary: string | null;
-  verdict: TaskVerdict | null;
+  /**
+   * Fine-grained badge shown at the card's bottom-left, computed by the backend
+   * (persisted AI verdict/failed OR realtime derived running / waiting_* / pending_acceptance).
+   */
+  sub_status: SubStatus | null;
   verdict_reason: string | null;
   verdict_at: string | null;
   created_at: string;
@@ -109,13 +123,6 @@ export interface Task {
    * ExitPlanMode→"等你确认计划", other→"等你批准". Null when not pending.
    */
   pending_tool?: string | null;
-  /**
-   * Realtime-only flag (server-decorated, never persisted): true when the task
-   * reads as in_progress but its linked session has no live run (failed /
-   * orphaned run). Drives the board/detail "失败" badge + retry, reconstructed
-   * on list load and WS reconnect like `approval_pending`.
-   */
-  failed?: boolean;
 }
 
 export interface TaskUpsertedEvent {

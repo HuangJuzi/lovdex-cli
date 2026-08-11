@@ -10,7 +10,7 @@ export function taskTimeLabel(task: Task): { label: string; iso: string } {
     case 'in_progress':
       return { label: '开始于', iso: task.started_at ?? task.updated_at ?? task.created_at };
     case 'in_review':
-      return { label: '完成于', iso: task.updated_at ?? task.created_at };
+      return { label: '评审于', iso: task.updated_at ?? task.created_at };
     case 'done':
       return { label: '完成于', iso: task.completed_at ?? task.updated_at ?? task.created_at };
     default:
