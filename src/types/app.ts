@@ -70,6 +70,7 @@ export interface Project {
   sessions?: ProjectSession[];
   sessionMeta?: ProjectSessionMeta;
   taskmaster?: ProjectTaskmasterInfo;
+  isMainAgentWorkspace?: boolean;
   [key: string]: unknown;
 }
 
@@ -86,6 +87,8 @@ export type SubStatus =
   | 'needs_review'
   | 'blocked';
 export type TaskEngine = 'claude' | 'codex';
+export type TaskPriority = 'P0' | 'P1' | 'P2' | 'P3';
+export type TaskLabel = 'bug' | 'feature' | 'optimization' | 'refactor' | 'docs' | 'other';
 
 export interface Task {
   task_id: string;
@@ -107,6 +110,11 @@ export interface Task {
   sub_status: SubStatus | null;
   verdict_reason: string | null;
   verdict_at: string | null;
+  priority: TaskPriority;
+  deadline: string | null;
+  is_operator: number; // 0 | 1 — 1 = Lovdex 助手任务
+  label: TaskLabel;
+  remark: string | null;
   created_at: string;
   updated_at: string;
   /**

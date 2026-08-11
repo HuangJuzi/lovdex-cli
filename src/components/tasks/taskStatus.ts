@@ -1,4 +1,4 @@
-import type { SubStatus, Task, TaskStatus } from '../../types/app';
+import type { SubStatus, Task, TaskPriority, TaskLabel, TaskStatus } from '../../types/app';
 
 import { taskTimeLabel } from './taskTimestamp';
 
@@ -54,3 +54,23 @@ export function taskSessionState(t: Task): 'none' | 'running' | 'review' | 'done
     default: return 'none';
   }
 }
+
+export const PRIORITY_ORDER: TaskPriority[] = ['P0', 'P1', 'P2', 'P3'];
+
+export const PRIORITY_META: Record<TaskPriority, { label: string; color: string }> = {
+  P0: { label: 'P0 紧急', color: '#ef4444' },
+  P1: { label: 'P1 高', color: '#f97316' },
+  P2: { label: 'P2 中', color: '#3b82f6' },
+  P3: { label: 'P3 低', color: '#6b7280' },
+};
+
+export const LABEL_ORDER: TaskLabel[] = ['bug', 'feature', 'optimization', 'refactor', 'docs', 'other'];
+
+export const LABEL_META: Record<TaskLabel, { label: string; color: string }> = {
+  bug: { label: 'BUG', color: '#ef4444' },
+  feature: { label: '新特性', color: '#22c55e' },
+  optimization: { label: '优化', color: '#3b82f6' },
+  refactor: { label: '重构', color: '#a855f7' },
+  docs: { label: '文档', color: '#06b6d4' },
+  other: { label: '其他', color: '#6b7280' },
+};
