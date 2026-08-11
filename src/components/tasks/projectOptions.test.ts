@@ -36,3 +36,10 @@ test('projectPathOf falls back from fullPath to path', () => {
 test('assistant sentinel is a stable string', () => {
   assert.equal(typeof ASSISTANT_OPTION_VALUE, 'string');
 });
+
+test('taskFormProjects excludes operator workspace projects too', () => {
+  const ws = mkProject({ displayName: 'operator-workspace', fullPath: '/ws', isOperatorWorkspace: true });
+  const plain = mkProject({ displayName: 'alpha', fullPath: '/a' });
+  const out = taskFormProjects([plain, ws]);
+  assert.deepEqual(out.map((p) => p.fullPath), ['/a']);
+});
