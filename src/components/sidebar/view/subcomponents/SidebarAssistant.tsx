@@ -1,23 +1,72 @@
 import { MessageSquare, Plus, Settings } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../../../../shared/view/ui';
 import { cn } from '../../../../lib/utils';
+import { api } from '../../../../utils/api';
+import { formatRelativeTime } from '../../../tasks/taskTimestamp';
+
+type OperatorSession = {
+  session_id: string;
+  summary: string | null;
+  updated_at: string;
+  created_at: string;
+};
 
 /**
- * 侧边栏顶部的「助手」入口。
+ * 把助手会话打开到 /session/:id。用整页跳转（不是 SPA navigate）这样
+ * AppContent 的 useProjectsState 会重新拉项目列表（含 operator 工作区），
+ * session 才能正确解析为 selectedSession——和 AssistantPanel 同一理由。
+ */
+function openSession(sessionId: string) {
+  window.location.href = `${import.meta.env.BASE_URL}session/${sessionId}`
+    .replace(/\/+/g, '/')
+    .replace(/^\/\//, '/');
+}
+
+/**
+ * 侧边栏顶部的「助手」入口 + 其会话记录列表。
  *
  * 布局参考 SidebarProjectItem 的桌面行：助手名在左，[+]（新建助手会话）和
- * [⚙]（Operator 设置）在右，默认 opacity-0，hover 整行时 group-hover:opacity-100
- * 淡入（触屏用 touch:opacity-100 常驻）。设置/新建不一直显示是因为日常只用
- * 助手本身；多数时候复用最近一个会话即可。
+ * [⚙]（Operator 设置）在右，默认 opacity-0，hover 整行 group-hover:opacity-100
+ * 淡入（触屏 touch:opacity-100 常驻）。
+ *
+ * 助手按钮下面列出 operator session 历史（is_operator=1，按 updated_at 倒序），
+ * 点击整页跳转到 /session/:id。挂载时拉一次 + 窗口重新获焦时刷新，覆盖"发完
+ * 消息切回来"的场景。
  *
  * 点击助手 → /assistant（复用最近会话或新建）；点击 + → /assistant?new=1
- * （强制新建）；点击 ⚙ → /settings/operator。实际跳转到 /session/:id 由
- * AssistantPanel 在整页 reload 后完成（见该组件注释）。
+ * （强制新建）；点击 ⚙ → /settings/operator。
  */
 export default function SidebarAssistant() {
   const navigate = useNavigate();
+  const [sessions, setSessions] = useState<OperatorSession[]>([]);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await api.operator.listSessions();
+        if (!res.ok) return;
+        const body = (await res.json()) as { data?: { sessions?: OperatorSession[] } };
+        if (cancelled) return;
+        setSessions(body?.data?.sessions ?? []);
+        setNow(new Date());
+      } catch {
+        // swallow — the list just stays empty
+      }
+    };
+    void load();
+    const onFocus = () => void load();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', onFocus);
+    };
+  }, []);
+
   return (
     <div className="md:group group flex-shrink-0 px-2 pt-1.5 md:px-1.5">
       {/* Mobile: 显式行，按钮常驻（触屏无 hover）。 */}
@@ -55,6 +104,23 @@ export default function SidebarAssistant() {
             </button>
           </div>
         </div>
+        {sessions.length > 0 && (
+          <div className="mx-1 mb-1 mt-1 max-h-[28vh] overflow-y-auto rounded-lg bg-muted/20 p-1">
+            {sessions.map((s) => (
+              <button
+                key={s.session_id}
+                className="block w-full truncate rounded-md px-2 py-1.5 text-left text-xs text-foreground hover:bg-accent/60"
+                onClick={() => openSession(s.session_id)}
+                title={s.summary ?? '新会话'}
+              >
+                <span className="block truncate">{s.summary ?? '新会话'}</span>
+                <span className="block text-[10px] text-muted-foreground/70">
+                  {formatRelativeTime(s.updated_at || s.created_at, now)}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Desktop: 与 SidebarProjectItem 同款 ghost Button + hover-revealed actions. */}
@@ -116,6 +182,28 @@ export default function SidebarAssistant() {
           </div>
         </div>
       </Button>
+
+      {/* Desktop: operator session history under the assistant button. */}
+      {sessions.length > 0 && (
+        <div className="hidden md:block mt-1 max-h-[40vh] overflow-y-auto rounded-lg bg-muted/20 p-1">
+          <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground/70">
+            会话记录
+          </div>
+          {sessions.map((s) => (
+            <button
+              key={s.session_id}
+              className="block w-full truncate rounded-md px-2 py-1.5 text-left hover:bg-accent/60"
+              onClick={() => openSession(s.session_id)}
+              title={s.summary ?? '新会话'}
+            >
+              <span className="block truncate text-xs text-foreground">{s.summary ?? '新会话'}</span>
+              <span className="block text-[10px] text-muted-foreground/70">
+                {formatRelativeTime(s.updated_at || s.created_at, now)}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
