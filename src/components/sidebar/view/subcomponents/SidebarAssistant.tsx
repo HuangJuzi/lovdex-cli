@@ -17,9 +17,9 @@ type OperatorSession = {
 const COLLAPSE_KEY = 'lovdex:assistant:sessions-collapsed';
 
 /**
- * 把助手会话打开到 /session/:id。用整页跳转（不是 SPA navigate）这样
+ * 把 Lovdex助手 会话打开到 /session/:id。用整页跳转（不是 SPA navigate）这样
  * AppContent 的 useProjectsState 会重新拉项目列表（含 operator 工作区），
- * session 才能正确解析为 selectedSession——和 AssistantPanel 同一理由。
+ * session 才能正确解析为 selectedSession。
  */
 function openSession(sessionId: string) {
   window.location.href = `${import.meta.env.BASE_URL}session/${sessionId}`
@@ -28,20 +28,20 @@ function openSession(sessionId: string) {
 }
 
 /**
- * 侧边栏顶部的「助手」入口 + 其会话记录列表。
+ * 侧边栏顶部的「Lovdex助手」入口 + 其会话记录列表。
  *
- * 布局参考 SidebarProjectItem 的桌面行：助手名在左，[+]（新建助手会话）和
- * [⚙]（Operator 设置）在右，默认 opacity-0，hover 整行 group-hover:opacity-100
- * 淡入（触屏 touch:opacity-100 常驻）。
+ * Lovdex助手 是一个特殊的 Project（operator 工作区）：项目列表里它的工作区
+ * 项目被过滤掉（isOperatorWorkspace），会话只在这里展示。折叠行为参考普通
+ * Project 的整行折叠——点击 Lovdex助手 整行展开/收起会话列表，右侧 chevron
+ * 指示状态。
  *
- * 助手按钮下面是可折叠的会话记录列表（is_operator=1，按 updated_at 倒序）：
- *  - 点「会话记录」头切换折叠/展开，状态存 localStorage。
+ * 会话列表（is_operator=1，按 updated_at 倒序）：
  *  - 每行 hover 出 [✎]（重命名）和 [🗑]（删除）；重命名走 api.renameSession，
  *    删除走 api.deleteSession(hard)。
  *  - 点击行打开 /session/:id（整页跳转）。
  *
- * 挂载时拉一次 + 窗口重新获焦时刷新。点击助手 → /assistant（复用最近会话或
- * 新建）；点击 + → /assistant?new=1（强制新建）；点击 ⚙ → /settings/operator。
+ * 挂载时拉一次 + 窗口重新获焦时刷新。[+] → /assistant?new=1（强制新建）；
+ * [⚙] → /settings/operator。
  */
 export default function SidebarAssistant() {
   const navigate = useNavigate();
@@ -131,7 +131,7 @@ export default function SidebarAssistant() {
   }
 
   async function deleteSession(sessionId: string) {
-    if (!window.confirm('删除该助手会话？历史对话记录将一并删除，不可恢复。')) return;
+    if (!window.confirm('删除该 Lovdex助手 会话？历史对话记录将一并删除，不可恢复。')) return;
     setDeleting((prev) => new Set(prev).add(sessionId));
     setSessions((prev) => prev.filter((s) => s.session_id !== sessionId));
     try {
@@ -248,44 +248,37 @@ export default function SidebarAssistant() {
     );
   };
 
+  const hasSessions = sessions.length > 0;
+  const expanded = hasSessions && !collapsed;
+
   /** Collapsible list body shared by mobile + desktop (container classes differ). */
-  const listBody = (containerCls: string) =>
-    sessions.length > 0 && !collapsed ? (
+  const sessionList = (containerCls: string) =>
+    expanded ? (
       <div className={cn('overflow-y-auto rounded-lg bg-muted/20 p-1', containerCls)}>
         {sessions.map(renderRow)}
       </div>
     ) : null;
 
-  const collapseHeader = (cls: string) =>
-    sessions.length > 0 ? (
-      <button
-        className={cn('flex w-full items-center gap-1 px-2 py-1 text-left', cls)}
-        onClick={toggleCollapsed}
-        title={collapsed ? '展开' : '折叠'}
-      >
-        {collapsed ? (
-          <ChevronRight className="h-3 w-3 flex-shrink-0 text-muted-foreground/70" />
-        ) : (
-          <ChevronDown className="h-3 w-3 flex-shrink-0 text-muted-foreground/70" />
-        )}
-        <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
-          会话记录
-        </span>
-        <span className="ml-auto text-[10px] text-muted-foreground/50">{sessions.length}</span>
-      </button>
-    ) : null;
+  const chevron = hasSessions ? (
+    collapsed ? (
+      <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+    ) : (
+      <ChevronDown className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+    )
+  ) : null;
 
   return (
     <div className="md:group group flex-shrink-0 px-2 pt-1.5 md:px-1.5">
-      {/* Mobile: 显式行，按钮常驻（触屏无 hover）。 */}
+      {/* Mobile: 显式行，按钮常驻（触屏无 hover）。点击整行折叠。 */}
       <div className="md:hidden">
         <div
           className="mx-1 flex items-center justify-between rounded-lg bg-primary/5 p-2 active:scale-[0.98] transition-all duration-150"
-          onClick={() => navigate('/assistant')}
+          onClick={toggleCollapsed}
+          title={hasSessions ? (collapsed ? '展开 Lovdex助手 会话' : '收起 Lovdex助手 会话') : 'Lovdex助手'}
         >
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <MessageSquare className="h-4 w-4 flex-shrink-0 text-primary" />
-            <span className="min-w-0 flex-1 truncate text-sm font-semibold text-primary">助手</span>
+            <span className="min-w-0 flex-1 truncate text-sm font-semibold text-primary">Lovdex助手</span>
           </div>
           <div className="flex flex-shrink-0 items-center gap-1">
             <button
@@ -294,8 +287,8 @@ export default function SidebarAssistant() {
                 e.stopPropagation();
                 navigate('/assistant?new=1');
               }}
-              title="新建助手会话"
-              aria-label="新建助手会话"
+              title="新建 Lovdex助手 会话"
+              aria-label="新建 Lovdex助手 会话"
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -305,15 +298,15 @@ export default function SidebarAssistant() {
                 e.stopPropagation();
                 navigate('/settings/operator');
               }}
-              title="Operator 设置"
-              aria-label="Operator 设置"
+              title="Lovdex助手 设置"
+              aria-label="Lovdex助手 设置"
             >
               <Settings className="h-4 w-4" />
             </button>
+            {chevron}
           </div>
         </div>
-        {collapseHeader('mx-1 mt-1')}
-        {listBody('mx-1 mb-1 mt-0.5 max-h-[28vh]')}
+        {sessionList('mr-1 mb-1 mt-0.5 ml-3 max-h-[28vh] border-l border-border pl-3')}
       </div>
 
       {/* Desktop: 与 SidebarProjectItem 同款 ghost Button + hover-revealed actions. */}
@@ -323,13 +316,13 @@ export default function SidebarAssistant() {
           'hidden md:flex w-full justify-between p-2 h-auto font-normal hover:bg-primary/10',
           'bg-primary/5',
         )}
-        onClick={() => navigate('/assistant')}
-        title="Operator 助手"
+        onClick={toggleCollapsed}
+        title={hasSessions ? (collapsed ? '展开 Lovdex助手 会话' : '收起 Lovdex助手 会话') : 'Lovdex助手'}
       >
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <MessageSquare className="h-4 w-4 flex-shrink-0 text-primary" />
           <span className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-primary">
-            助手
+            Lovdex助手
           </span>
         </div>
         <div className="flex flex-shrink-0 items-center gap-1">
@@ -348,8 +341,8 @@ export default function SidebarAssistant() {
                 navigate('/assistant?new=1');
               }
             }}
-            title="新建助手会话"
-            aria-label="新建助手会话"
+            title="新建 Lovdex助手 会话"
+            aria-label="新建 Lovdex助手 会话"
           >
             <Plus className="!h-5 !w-5" />
           </div>
@@ -368,19 +361,17 @@ export default function SidebarAssistant() {
                 navigate('/settings/operator');
               }
             }}
-            title="Operator 设置"
-            aria-label="Operator 设置"
+            title="Lovdex助手 设置"
+            aria-label="Lovdex助手 设置"
           >
             <Settings className="h-3.5 w-3.5" />
           </div>
+          {chevron}
         </div>
       </Button>
 
-      {/* Desktop: collapsible operator session history under the assistant button. */}
-      <div className="hidden md:block mt-1">
-        {collapseHeader('')}
-        {listBody('max-h-[40vh]')}
-      </div>
+      {/* Desktop: collapsible Lovdex助手 session history under the row. */}
+      {sessionList('ml-3 mt-1 hidden max-h-[40vh] border-l border-border pl-3 md:block')}
     </div>
   );
 }
