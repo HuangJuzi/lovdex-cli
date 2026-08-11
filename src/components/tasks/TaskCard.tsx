@@ -3,60 +3,27 @@ import { useNavigate } from 'react-router-dom';
 
 import type { Task, TaskStatus } from '../../types/app';
 
-import { STATUS_META, taskSessionState } from './taskStatus';
+import { STATUS_META } from './taskStatus';
 import { formatAbsoluteTime, formatRelativeTime, taskTimeLabel } from './taskTimestamp';
-import { VerdictBadge } from './VerdictBadge';
+import { SubStatusBadge } from './SubStatusBadge';
 
 type TaskCardProps = {
   task: Task;
   onStart?: () => void;
   onStatusChange?: (status: TaskStatus) => void;
   onOpenSession?: () => void;
-  waitingApproval?: boolean;
-  /**
-   * Whether the Operator Agent is enabled. When true, the "waiting for you"
-   * indicator is classified by the pending tool (AskUserQuestion→等你回答,
-   * ExitPlanMode→等你确认计划, other→等你批准). When false, falls back to the
-   * generic "待审批" so the board reads as before the agent existed.
-   */
-  operatorEnabled?: boolean;
 };
-
-/**
- * Classifies what the session is waiting on, by toolName. Only used when the
- * operator agent is enabled — without it the card shows the generic 待审批.
- */
-function waitReasonLabel(
-  pendingTool: string | null | undefined,
-  operatorEnabled: boolean,
-): { label: string; className: string; dot: string } | null {
-  if (!pendingTool) return null;
-  if (!operatorEnabled) {
-    return { label: '待审批', className: 'text-amber-500', dot: 'bg-amber-500' };
-  }
-  if (pendingTool === 'AskUserQuestion') {
-    return { label: '等你回答', className: 'text-amber-500', dot: 'bg-amber-500' };
-  }
-  if (pendingTool === 'ExitPlanMode' || pendingTool === 'exit_plan_mode') {
-    return { label: '等你确认计划', className: 'text-indigo-500 dark:text-indigo-400', dot: 'bg-indigo-500 dark:bg-indigo-400' };
-  }
-  return { label: '等你批准', className: 'text-amber-500', dot: 'bg-amber-500' };
-}
 
 export const TaskCard = memo(function TaskCard({
   task,
   onStart,
   onStatusChange,
   onOpenSession,
-  waitingApproval = false,
-  operatorEnabled = false,
 }: TaskCardProps) {
   const navigate = useNavigate();
-  const sessionState = taskSessionState(task);
   const isClaude = task.executor_provider === 'claude';
   const timeLabel = taskTimeLabel(task);
   const now = new Date();
-  const waitReason = waitingApproval ? waitReasonLabel(task.pending_tool, operatorEnabled) : null;
 
   return (
     <div
@@ -104,34 +71,10 @@ export const TaskCard = memo(function TaskCard({
         {timeLabel.label} {formatRelativeTime(timeLabel.iso, now)}
       </div>
 
-      {/* Session/approval/failure indicator. A failed task keeps its
-          in_progress slot but swaps the running/approval badges for a red
-          "执行失败" badge so it never reads as actively running. */}
-      {task.session_id && sessionState === 'running' && (
-        task.failed ? (
-          <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-red-500">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> 执行失败
-          </div>
-        ) : waitReason ? (
-          <div className={`mt-2 flex items-center gap-1.5 text-[11px] font-semibold ${waitReason.className}`}>
-            <span className={`h-1.5 w-1.5 animate-pulse rounded-full ${waitReason.dot}`} /> {waitReason.label}
-          </div>
-        ) : (
-          <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-primary">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" /> 会话运行中
-          </div>
-        )
-      )}
-      {task.session_id && sessionState === 'review' && (
-        task.verdict ? (
-          <div className="mt-2">
-            <VerdictBadge verdict={task.verdict} />
-          </div>
-        ) : (
-          <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-purple-500 dark:text-purple-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-purple-500 dark:bg-purple-400" /> 待你验收
-          </div>
-        )
+      {task.sub_status && (
+        <div className="mt-2">
+          <SubStatusBadge subStatus={task.sub_status} />
+        </div>
       )}
 
       {/* Actions */}
@@ -147,7 +90,7 @@ export const TaskCard = memo(function TaskCard({
             ▶ 开始执行
           </button>
         )}
-        {task.failed && onStart && (
+        {task.sub_status === 'failed' && onStart && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -193,6 +136,19 @@ export const TaskCard = memo(function TaskCard({
             打开会话
           </button>
         )}
+        {['only_plan', 'needs_review', 'blocked'].includes(task.sub_status ?? '') &&
+          task.session_id &&
+          onOpenSession && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenSession();
+              }}
+              className="min-h-9 min-w-0 flex-1 rounded-md bg-primary/10 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20 sm:min-h-0"
+            >
+              打开会话
+            </button>
+          )}
       </div>
     </div>
   );
