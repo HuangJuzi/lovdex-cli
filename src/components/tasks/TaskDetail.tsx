@@ -9,7 +9,7 @@ import { buildTaskChatSend, TASK_RETRY_MESSAGE } from './taskExecution';
 import { TaskResultPanel } from './TaskResultPanel';
 import { pickLastAssistantText } from './taskResult';
 import type { TaskResultState } from './taskResult';
-import { ASSISTANT_OPTION_VALUE, projectPathOf, taskFormProjects } from './projectOptions';
+import { projectPathOf, taskFormProjects } from './projectOptions';
 import { LABEL_META, LABEL_ORDER, PRIORITY_META, PRIORITY_ORDER, STATUS_META, STATUS_ORDER, SUB_STATUS_META } from './taskStatus';
 import { formatAbsoluteTime } from './taskTimestamp';
 import { SubStatusBadge } from './SubStatusBadge';
@@ -192,13 +192,20 @@ export function TaskDetailPage() {
               verdict_at: next.verdict_at,
               updated_at: next.updated_at,
               priority: next.priority ?? prev.priority,
-              deadline: next.deadline ?? prev.deadline,
-              is_operator: next.is_operator ?? prev.is_operator,
+              deadline: next.deadline,
+              is_operator: next.is_operator,
               label: next.label ?? prev.label,
-              remark: next.remark ?? prev.remark,
+              remark: next.remark,
             }
           : prev,
       );
+      // The backend always broadcasts a complete task row, so sync the
+      // controlled edit inputs straight from the payload. Nullable fields are
+      // mapped to '' (the input's empty state) so a remote null-clear propagates.
+      setPriority(next.priority);
+      setDeadline(next.deadline ?? '');
+      setLabel(next.label);
+      setRemark(next.remark ?? '');
       const sid = next.session_id;
       if (!sid) return;
       if (next.status === 'in_progress' || next.status === 'in_review' || next.status === 'done') {
@@ -261,7 +268,7 @@ export function TaskDetailPage() {
 
   async function saveRemark(nextRemark: string) {
     if (!task) return;
-    setRemark(nextRemark);
+    setRemark(nextRemark.trim());
     const value = nextRemark.trim() || null;
     if (value === task.remark) return;
     try {
