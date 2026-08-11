@@ -36,36 +36,6 @@ export function TaskBoardPage() {
   const navigate = useNavigate();
   const { subscribe, sendMessage } = useWebSocket();
   const { tasks, loading, loadError, refresh, upsert } = useTasks({}, subscribe);
-  // The "等你批准" overlay is derived straight from each task row's
-  // `approval_pending` flag — server-decorated from the run registry's pending
-  // set, so it is reconstructed on list load AND on WS-reconnect refresh, not
-  // just from one-shot `task_upserted` events that fire while this tab may be
-  // closed. `useTasks` already upserts live task rows (carrying the flag), so a
-  // memo is all that's needed here — no separate approval event listener.
-  const approvalTaskIds = useMemo(
-    () => new Set(tasks.filter((t) => t.approval_pending).map((t) => t.task_id)),
-    [tasks],
-  );
-
-  // Whether the Operator Agent is enabled — gates the classified wait-reason
-  // display (等你回答/等你确认计划/等你批准) vs the generic 待审批. Fetched once;
-  // if the request fails the board falls back to the generic label, which is
-  // the pre-operator behavior.
-  const [operatorEnabled, setOperatorEnabled] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    api.operator
-      .settings()
-      .then(async (res) => {
-        if (!res.ok) return;
-        const cfg = (await res.json()) as { enabled?: boolean };
-        if (!cancelled) setOperatorEnabled(Boolean(cfg.enabled));
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
   const groups = useMemo(() => groupByStatus(tasks), [tasks]);
 
   // Create-task form state.
@@ -175,7 +145,7 @@ export function TaskBoardPage() {
         description: prompt,
         executorProvider: newEngine,
         executorModel: newModel || null,
-        status: 'backlog',
+        status: 'todo',
       });
       if (!res.ok) {
         const err = await res.json().catch(() => null);
@@ -223,7 +193,7 @@ export function TaskBoardPage() {
    * session and orphan the old one. Fresh runs (no session) keep the old path.
    */
   function runTask(task: Task) {
-    if (task.failed && task.session_id) {
+    if (task.sub_status === 'failed' && task.session_id) {
       sendMessage(buildTaskChatSend(task.session_id, task, TASK_RETRY_MESSAGE));
       return;
     }
@@ -360,8 +330,6 @@ export function TaskBoardPage() {
                   <TaskCard
                     key={task.task_id}
                     task={task}
-                    waitingApproval={approvalTaskIds.has(task.task_id)}
-                    operatorEnabled={operatorEnabled}
                     onStart={() => runTask(task)}
                     onStatusChange={(s) => updateStatus(task, s)}
                     onOpenSession={() => task.session_id && navigate(`/session/${task.session_id}`)}

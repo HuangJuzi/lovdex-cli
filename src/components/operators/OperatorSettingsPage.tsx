@@ -11,8 +11,7 @@ import { Button } from '../../shared/view/ui';
  * 不配置也能用（后端有安全默认）；这里开了能调自动化强度与模型/并发等。
  *
  * 字段对应后端 OperatorConfig：
- *  - enabled / auto_verdict_enabled / auto_move_enabled
- *  - auto_move_done（done verdict → done 列，激进）/ auto_move_only_plan_to_todo
+ *  - enabled / auto_verdict_enabled
  *  - interactive_chat_enabled
  *  - model / max_concurrent / verdict_prompt_override
  *
@@ -24,9 +23,6 @@ import { Button } from '../../shared/view/ui';
 type OperatorConfig = {
   enabled: boolean;
   auto_verdict_enabled: boolean;
-  auto_move_enabled: boolean;
-  auto_move_done: boolean;
-  auto_move_only_plan_to_todo: boolean;
   model: string;
   max_concurrent: number;
   verdict_prompt_override: string | null;
@@ -36,9 +32,6 @@ type OperatorConfig = {
 const EMPTY: OperatorConfig = {
   enabled: true,
   auto_verdict_enabled: true,
-  auto_move_enabled: true,
-  auto_move_done: false,
-  auto_move_only_plan_to_todo: true,
   model: '',
   max_concurrent: 2,
   verdict_prompt_override: null,
@@ -184,35 +177,18 @@ export function OperatorSettingsPage() {
               />
             </section>
 
-            {/* 自动判定 + 移列 */}
+            {/* 自动判定 */}
             <section className="rounded-lg border border-border bg-card p-4">
-              <h2 className="mb-1 text-sm font-semibold text-foreground">自动判定与移列</h2>
+              <h2 className="mb-1 text-sm font-semibold text-foreground">自动判定</h2>
               <p className="mb-2 text-xs text-muted-foreground">
-                任务 session 跑完后，Operator 自动读 transcript 出 summary + verdict，并按 verdict 移列。
+                任务 session 跑完后，Operator 自动读 transcript 出 summary + verdict，写入 sub_status
+                标签。done 判定留在评审列等你验收；计划待执行/待你决策/需协助会移回进行中列。
               </p>
               <Toggle
                 label="完成时自动判定"
                 description="session completed 后自动起头跑读 transcript、写 summary/verdict。"
                 checked={config.auto_verdict_enabled}
                 onChange={(v) => patch({ auto_verdict_enabled: v })}
-              />
-              <Toggle
-                label="verdict 驱动自动移列"
-                description="关闭后只写 summary/verdict，不自动改任务状态。"
-                checked={config.auto_move_enabled}
-                onChange={(v) => patch({ auto_move_enabled: v })}
-              />
-              <Toggle
-                label="only_plan → 代办"
-                description="只出了计划没动代码的，自动退回 todo。"
-                checked={config.auto_move_only_plan_to_todo}
-                onChange={(v) => patch({ auto_move_only_plan_to_todo: v })}
-              />
-              <Toggle
-                label="done → 完成列（激进）"
-                description="默认关：done verdict 留在 in_review 等你确认。开启后自动进完成列。"
-                checked={config.auto_move_done}
-                onChange={(v) => patch({ auto_move_done: v })}
               />
             </section>
 
