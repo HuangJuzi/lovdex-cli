@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { useWebSocket } from '../../contexts/WebSocketContext';
 import { useTasks } from '../../hooks/useTasks';
-import { Button, Input } from '../../shared/view/ui';
+import { Button, Dialog, DialogContent, DialogTitle, Input } from '../../shared/view/ui';
 import type {
   Project,
   ProviderModelOption,
@@ -132,14 +132,23 @@ export function TaskBoardPage() {
       });
   }, [creating, newEngine]);
 
-  function toggleCreateForm() {
+  function resetCreateForm() {
     setNewPrompt('');
     setNewName('');
     setNewPriority('P2');
     setNewDeadline('');
     setNewLabel('other');
     setNewRemark('');
-    setCreating((prev) => !prev);
+  }
+
+  function openCreateForm() {
+    resetCreateForm();
+    setCreating(true);
+  }
+
+  function closeCreateForm() {
+    resetCreateForm();
+    setCreating(false);
   }
 
   async function createTask() {
@@ -240,26 +249,30 @@ export function TaskBoardPage() {
       <header className="pwa-header-safe flex flex-shrink-0 items-center gap-2 border-b border-border/60 bg-background px-3 py-1.5 sm:px-4 sm:py-2">
         <ViewSwitcher active="tasks" className="w-40 flex-shrink-0 sm:w-44" />
         <div className="ml-auto">
-          <Button size="sm" className="h-8 px-3 text-sm" onClick={toggleCreateForm} disabled={creating}>
+          <Button size="sm" className="h-8 px-3 text-sm" onClick={openCreateForm} disabled={creating}>
             ＋ 新建任务
           </Button>
         </div>
       </header>
-      {creating && (
-        <div className="border-b border-border bg-card/50 px-3 py-3 sm:px-6 sm:py-4">
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted-foreground">任务提示词</label>
-              <textarea
-                className="min-h-[64px] w-full resize-y rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/60"
-                placeholder="发给 agent 执行的内容"
-                value={newPrompt}
-                onChange={(e) => setNewPrompt(e.target.value)}
-                rows={2}
-                autoFocus
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <Dialog open={creating} onOpenChange={(open) => { if (!open) closeCreateForm(); }}>
+        <DialogContent className="max-h-[85vh] w-full max-w-lg overflow-y-auto">
+          <DialogTitle>新建任务</DialogTitle>
+          <div className="border-b border-border px-5 py-3">
+            <h2 className="text-sm font-semibold text-foreground">新建任务</h2>
+          </div>
+          <div className="p-5">
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">任务提示词</label>
+                <textarea
+                  className="min-h-[64px] w-full resize-y rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/60"
+                  placeholder="发给 agent 执行的内容"
+                  value={newPrompt}
+                  onChange={(e) => setNewPrompt(e.target.value)}
+                  rows={2}
+                  autoFocus
+                />
+              </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-muted-foreground">名称</label>
                 <Input
@@ -363,18 +376,18 @@ export function TaskBoardPage() {
                   onChange={(e) => setNewRemark(e.target.value)}
                 />
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" disabled={!newPrompt.trim()} onClick={() => void createTask()}>
-                创建
-              </Button>
-              <Button size="sm" variant="ghost" onClick={toggleCreateForm}>
-                取消
-              </Button>
+              <div className="mt-2 flex items-center justify-end gap-2">
+                <Button size="sm" variant="ghost" onClick={closeCreateForm}>
+                  取消
+                </Button>
+                <Button size="sm" disabled={!newPrompt.trim()} onClick={() => void createTask()}>
+                  创建
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
       {loading ? (
         <div className="px-3 text-sm text-muted-foreground sm:px-6">加载中…</div>
       ) : loadError ? (
