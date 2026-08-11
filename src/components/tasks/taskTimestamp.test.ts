@@ -19,7 +19,7 @@ function mk(overrides: Partial<Task> = {}): Task {
     started_at: null,
     completed_at: null,
     ai_summary: null,
-    verdict: null,
+    sub_status: null,
     verdict_reason: null,
     verdict_at: null,
     created_at: '2026-08-07T10:00:00.000Z',
@@ -28,8 +28,7 @@ function mk(overrides: Partial<Task> = {}): Task {
   };
 }
 
-test('taskTimeLabel: backlog/todo → 创建于 created_at', () => {
-  assert.deepEqual(taskTimeLabel(mk({ status: 'backlog' })), { label: '创建于', iso: '2026-08-07T10:00:00.000Z' });
+test('taskTimeLabel: todo → 创建于 created_at', () => {
   assert.deepEqual(taskTimeLabel(mk({ status: 'todo' })), { label: '创建于', iso: '2026-08-07T10:00:00.000Z' });
 });
 
@@ -44,10 +43,10 @@ test('taskTimeLabel: in_progress → 开始于 started_at with fallback', () => 
   );
 });
 
-test('taskTimeLabel: in_review → 完成于 updated_at', () => {
+test('taskTimeLabel: in_review → 评审于 updated_at', () => {
   assert.deepEqual(
     taskTimeLabel(mk({ status: 'in_review', updated_at: '2026-08-07T12:00:00.000Z' })),
-    { label: '完成于', iso: '2026-08-07T12:00:00.000Z' },
+    { label: '评审于', iso: '2026-08-07T12:00:00.000Z' },
   );
 });
 

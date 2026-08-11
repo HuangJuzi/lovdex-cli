@@ -19,7 +19,7 @@ function mkTask(session_id: string | null): Task {
     started_at: null,
     completed_at: null,
     ai_summary: null,
-    verdict: null,
+    sub_status: null,
     verdict_reason: null,
     verdict_at: null,
     created_at: '',
