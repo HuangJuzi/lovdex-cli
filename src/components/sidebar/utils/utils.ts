@@ -222,6 +222,13 @@ export const filterProjects = (projects: Project[], searchFilter: string): Proje
   });
 };
 
+/**
+ * 侧边栏项目列表过滤：隐藏 operator 工作区（Lovdex助手）项目。会话数据保留在
+ * 全局 projects state 里供 /session/:id 路由解析，这里只做渲染层过滤。
+ */
+export const excludeHiddenProjects = (projects: Project[]): Project[] =>
+  projects.filter((project) => !project.isOperatorWorkspace);
+
 export const getTaskIndicatorStatus = (
   project: Project,
   mcpServerStatus: { hasMCPServer?: boolean; isConfigured?: boolean } | null,

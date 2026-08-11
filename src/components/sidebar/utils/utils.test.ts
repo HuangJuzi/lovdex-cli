@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import type { Project, ProjectSession } from '../../../types/app';
 
-import { getSessionDotState, isProjectActive, isSessionActive, isSessionRecentlyActive, sortProjects } from './utils';
+import { excludeHiddenProjects, getSessionDotState, isProjectActive, isSessionActive, isSessionRecentlyActive, sortProjects } from './utils';
 
 const mkSession = (id: string, lastActivity?: string): ProjectSession => ({
   id,
@@ -128,4 +128,12 @@ test('sortProjects floats a recently active project above an idle one', () => {
   const idle = mkProject('pb', 'Idle', { sessions: [mkSession('s2', '2026-08-04T10:00:00Z')] });
   const result = sortProjects([idle, recent], 'name', new Set(), NOW);
   assert.deepEqual(result.map((p) => p.projectId), ['pa', 'pb']);
+});
+
+test('excludeHiddenProjects drops operator workspace projects', () => {
+  const assistantWs = mkProject('op-ws', 'operator-workspace');
+  (assistantWs as Project).isOperatorWorkspace = true;
+  const regular = mkProject('reg', 'Regular');
+  const out = excludeHiddenProjects([assistantWs, regular]);
+  assert.deepEqual(out.map((p) => p.projectId), ['reg']);
 });

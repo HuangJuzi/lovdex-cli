@@ -13,6 +13,7 @@ import type {
 } from '../types/types';
 import {
   clearLegacyStarredProjectIds,
+  excludeHiddenProjects,
   filterProjects,
   getAllSessions,
   readLegacyStarredProjectIds,
@@ -516,10 +517,10 @@ export function useSidebarController({
     });
   }, [optimisticStarByProjectId, projects]);
 
-  const sortedProjects = useMemo(
-    () => sortProjects(projectsWithResolvedStarState, projectSortOrder, activeSessionIds, currentTime),
-    [projectSortOrder, projectsWithResolvedStarState, activeSessionIds, currentTime],
-  );
+  const sortedProjects = useMemo(() => {
+    const visibleProjects = excludeHiddenProjects(projectsWithResolvedStarState);
+    return sortProjects(visibleProjects, projectSortOrder, activeSessionIds, currentTime);
+  }, [projectSortOrder, projectsWithResolvedStarState, activeSessionIds, currentTime]);
 
   const runningProjects = useMemo(() => {
     if (activeSessionIds.size === 0) {
