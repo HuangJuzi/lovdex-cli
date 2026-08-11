@@ -385,8 +385,8 @@ export function TaskDetailPage() {
           </div>
         </div>
 
-        {/* 主操作 + 次要操作：手机主按钮整行、次按钮并排；桌面全部紧凑（不出现通栏长按钮） */}
-        <div className="mt-4 flex flex-col gap-2 sm:mt-5 sm:flex-row sm:items-center sm:gap-3">
+        {/* 主操作 + 次要操作：手机主按钮整行、次按钮并排；web 主操作靠左、标记完成/删除靠右（拉开距离防误触） */}
+        <div className="mt-4 flex flex-col gap-2 sm:mt-5 sm:flex-row sm:items-center sm:justify-between">
           {task.session_id ? (
             <button
               className="w-full rounded-md border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20 sm:w-auto"
@@ -402,7 +402,7 @@ export function TaskDetailPage() {
               ▶ 开始执行
             </button>
           )}
-          <div className="flex gap-2 sm:contents">
+          <div className="flex gap-2 sm:gap-3">
             {task.status !== 'done' && (
               <button
                 className="flex-1 rounded-md bg-green-500/15 px-4 py-2 text-sm font-semibold text-green-500 hover:bg-green-500/25 dark:text-green-400 sm:w-auto sm:flex-none"
