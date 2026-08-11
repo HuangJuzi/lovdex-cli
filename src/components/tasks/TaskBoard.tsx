@@ -309,7 +309,6 @@ export function TaskBoardPage() {
                   className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
                   value={newEngine}
                   onChange={(e) => setNewEngine(e.target.value as TaskEngine)}
-                  disabled={newProjectPath === ASSISTANT_OPTION_VALUE}
                 >
                   <option value="claude">Claude Code</option>
                   <option value="codex">Codex</option>
@@ -321,7 +320,7 @@ export function TaskBoardPage() {
                   className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
                   value={newModel}
                   onChange={(e) => setNewModel(e.target.value)}
-                  disabled={newProjectPath === ASSISTANT_OPTION_VALUE || models.length === 0}
+                  disabled={models.length === 0}
                 >
                   {models.length === 0 ? (
                     <option value="">默认模型 (default)</option>
@@ -334,6 +333,11 @@ export function TaskBoardPage() {
                   )}
                 </select>
               </div>
+              {newProjectPath === ASSISTANT_OPTION_VALUE && (
+                <p className="col-span-full text-xs text-muted-foreground">
+                  🤖 助手任务固定使用 Claude + 默认模型，以上引擎/模型设置将被忽略。
+                </p>
+              )}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-muted-foreground">优先级</label>
                 <select
