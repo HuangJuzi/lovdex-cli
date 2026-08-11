@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 
 import type { Task, TaskStatus } from '../../types/app';
 
-import { STATUS_META } from './taskStatus';
+import { STATUS_META, LABEL_META, PRIORITY_META } from './taskStatus';
+import { taskDeadlineInfo } from './taskDeadline';
 import { formatAbsoluteTime, formatRelativeTime, taskTimeLabel } from './taskTimestamp';
 import { SubStatusBadge } from './SubStatusBadge';
 
@@ -24,6 +25,7 @@ export const TaskCard = memo(function TaskCard({
   const isClaude = task.executor_provider === 'claude';
   const timeLabel = taskTimeLabel(task);
   const now = new Date();
+  const deadline = taskDeadlineInfo(task, now);
 
   return (
     <div
@@ -48,6 +50,38 @@ export const TaskCard = memo(function TaskCard({
         </p>
       )}
       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+        {task.label && LABEL_META[task.label] && (
+          <span
+            className="rounded-full px-2 py-0.5 font-semibold"
+            style={{ color: LABEL_META[task.label].color, backgroundColor: `${LABEL_META[task.label].color}1a` }}
+          >
+            {LABEL_META[task.label].label}
+          </span>
+        )}
+        {task.priority && (
+          <span
+            className="rounded-full px-2 py-0.5 font-semibold"
+            style={{ color: PRIORITY_META[task.priority].color, backgroundColor: `${PRIORITY_META[task.priority].color}1a` }}
+          >
+            {PRIORITY_META[task.priority].label}
+          </span>
+        )}
+        {task.is_operator === 1 && (
+          <span className="rounded-full bg-violet-500/10 px-2 py-0.5 font-semibold text-violet-500 dark:text-violet-400">
+            🤖 助手
+          </span>
+        )}
+        {deadline && (
+          <span
+            className={`rounded-full px-2 py-0.5 font-medium ${
+              deadline.overdue
+                ? 'bg-red-500/10 text-red-500 dark:text-red-400'
+                : 'bg-muted text-muted-foreground'
+            }`}
+          >
+            {deadline.overdue ? '⏰ ' : ''}{deadline.label}
+          </span>
+        )}
         <span className="max-w-full truncate rounded-full bg-muted px-2 py-0.5 font-medium text-muted-foreground">
           {task.project_path}
         </span>
