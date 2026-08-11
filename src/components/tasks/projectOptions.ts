@@ -6,12 +6,13 @@ export const ASSISTANT_OPTION_VALUE = '__lovdex_assistant__';
 export const projectPathOf = (project: Project): string => project.fullPath || project.path || '';
 
 /**
- * 任务表单的项目候选：排除主Agent/操作员工作目录，收藏优先，再按 displayName 升序。
- * 「Lovdex 助手」选项由调用方放在列表头部（见 ASSISTANT_OPTION_VALUE）。
+ * 任务表单的项目候选：排除操作员（Lovdex助手）工作目录——它由列表顶部的
+ * 「🤖 Lovdex 助手」选项代表。主 Agent 工作目录（用户自己的主项目）保留可选。
+ * 收藏优先，再按 displayName 升序。
  */
 export function taskFormProjects(projects: Project[]): Project[] {
   return projects
-    .filter((p) => !p.isMainAgentWorkspace && !p.isOperatorWorkspace)
+    .filter((p) => !p.isOperatorWorkspace)
     .sort((a, b) => {
       const aStarred = Boolean(a.isStarred);
       const bStarred = Boolean(b.isStarred);

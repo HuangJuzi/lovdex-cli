@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+
 import type { Project } from '../../types/app';
+
 import { ASSISTANT_OPTION_VALUE, projectPathOf, taskFormProjects } from './projectOptions';
 
 const mkProject = (over: Partial<Project> & { displayName: string; fullPath: string }): Project => ({
@@ -11,12 +13,13 @@ const mkProject = (over: Partial<Project> & { displayName: string; fullPath: str
   ...over,
 });
 
-test('taskFormProjects excludes main agent workspace and sorts starred first', () => {
+test('taskFormProjects keeps the main agent workspace but excludes operator workspace, sorted starred first', () => {
   const main = mkProject({ displayName: 'lovdex', fullPath: '/root', isMainAgentWorkspace: true });
   const star = mkProject({ displayName: 'zeta', fullPath: '/z', isStarred: true });
   const plain = mkProject({ displayName: 'alpha', fullPath: '/a' });
   const out = taskFormProjects([plain, main, star]);
-  assert.deepEqual(out.map((p) => p.fullPath), ['/z', '/a']);
+  // 主 Agent 工作目录（用户主项目）保留可选；星标优先于普通项目。
+  assert.deepEqual(out.map((p) => p.fullPath), ['/z', '/a', '/root']);
 });
 
 test('taskFormProjects sorts same-starred by displayName and does not mutate input', () => {
