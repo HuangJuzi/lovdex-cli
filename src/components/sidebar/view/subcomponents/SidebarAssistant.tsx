@@ -1,5 +1,5 @@
-import { MessageSquare, Plus, Settings, Trash2 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { ChevronDown, ChevronRight, Check, Edit2, MessageSquare, Plus, Settings, Trash2, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../../../../shared/view/ui';
@@ -13,6 +13,8 @@ type OperatorSession = {
   updated_at: string;
   created_at: string;
 };
+
+const COLLAPSE_KEY = 'lovdex:assistant:sessions-collapsed';
 
 /**
  * 把助手会话打开到 /session/:id。用整页跳转（不是 SPA navigate）这样
@@ -32,20 +34,30 @@ function openSession(sessionId: string) {
  * [⚙]（Operator 设置）在右，默认 opacity-0，hover 整行 group-hover:opacity-100
  * 淡入（触屏 touch:opacity-100 常驻）。
  *
- * 助手按钮下面列出 operator session 历史（is_operator=1，按 updated_at 倒序），
- * 点击整页跳转到 /session/:id。挂载时拉一次 + 窗口重新获焦时刷新，覆盖"发完
- * 消息切回来"的场景。
+ * 助手按钮下面是可折叠的会话记录列表（is_operator=1，按 updated_at 倒序）：
+ *  - 点「会话记录」头切换折叠/展开，状态存 localStorage。
+ *  - 每行 hover 出 [✎]（重命名）和 [🗑]（删除）；重命名走 api.renameSession，
+ *    删除走 api.deleteSession(hard)。
+ *  - 点击行打开 /session/:id（整页跳转）。
  *
- * 点击助手 → /assistant（复用最近会话或新建）；点击 + → /assistant?new=1
- * （强制新建）；点击 ⚙ → /settings/operator。
+ * 挂载时拉一次 + 窗口重新获焦时刷新。点击助手 → /assistant（复用最近会话或
+ * 新建）；点击 + → /assistant?new=1（强制新建）；点击 ⚙ → /settings/operator。
  */
 export default function SidebarAssistant() {
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<OperatorSession[]>([]);
   const [now, setNow] = useState(() => new Date());
-  // sessionId → true while a delete is in flight, so we can hide the row from
-  // the optimistic filter without losing its hover target mid-request.
   const [deleting, setDeleting] = useState<Set<string>>(new Set());
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(COLLAPSE_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const editContainerRef = useRef<HTMLDivElement>(null);
 
   const loadSessions = useCallback(async () => {
     try {
@@ -74,16 +86,53 @@ export default function SidebarAssistant() {
     };
   }, [loadSessions]);
 
+  function toggleCollapsed() {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0');
+      } catch {
+        // ignore storage failures
+      }
+      return next;
+    });
+  }
+
+  function startEdit(s: OperatorSession) {
+    setEditingId(s.session_id);
+    setEditingName(s.summary ?? '');
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditingName('');
+  }
+
+  async function saveEdit() {
+    const id = editingId;
+    const name = editingName.trim();
+    if (!id) return;
+    // Empty rename clears the custom summary → falls back to "新会话".
+    setSessions((prev) =>
+      prev.map((s) => (s.session_id === id ? { ...s, summary: name || null } : s)),
+    );
+    setEditingId(null);
+    setEditingName('');
+    try {
+      const res = await api.renameSession(id, name);
+      if (!res.ok) {
+        console.error('rename operator session failed', res.status);
+        await loadSessions();
+      }
+    } catch (err) {
+      console.error('rename operator session failed', err);
+      await loadSessions();
+    }
+  }
+
   async function deleteSession(sessionId: string) {
-    // Empty-operator sessions (created but never sent a message) pile up; the
-    // user wants them gone. Hard-delete removes the row + transcript file. The
-    // operator session has no task linkage (tasks link sessions, not vice
-    // versa) so a hard delete won't orphan a task — the task's session_id just
-    // resolves to no live run.
     if (!window.confirm('删除该助手会话？历史对话记录将一并删除，不可恢复。')) return;
     setDeleting((prev) => new Set(prev).add(sessionId));
-    // Optimistic: drop the row immediately so the list shrinks before the
-    // network round-trip; revert on failure by reloading.
     setSessions((prev) => prev.filter((s) => s.session_id !== sessionId));
     try {
       const res = await api.deleteSession(sessionId, true);
@@ -102,6 +151,129 @@ export default function SidebarAssistant() {
       });
     }
   }
+
+  // Dismiss the inline rename when clicking outside its panel (matches Escape).
+  useEffect(() => {
+    if (!editingId) return;
+    const onPointerDown = (event: MouseEvent) => {
+      const container = editContainerRef.current;
+      if (container && !container.contains(event.target as Node)) cancelEdit();
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [editingId]);
+
+  /** One session row: open-on-click + hover rename/delete, or inline rename form. */
+  const renderRow = (s: OperatorSession) => {
+    const isEditing = editingId === s.session_id;
+    const label = s.summary ?? '新会话';
+    return (
+      <div key={s.session_id} className="group/row relative flex items-center">
+        {isEditing ? (
+          <div ref={editContainerRef} className="flex w-full items-center gap-1 px-1 py-1">
+            <input
+              type="text"
+              value={editingName}
+              onChange={(e) => setEditingName(e.target.value)}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.key === 'Enter') void saveEdit();
+                else if (e.key === 'Escape') cancelEdit();
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="min-w-0 flex-1 rounded border border-border bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              autoFocus
+            />
+            <button
+              className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-green-50 hover:bg-green-100 dark:bg-green-900/20"
+              onClick={(e) => {
+                e.stopPropagation();
+                void saveEdit();
+              }}
+              title="保存"
+            >
+              <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
+            </button>
+            <button
+              className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-gray-50 hover:bg-gray-100 dark:bg-gray-900/20"
+              onClick={(e) => {
+                e.stopPropagation();
+                cancelEdit();
+              }}
+              title="取消"
+            >
+              <X className="h-3 w-3 text-gray-600 dark:text-gray-400" />
+            </button>
+          </div>
+        ) : (
+          <>
+            <button
+              className="block min-w-0 flex-1 truncate rounded-md px-2 py-1.5 text-left hover:bg-accent/60"
+              onClick={() => openSession(s.session_id)}
+              title={label}
+            >
+              <span className="block truncate text-xs text-foreground">{label}</span>
+              <span className="block text-[10px] text-muted-foreground/70">
+                {formatRelativeTime(s.updated_at || s.created_at, now)}
+              </span>
+            </button>
+            <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover/row:opacity-100">
+              <button
+                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground/70 hover:bg-foreground/10 hover:text-foreground"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startEdit(s);
+                }}
+                title="重命名"
+                aria-label="重命名"
+              >
+                <Edit2 className="h-3 w-3" />
+              </button>
+              <button
+                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground/70 hover:bg-red-500/15 hover:text-red-500"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void deleteSession(s.session_id);
+                }}
+                disabled={deleting.has(s.session_id)}
+                title="删除会话"
+                aria-label="删除会话"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  /** Collapsible list body shared by mobile + desktop (container classes differ). */
+  const listBody = (containerCls: string) =>
+    sessions.length > 0 && !collapsed ? (
+      <div className={cn('overflow-y-auto rounded-lg bg-muted/20 p-1', containerCls)}>
+        {sessions.map(renderRow)}
+      </div>
+    ) : null;
+
+  const collapseHeader = (cls: string) =>
+    sessions.length > 0 ? (
+      <button
+        className={cn('flex w-full items-center gap-1 px-2 py-1 text-left', cls)}
+        onClick={toggleCollapsed}
+        title={collapsed ? '展开' : '折叠'}
+      >
+        {collapsed ? (
+          <ChevronRight className="h-3 w-3 flex-shrink-0 text-muted-foreground/70" />
+        ) : (
+          <ChevronDown className="h-3 w-3 flex-shrink-0 text-muted-foreground/70" />
+        )}
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+          会话记录
+        </span>
+        <span className="ml-auto text-[10px] text-muted-foreground/50">{sessions.length}</span>
+      </button>
+    ) : null;
 
   return (
     <div className="md:group group flex-shrink-0 px-2 pt-1.5 md:px-1.5">
@@ -140,36 +312,8 @@ export default function SidebarAssistant() {
             </button>
           </div>
         </div>
-        {sessions.length > 0 && (
-          <div className="mx-1 mb-1 mt-1 max-h-[28vh] overflow-y-auto rounded-lg bg-muted/20 p-1">
-            {sessions.map((s) => (
-              <div key={s.session_id} className="group/row relative flex items-center">
-                <button
-                  className="block min-w-0 flex-1 truncate rounded-md px-2 py-1.5 text-left text-xs text-foreground hover:bg-accent/60"
-                  onClick={() => openSession(s.session_id)}
-                  title={s.summary ?? '新会话'}
-                >
-                  <span className="block truncate">{s.summary ?? '新会话'}</span>
-                  <span className="block text-[10px] text-muted-foreground/70">
-                    {formatRelativeTime(s.updated_at || s.created_at, now)}
-                  </span>
-                </button>
-                <button
-                  className="absolute right-1 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded text-muted-foreground/70 opacity-0 transition-opacity hover:bg-red-500/15 hover:text-red-500 group-hover/row:opacity-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void deleteSession(s.session_id);
-                  }}
-                  disabled={deleting.has(s.session_id)}
-                  title="删除会话"
-                  aria-label="删除会话"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        {collapseHeader('mx-1 mt-1')}
+        {listBody('mx-1 mb-1 mt-0.5 max-h-[28vh]')}
       </div>
 
       {/* Desktop: 与 SidebarProjectItem 同款 ghost Button + hover-revealed actions. */}
@@ -232,40 +376,11 @@ export default function SidebarAssistant() {
         </div>
       </Button>
 
-      {/* Desktop: operator session history under the assistant button. */}
-      {sessions.length > 0 && (
-        <div className="hidden md:block mt-1 max-h-[40vh] overflow-y-auto rounded-lg bg-muted/20 p-1">
-          <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground/70">
-            会话记录
-          </div>
-          {sessions.map((s) => (
-            <div key={s.session_id} className="group/row relative flex items-center">
-              <button
-                className="block min-w-0 flex-1 truncate rounded-md px-2 py-1.5 text-left hover:bg-accent/60"
-                onClick={() => openSession(s.session_id)}
-                title={s.summary ?? '新会话'}
-              >
-                <span className="block truncate text-xs text-foreground">{s.summary ?? '新会话'}</span>
-                <span className="block text-[10px] text-muted-foreground/70">
-                  {formatRelativeTime(s.updated_at || s.created_at, now)}
-                </span>
-              </button>
-              <button
-                className="absolute right-1 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded text-muted-foreground/70 opacity-0 transition-opacity hover:bg-red-500/15 hover:text-red-500 group-hover/row:opacity-100"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  void deleteSession(s.session_id);
-                }}
-                disabled={deleting.has(s.session_id)}
-                title="删除会话"
-                aria-label="删除会话"
-              >
-                <Trash2 className="h-3 w-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Desktop: collapsible operator session history under the assistant button. */}
+      <div className="hidden md:block mt-1">
+        {collapseHeader('')}
+        {listBody('max-h-[40vh]')}
+      </div>
     </div>
   );
 }
