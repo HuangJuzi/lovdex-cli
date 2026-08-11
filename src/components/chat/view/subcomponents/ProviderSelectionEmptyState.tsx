@@ -25,6 +25,7 @@ import {
 const PROVIDER_META: { id: LLMProvider; name: string }[] = [
   { id: "claude", name: "Anthropic" },
   { id: "codex", name: "OpenAI" },
+  { id: "sophcode", name: "Sophcode" },
 ];
 
 const MOD_KEY =
@@ -55,6 +56,8 @@ type ProviderSelectionEmptyStateProps = {
   setCodexModel: (model: string) => void;
   opencodeModel: string;
   setOpenCodeModel: (model: string) => void;
+  sophcodeModel: string;
+  setSophcodeModel: (model: string) => void;
   providerModelCatalog: Partial<Record<LLMProvider, ProviderModelsDefinition>>;
   providerModelsLoading: boolean;
   tasksEnabled: boolean;
@@ -83,10 +86,12 @@ function getCurrentModel(
   cu: string,
   co: string,
   o: string,
+  s: string,
 ) {
   if (p === "claude") return c;
   if (p === "codex") return co;
   if (p === "opencode") return o;
+  if (p === "sophcode") return s;
   return cu;
 }
 
@@ -95,6 +100,7 @@ function getProviderDisplayName(p: LLMProvider) {
   if (p === "cursor") return "Cursor";
   if (p === "codex") return "Codex";
   if (p === "opencode") return "OpenCode";
+  if (p === "sophcode") return "Sophcode";
   return "Claude";
 }
 
@@ -112,6 +118,8 @@ export default function ProviderSelectionEmptyState({
   setCodexModel,
   opencodeModel,
   setOpenCodeModel,
+  sophcodeModel,
+  setSophcodeModel,
   providerModelCatalog,
   providerModelsLoading,
   tasksEnabled,
@@ -140,6 +148,7 @@ export default function ProviderSelectionEmptyState({
     cursorModel,
     codexModel,
     opencodeModel,
+    sophcodeModel,
   );
 
   const currentModelLabel = useMemo(() => {
@@ -161,12 +170,15 @@ export default function ProviderSelectionEmptyState({
       } else if (providerId === "opencode") {
         setOpenCodeModel(modelValue);
         localStorage.setItem("opencode-model", modelValue);
+      } else if (providerId === "sophcode") {
+        setSophcodeModel(modelValue);
+        localStorage.setItem("sophcode-model", modelValue);
       } else {
         setCursorModel(modelValue);
         localStorage.setItem("cursor-model", modelValue);
       }
     },
-    [setClaudeModel, setCursorModel, setCodexModel, setOpenCodeModel],
+    [setClaudeModel, setCursorModel, setCodexModel, setOpenCodeModel, setSophcodeModel],
   );
 
   const handleModelSelect = useCallback(
@@ -312,6 +324,10 @@ export default function ProviderSelectionEmptyState({
                 opencode: t("providerSelection.readyPrompt.opencode", {
                   model: opencodeModel,
                   defaultValue: "Ready with OpenCode {{model}}",
+                }),
+                sophcode: t("providerSelection.readyPrompt.sophcode", {
+                  model: sophcodeModel,
+                  defaultValue: "Ready with Sophcode {{model}}",
                 }),
               }[provider]
             }

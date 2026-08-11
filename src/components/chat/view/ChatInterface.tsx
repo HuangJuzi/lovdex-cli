@@ -77,6 +77,8 @@ function ChatInterface({
     currentProviderEffortOptions,
     opencodeModel,
     setOpenCodeModel,
+    sophcodeModel,
+    setSophcodeModel,
     permissionMode,
     pendingPermissionRequests,
     setPendingPermissionRequests,
@@ -216,6 +218,7 @@ function ChatInterface({
     codexModel,
     currentProviderEffort,
     opencodeModel,
+    sophcodeModel,
     isLoading: isProcessing,
     canAbortSession,
     tokenBudget,
@@ -382,7 +385,9 @@ function ChatInterface({
         ? cursorModel
         : provider === 'opencode'
           ? opencodeModel
-          : claudeModel;
+          : provider === 'sophcode'
+            ? sophcodeModel
+            : claudeModel;
   const currentModelLabel = useMemo(() => {
     const option = providerModelCatalog[provider]?.OPTIONS.find((o) => o.value === currentModelValue);
     const label = option?.label || currentModelValue;
@@ -399,7 +404,9 @@ function ChatInterface({
           ? t('messageTypes.codex')
           : provider === 'opencode'
               ? t('messageTypes.opencode', { defaultValue: 'OpenCode' })
-            : t('messageTypes.claude');
+              : provider === 'sophcode'
+                ? t('messageTypes.sophcode', { defaultValue: 'Sophcode' })
+                : t('messageTypes.claude');
 
     return (
       <div className="flex h-full items-center justify-center">
@@ -439,6 +446,8 @@ function ChatInterface({
           setCodexModel={setCodexModel}
           opencodeModel={opencodeModel}
           setOpenCodeModel={setOpenCodeModel}
+          sophcodeModel={sophcodeModel}
+          setSophcodeModel={setSophcodeModel}
           providerModelCatalog={providerModelCatalog}
           providerModelsLoading={providerModelsLoading}
           tasksEnabled={false}
@@ -552,6 +561,8 @@ function ChatInterface({
                   ? t('messageTypes.codex')
                   : provider === 'opencode'
                       ? t('messageTypes.opencode', { defaultValue: 'OpenCode' })
+                      : provider === 'sophcode'
+                        ? t('messageTypes.sophcode', { defaultValue: 'Sophcode' })
                     : t('messageTypes.claude'),
           })}
           isTextareaExpanded={isTextareaExpanded}
