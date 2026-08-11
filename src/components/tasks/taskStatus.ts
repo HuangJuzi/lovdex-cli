@@ -23,7 +23,7 @@ export const SUB_STATUS_META: Record<SubStatus, { label: string; color: string }
   waiting_plan: { label: '等你确认计划', color: '#6366f1' },
   waiting_approval: { label: '等你批准', color: '#f59e0b' },
   pending_acceptance: { label: '待你验收', color: '#a855f7' },
-  done: { label: '已完成', color: '#34d399' },
+  done: { label: '已完成，待评审', color: '#34d399' },
   only_plan: { label: '计划待执行', color: '#3b82f6' },
   needs_review: { label: '待你决策', color: '#eab308' },
   blocked: { label: '需协助', color: '#ef4444' },

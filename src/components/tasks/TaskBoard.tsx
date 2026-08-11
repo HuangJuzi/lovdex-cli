@@ -304,11 +304,11 @@ export function TaskBoardPage() {
           </button>
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-2 pb-3 sm:flex-row sm:justify-[safe_center] sm:gap-3 sm:overflow-x-auto sm:overflow-y-hidden sm:px-4 sm:pb-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-2 pb-3 sm:flex-row sm:gap-3 sm:overflow-x-auto sm:overflow-y-hidden sm:px-4 sm:pb-4">
           {STATUS_ORDER.map((status) => (
             <div
               key={status}
-              className="flex w-full flex-col rounded-xl border border-border bg-muted/30 sm:min-w-64 sm:flex-1 sm:max-w-md"
+              className="flex w-full flex-col rounded-xl border border-border bg-muted/30 sm:min-w-64 sm:flex-1"
             >
               <div className="flex items-center gap-2 px-3 py-2.5">
                 <span

@@ -353,7 +353,7 @@ export function TaskDetailPage() {
           </button>
         </div>
       </header>
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:p-8">
+      <div className="mx-auto w-full px-4 py-6 sm:p-8">
         <div className="mt-4 flex flex-wrap items-start gap-3">
           {(() => {
             const badge = liveHeaderBadge(task);
@@ -383,17 +383,36 @@ export function TaskDetailPage() {
               {task.project_path} · {task.task_id.slice(0, 8)}
             </p>
           </div>
-          <div className="flex w-full gap-2 sm:w-auto">
+        </div>
+
+        {/* 主操作 + 次要操作：手机主按钮整行、次按钮并排；桌面全部紧凑（不出现通栏长按钮） */}
+        <div className="mt-4 flex flex-col gap-2 sm:mt-5 sm:flex-row sm:items-center sm:gap-3">
+          {task.session_id ? (
+            <button
+              className="w-full rounded-md border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20 sm:w-auto"
+              onClick={() => navigate(`/session/${task.session_id}`)}
+            >
+              打开会话
+            </button>
+          ) : (
+            <button
+              className="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 sm:w-auto"
+              onClick={() => void startExecution()}
+            >
+              ▶ 开始执行
+            </button>
+          )}
+          <div className="flex gap-2 sm:contents">
             {task.status !== 'done' && (
               <button
-                className="flex-1 rounded-md bg-green-500/15 px-3 py-1.5 text-sm font-semibold text-green-500 hover:bg-green-500/25 dark:text-green-400 sm:flex-none"
+                className="flex-1 rounded-md bg-green-500/15 px-4 py-2 text-sm font-semibold text-green-500 hover:bg-green-500/25 dark:text-green-400 sm:w-auto sm:flex-none"
                 onClick={() => updateStatus('done')}
               >
                 ✓ 标记完成
               </button>
             )}
             <button
-              className="flex-1 rounded-md bg-red-500/10 px-3 py-1.5 text-sm text-red-500 hover:bg-red-500/20 dark:text-red-400 sm:flex-none"
+              className="flex-1 rounded-md bg-red-500/10 px-4 py-2 text-sm text-red-500 hover:bg-red-500/20 dark:text-red-400 sm:w-auto sm:flex-none"
               onClick={remove}
             >
               删除
@@ -401,7 +420,59 @@ export function TaskDetailPage() {
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-[1fr_280px]">
+        {/* 状态横幅：失败 / 等你…（有状态才出现） */}
+        {task.sub_status === 'failed' && task.session_id && (
+          <div className="mt-4 flex flex-col gap-3 rounded-md border border-red-500/40 bg-red-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-2">
+              <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-red-500" />
+              <div>
+                <div className="text-sm font-semibold text-red-500">执行失败</div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  任务执行出错，可以重试或打开会话查看原因。
+                </p>
+              </div>
+            </div>
+            <button
+              className="w-full shrink-0 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 sm:w-auto"
+              onClick={() => retryTask()}
+            >
+              ↻ 重试
+            </button>
+          </div>
+        )}
+        {(task.sub_status === 'waiting_answer' ||
+          task.sub_status === 'waiting_plan' ||
+          task.sub_status === 'waiting_approval') &&
+          task.session_id && (() => {
+          let label = '等你批准';
+          let desc = '关联会话有一个待审批的权限请求，需要你处理。';
+          if (task.sub_status === 'waiting_answer') {
+            label = '等你回答';
+            desc = '助手在等你回答一个问题，去会话里回复它即可继续。';
+          } else if (task.sub_status === 'waiting_plan') {
+            label = '等你确认计划';
+            desc = '助手已出 plan，等你确认后才会开始执行。';
+          }
+          return (
+            <div className="mt-4 flex flex-col gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-2">
+                <span className="mt-0.5 h-2 w-2 shrink-0 animate-pulse rounded-full bg-amber-500" />
+                <div>
+                  <div className="text-sm font-semibold text-amber-500">{label}</div>
+                  <p className="mt-1 text-xs text-muted-foreground">{desc}</p>
+                </div>
+              </div>
+              <button
+                className="w-full shrink-0 rounded-md bg-amber-500/15 px-4 py-2 text-sm font-semibold text-amber-600 transition-colors hover:bg-amber-500/25 dark:text-amber-400 sm:w-auto"
+                onClick={() => navigate(`/session/${task.session_id}`)}
+              >
+                去处理
+              </button>
+            </div>
+          );
+        })()}
+
+        <div className="mt-6 flex flex-col gap-6">
           <div className="flex flex-col gap-6">
             <div className="rounded-lg border border-border bg-card p-4">
               <textarea
@@ -446,133 +517,73 @@ export function TaskDetailPage() {
           <div className="flex flex-col gap-3">
             <div className="rounded-lg border border-border bg-card p-4">
               <h4 className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">属性</h4>
-              <div className="mb-3">
-                <div className="mb-1 text-xs text-muted-foreground">状态</div>
-                <select
-                  className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
-                  value={task.status}
-                  onChange={(e) => updateStatus(e.target.value as TaskStatus)}
-                >
-                  {STATUS_ORDER.map((s) => (
-                    <option key={s} value={s}>
-                      {STATUS_META[s].label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="mb-3">
-                <div className="mb-1 text-xs text-muted-foreground">所属项目</div>
-                {task.status === 'todo' ? (
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 lg:grid-cols-4">
+                <div>
+                  <div className="mb-1 text-xs text-muted-foreground">状态</div>
                   <select
                     className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
-                    value={projectPath}
-                    onChange={(e) => void changeProject(e.target.value)}
+                    value={task.status}
+                    onChange={(e) => updateStatus(e.target.value as TaskStatus)}
                   >
-                    {projects.map((project) => {
-                      const path = projectPathOf(project);
-                      const name = project.displayName || path;
-                      const label =
-                        duplicateProjectNames.has(name) && name !== path ? `${name} — ${path}` : name;
-                      return (
-                        <option key={project.projectId} value={path} title={path}>
-                          {label}
-                        </option>
-                      );
-                    })}
+                    {STATUS_ORDER.map((s) => (
+                      <option key={s} value={s}>
+                        {STATUS_META[s].label}
+                      </option>
+                    ))}
                   </select>
-                ) : (
-                  <div className="text-sm text-foreground">{task.project_path}</div>
+                </div>
+                <div>
+                  <div className="mb-1 text-xs text-muted-foreground">所属项目</div>
+                  {task.status === 'todo' ? (
+                    <select
+                      className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                      value={projectPath}
+                      onChange={(e) => void changeProject(e.target.value)}
+                    >
+                      {projects.map((project) => {
+                        const path = projectPathOf(project);
+                        const name = project.displayName || path;
+                        const label =
+                          duplicateProjectNames.has(name) && name !== path ? `${name} — ${path}` : name;
+                        return (
+                          <option key={project.projectId} value={path} title={path}>
+                            {label}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  ) : (
+                    <div className="text-sm text-foreground">{task.project_path}</div>
+                  )}
+                </div>
+                <div>
+                  <div className="mb-1 text-xs text-muted-foreground">执行引擎</div>
+                  <div className="text-sm text-foreground">
+                    {task.executor_provider}
+                    {task.executor_model ? ` · ${task.executor_model}` : ''}
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-1 text-xs text-muted-foreground">创建时间</div>
+                  <div className="text-sm text-foreground">{formatAbsoluteTime(task.created_at)}</div>
+                </div>
+                <div>
+                  <div className="mb-1 text-xs text-muted-foreground">更新时间</div>
+                  <div className="text-sm text-foreground">{formatAbsoluteTime(task.updated_at)}</div>
+                </div>
+                {task.started_at && (
+                  <div>
+                    <div className="mb-1 text-xs text-muted-foreground">开始时间</div>
+                    <div className="text-sm text-foreground">{formatAbsoluteTime(task.started_at)}</div>
+                  </div>
+                )}
+                {task.completed_at && (
+                  <div>
+                    <div className="mb-1 text-xs text-muted-foreground">完成时间</div>
+                    <div className="text-sm text-foreground">{formatAbsoluteTime(task.completed_at)}</div>
+                  </div>
                 )}
               </div>
-              <div>
-                <div className="mb-1 text-xs text-muted-foreground">执行引擎</div>
-                <div className="text-sm text-foreground">
-                  {task.executor_provider}
-                  {task.executor_model ? ` · ${task.executor_model}` : ''}
-                </div>
-              </div>
-              <div className="mt-3 border-t border-border pt-3">
-                <div className="mb-1 text-xs text-muted-foreground">创建时间</div>
-                <div className="text-sm text-foreground">{formatAbsoluteTime(task.created_at)}</div>
-              </div>
-              <div className="mt-3">
-                <div className="mb-1 text-xs text-muted-foreground">更新时间</div>
-                <div className="text-sm text-foreground">{formatAbsoluteTime(task.updated_at)}</div>
-              </div>
-              {task.started_at && (
-                <div className="mt-3">
-                  <div className="mb-1 text-xs text-muted-foreground">开始时间</div>
-                  <div className="text-sm text-foreground">{formatAbsoluteTime(task.started_at)}</div>
-                </div>
-              )}
-              {task.completed_at && (
-                <div className="mt-3">
-                  <div className="mb-1 text-xs text-muted-foreground">完成时间</div>
-                  <div className="text-sm text-foreground">{formatAbsoluteTime(task.completed_at)}</div>
-                </div>
-              )}
-            </div>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <h4 className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">执行</h4>
-              {task.sub_status === 'failed' && task.session_id && (
-                <div className="mb-3 rounded-md border border-red-500/40 bg-red-500/10 p-3">
-                  <div className="flex items-center gap-1.5 text-sm font-semibold text-red-500">
-                    <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> 执行失败
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    任务执行出错，可以重试或打开会话查看原因。
-                  </p>
-                  <button
-                    className="mt-2 w-full rounded-md bg-primary py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
-                    onClick={() => retryTask()}
-                  >
-                    ↻ 重试
-                  </button>
-                </div>
-              )}
-              {(task.sub_status === 'waiting_answer' ||
-                task.sub_status === 'waiting_plan' ||
-                task.sub_status === 'waiting_approval') &&
-                task.session_id && (() => {
-                let label = '等你批准';
-                let desc = '关联会话有一个待审批的权限请求，需要你处理。';
-                if (task.sub_status === 'waiting_answer') {
-                  label = '等你回答';
-                  desc = '助手在等你回答一个问题，去会话里回复它即可继续。';
-                } else if (task.sub_status === 'waiting_plan') {
-                  label = '等你确认计划';
-                  desc = '助手已出 plan，等你确认后才会开始执行。';
-                }
-                return (
-                  <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
-                    <div className="flex items-center gap-1.5 text-sm font-semibold text-amber-500">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" /> {label}
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">{desc}</p>
-                    <button
-                      className="mt-2 w-full rounded-md bg-amber-500/15 py-1.5 text-xs font-semibold text-amber-600 transition-colors hover:bg-amber-500/25 dark:text-amber-400"
-                      onClick={() => navigate(`/session/${task.session_id}`)}
-                    >
-                      去处理
-                    </button>
-                  </div>
-                );
-              })()}
-              {task.session_id ? (
-                <button
-                  className="w-full rounded-md border border-primary/40 bg-primary/10 py-2 text-sm font-semibold text-primary hover:bg-primary/20"
-                  onClick={() => navigate(`/session/${task.session_id}`)}
-                >
-                  打开会话
-                </button>
-              ) : (
-                <button
-                  className="w-full rounded-md bg-primary py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-                  onClick={() => void startExecution()}
-                >
-                  ▶ 开始执行
-                </button>
-              )}
             </div>
           </div>
         </div>
