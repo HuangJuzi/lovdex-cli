@@ -59,7 +59,7 @@ export const PRIORITY_ORDER: TaskPriority[] = ['P0', 'P1', 'P2', 'P3'];
 
 export const PRIORITY_META: Record<TaskPriority, { label: string; color: string }> = {
   P0: { label: 'P0 紧急', color: '#ef4444' },
-  P1: { label: 'P1 高', color: '#f97316' },
+  P1: { label: 'P1 高', color: '#ea580c' },
   P2: { label: 'P2 中', color: '#3b82f6' },
   P3: { label: 'P3 低', color: '#6b7280' },
 };
@@ -68,9 +68,9 @@ export const LABEL_ORDER: TaskLabel[] = ['bug', 'feature', 'optimization', 'refa
 
 export const LABEL_META: Record<TaskLabel, { label: string; color: string }> = {
   bug: { label: 'BUG', color: '#ef4444' },
-  feature: { label: '新特性', color: '#22c55e' },
+  feature: { label: '新特性', color: '#16a34a' },
   optimization: { label: '优化', color: '#3b82f6' },
   refactor: { label: '重构', color: '#a855f7' },
-  docs: { label: '文档', color: '#06b6d4' },
+  docs: { label: '文档', color: '#0891b2' },
   other: { label: '其他', color: '#6b7280' },
 };

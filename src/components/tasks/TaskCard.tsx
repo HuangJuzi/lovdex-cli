@@ -58,7 +58,7 @@ export const TaskCard = memo(function TaskCard({
             {LABEL_META[task.label].label}
           </span>
         )}
-        {task.priority && (
+        {task.priority && PRIORITY_META[task.priority] && (
           <span
             className="rounded-full px-2 py-0.5 font-semibold"
             style={{ color: PRIORITY_META[task.priority].color, backgroundColor: `${PRIORITY_META[task.priority].color}1a` }}
