@@ -246,100 +246,133 @@ export function TaskBoardPage() {
         </div>
       </header>
       {creating && (
-        <div className="flex flex-col gap-2 border-b border-border bg-card/50 px-3 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:px-6 sm:py-4">
-          <textarea
-            className="min-h-[64px] w-full resize-y rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/60"
-            placeholder="任务提示词（发给 agent 执行的内容）"
-            value={newPrompt}
-            onChange={(e) => setNewPrompt(e.target.value)}
-            rows={2}
-            autoFocus
-          />
-          <Input
-            className="w-full sm:w-64"
-            placeholder="名称（可选，留空自动从提示词提炼）"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-          />
-          <select
-            className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-64"
-            value={newProjectPath}
-            onChange={(e) => setNewProjectPath(e.target.value)}
-          >
-            <option value={ASSISTANT_OPTION_VALUE}>🤖 Lovdex 助手</option>
-            {taskFormProjects(projects).map((project) => {
-              const path = projectPathOf(project);
-              const name = project.displayName || path;
-              const label =
-                duplicateProjectNames.has(name) && name !== path ? `${name} — ${path}` : name;
-              return (
-                <option key={project.projectId} value={path} title={path}>
-                  {label}
-                </option>
-              );
-            })}
-          </select>
-          <select
-            className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-40"
-            value={newEngine}
-            onChange={(e) => setNewEngine(e.target.value as TaskEngine)}
-            disabled={newProjectPath === ASSISTANT_OPTION_VALUE}
-          >
-            <option value="claude">Claude Code</option>
-            <option value="codex">Codex</option>
-          </select>
-          <select
-            className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-28"
-            value={newPriority}
-            onChange={(e) => setNewPriority(e.target.value as TaskPriority)}
-          >
-            {PRIORITY_ORDER.map((p) => (
-              <option key={p} value={p}>{PRIORITY_META[p].label}</option>
-            ))}
-          </select>
-          <Input
-            type="date"
-            className="h-9 w-full sm:w-40"
-            value={newDeadline}
-            onChange={(e) => setNewDeadline(e.target.value)}
-          />
-          <select
-            className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-32"
-            value={newLabel}
-            onChange={(e) => setNewLabel(e.target.value as TaskLabel)}
-          >
-            {LABEL_ORDER.map((l) => (
-              <option key={l} value={l}>{LABEL_META[l].label}</option>
-            ))}
-          </select>
-          <Input
-            className="h-9 w-full sm:w-56"
-            placeholder="备注（需求来源等，可选）"
-            value={newRemark}
-            onChange={(e) => setNewRemark(e.target.value)}
-          />
-          <select
-            className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-56"
-            value={newModel}
-            onChange={(e) => setNewModel(e.target.value)}
-            disabled={newProjectPath === ASSISTANT_OPTION_VALUE || models.length === 0}
-          >
-            {models.length === 0 ? (
-              <option value="">默认模型 (default)</option>
-            ) : (
-              models.map((model) => (
-                <option key={model.value} value={model.value}>
-                  {model.label || model.value}
-                </option>
-              ))
-            )}
-          </select>
-          <Button size="sm" disabled={!newPrompt.trim()} onClick={() => void createTask()}>
-            创建
-          </Button>
-          <Button size="sm" variant="ghost" onClick={toggleCreateForm}>
-            取消
-          </Button>
+        <div className="border-b border-border bg-card/50 px-3 py-3 sm:px-6 sm:py-4">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted-foreground">任务提示词</label>
+              <textarea
+                className="min-h-[64px] w-full resize-y rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/60"
+                placeholder="发给 agent 执行的内容"
+                value={newPrompt}
+                onChange={(e) => setNewPrompt(e.target.value)}
+                rows={2}
+                autoFocus
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">名称</label>
+                <Input
+                  className="h-9 w-full"
+                  placeholder="可选，留空自动提炼"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">项目</label>
+                <select
+                  className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                  value={newProjectPath}
+                  onChange={(e) => setNewProjectPath(e.target.value)}
+                >
+                  <option value={ASSISTANT_OPTION_VALUE}>🤖 Lovdex 助手</option>
+                  {taskFormProjects(projects).map((project) => {
+                    const path = projectPathOf(project);
+                    const name = project.displayName || path;
+                    const label =
+                      duplicateProjectNames.has(name) && name !== path ? `${name} — ${path}` : name;
+                    return (
+                      <option key={project.projectId} value={path} title={path}>
+                        {label}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">执行引擎</label>
+                <select
+                  className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                  value={newEngine}
+                  onChange={(e) => setNewEngine(e.target.value as TaskEngine)}
+                  disabled={newProjectPath === ASSISTANT_OPTION_VALUE}
+                >
+                  <option value="claude">Claude Code</option>
+                  <option value="codex">Codex</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">模型</label>
+                <select
+                  className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                  value={newModel}
+                  onChange={(e) => setNewModel(e.target.value)}
+                  disabled={newProjectPath === ASSISTANT_OPTION_VALUE || models.length === 0}
+                >
+                  {models.length === 0 ? (
+                    <option value="">默认模型 (default)</option>
+                  ) : (
+                    models.map((model) => (
+                      <option key={model.value} value={model.value}>
+                        {model.label || model.value}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">优先级</label>
+                <select
+                  className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                  value={newPriority}
+                  onChange={(e) => setNewPriority(e.target.value as TaskPriority)}
+                >
+                  {PRIORITY_ORDER.map((p) => (
+                    <option key={p} value={p}>{PRIORITY_META[p].label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">截止日期</label>
+                <Input
+                  type="date"
+                  className="h-9 w-full"
+                  value={newDeadline}
+                  onChange={(e) => setNewDeadline(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">Label</label>
+                <select
+                  className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value as TaskLabel)}
+                >
+                  {LABEL_ORDER.map((l) => (
+                    <option key={l} value={l}>{LABEL_META[l].label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">备注</label>
+                <Input
+                  className="h-9 w-full"
+                  placeholder="需求来源等，可选"
+                  value={newRemark}
+                  onChange={(e) => setNewRemark(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" disabled={!newPrompt.trim()} onClick={() => void createTask()}>
+                创建
+              </Button>
+              <Button size="sm" variant="ghost" onClick={toggleCreateForm}>
+                取消
+              </Button>
+            </div>
+          </div>
         </div>
       )}
       {loading ? (
