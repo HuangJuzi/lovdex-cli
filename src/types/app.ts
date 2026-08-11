@@ -71,6 +71,7 @@ export interface Project {
   sessionMeta?: ProjectSessionMeta;
   taskmaster?: ProjectTaskmasterInfo;
   isMainAgentWorkspace?: boolean;
+  isOperatorWorkspace?: boolean;
   [key: string]: unknown;
 }
 

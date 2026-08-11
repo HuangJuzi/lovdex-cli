@@ -38,6 +38,7 @@ type SessionUpsertedEvent = ServerEvent & {
     fullPath: string;
     displayName: string;
     isStarred: boolean;
+    isOperatorWorkspace?: boolean;
   } | null;
 };
 
@@ -304,6 +305,7 @@ const projectFromRegistration = (project: Project): Project => ({
   fullPath: project.fullPath || project.path || '',
   displayName: project.displayName,
   isStarred: project.isStarred,
+  isOperatorWorkspace: project.isOperatorWorkspace,
   sessions: project.sessions ?? [],
   sessionMeta: project.sessionMeta ?? { hasMore: false, total: countLoadedProjectSessions(project) },
   taskmaster: project.taskmaster,
@@ -519,6 +521,7 @@ export function useProjectsState({
         fullPath: project.fullPath || project.path || '',
         displayName: project.displayName,
         isStarred: Boolean(project.isStarred),
+        isOperatorWorkspace: Boolean(project.isOperatorWorkspace),
       },
       timestamp: now,
     };
@@ -707,6 +710,7 @@ export function useProjectsState({
             fullPath: upsert.project.fullPath,
             displayName: upsert.project.displayName,
             isStarred: upsert.project.isStarred,
+            isOperatorWorkspace: upsert.project.isOperatorWorkspace,
             sessions: [],
             sessionMeta: { hasMore: false, total: 0 },
           } as Project;
