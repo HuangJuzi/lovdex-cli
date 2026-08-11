@@ -92,7 +92,7 @@ export function TaskBoardPage() {
         if (cancelled) return;
         setProjects(list);
         const formProjects = taskFormProjects(list);
-        if (formProjects.length > 0) setNewProjectPath(projectPathOf(formProjects[0]));
+        setNewProjectPath(formProjects.length > 0 ? projectPathOf(formProjects[0]) : ASSISTANT_OPTION_VALUE);
       })
       .catch((err) => console.error('load projects for task create failed', err));
     return () => {
@@ -145,8 +145,7 @@ export function TaskBoardPage() {
   async function createTask() {
     const projectPath = newProjectPath;
     const prompt = newPrompt.trim();
-    const isAssistant = projectPath === ASSISTANT_OPTION_VALUE;
-    if (!isAssistant && !projectPath) return;
+    const isAssistant = projectPath === ASSISTANT_OPTION_VALUE || !projectPath;
     if (!prompt) return;
     // Name is optional: fall back to a locally distilled label from the prompt.
     const title = newName.trim() || deriveTaskName(prompt);
@@ -284,6 +283,7 @@ export function TaskBoardPage() {
             className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-40"
             value={newEngine}
             onChange={(e) => setNewEngine(e.target.value as TaskEngine)}
+            disabled={newProjectPath === ASSISTANT_OPTION_VALUE}
           >
             <option value="claude">Claude Code</option>
             <option value="codex">Codex</option>
@@ -322,7 +322,7 @@ export function TaskBoardPage() {
             className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground sm:w-56"
             value={newModel}
             onChange={(e) => setNewModel(e.target.value)}
-            disabled={models.length === 0}
+            disabled={newProjectPath === ASSISTANT_OPTION_VALUE || models.length === 0}
           >
             {models.length === 0 ? (
               <option value="">默认模型 (default)</option>
