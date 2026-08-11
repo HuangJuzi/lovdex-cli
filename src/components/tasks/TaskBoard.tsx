@@ -74,6 +74,20 @@ export function TaskBoardPage() {
     );
   }, [projects]);
 
+  // Candidate projects for each todo card's project selector. Same disambiguation
+  // rule as the create form / detail page: use the display name, and append the
+  // unique path only when the name collides.
+  const projectOptions = useMemo(
+    () =>
+      taskFormProjects(projects).map((project) => {
+        const path = projectPathOf(project);
+        const name = project.displayName || path;
+        const label = duplicateProjectNames.has(name) && name !== path ? `${name} — ${path}` : name;
+        return { value: path, label };
+      }),
+    [projects, duplicateProjectNames],
+  );
+
   // Load the project list once for the create form. The `/api/projects`
   // response JSON is an array of projects; the display name lives in
   // `displayName` and the path in `fullPath` (with `path` as a fallback).
@@ -241,6 +255,28 @@ export function TaskBoardPage() {
       upsert(updated);
     } catch (err) {
       console.error('updateStatus failed', err);
+    }
+  }
+
+  /** Change a todo card's project. Mirrors the detail page: warns when the task
+   *  has a linked session (changing project orphans that conversation), then
+   *  updates via the API and upserts the returned row into the board. */
+  async function changeProject(task: Task, nextPath: string) {
+    if (nextPath === task.project_path) return;
+    if (task.session_id) {
+      const ok = window.confirm('修改项目将删除当前会话及其全部对话记录，此操作不可恢复。是否继续？');
+      if (!ok) return;
+    }
+    try {
+      const res = await api.tasks.update(task.task_id, { projectPath: nextPath });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        console.error('changeProject failed', err?.error?.message ?? res.status);
+        return;
+      }
+      upsert((await res.json()) as Task);
+    } catch (err) {
+      console.error('changeProject failed', err);
     }
   }
 
@@ -434,6 +470,8 @@ export function TaskBoardPage() {
                     onStart={() => runTask(task)}
                     onStatusChange={(s) => updateStatus(task, s)}
                     onOpenSession={() => task.session_id && navigate(`/session/${task.session_id}`)}
+                    projectOptions={projectOptions}
+                    onProjectChange={(nextPath) => changeProject(task, nextPath)}
                   />
                 ))}
               </div>

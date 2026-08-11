@@ -8,11 +8,17 @@ import { taskDeadlineInfo } from './taskDeadline';
 import { formatAbsoluteTime, formatRelativeTime, taskTimeLabel } from './taskTimestamp';
 import { SubStatusBadge } from './SubStatusBadge';
 
+export type TaskProjectOption = { value: string; label: string };
+
 type TaskCardProps = {
   task: Task;
   onStart?: () => void;
   onStatusChange?: (status: TaskStatus) => void;
   onOpenSession?: () => void;
+  /** Candidate projects for the todo-card project selector. */
+  projectOptions?: TaskProjectOption[];
+  /** Called with the newly selected project path (todo tasks only). */
+  onProjectChange?: (nextPath: string) => void;
 };
 
 export const TaskCard = memo(function TaskCard({
@@ -20,6 +26,8 @@ export const TaskCard = memo(function TaskCard({
   onStart,
   onStatusChange,
   onOpenSession,
+  projectOptions,
+  onProjectChange,
 }: TaskCardProps) {
   const navigate = useNavigate();
   const isClaude = task.executor_provider === 'claude';
@@ -88,9 +96,37 @@ export const TaskCard = memo(function TaskCard({
             🤖 Lovdex助手
           </span>
         )}
-        <span className="max-w-full truncate rounded-full bg-muted px-2 py-0.5 font-medium text-muted-foreground">
-          {task.project_path}
-        </span>
+        {task.status === 'todo' &&
+        task.is_operator !== 1 &&
+        onProjectChange &&
+        projectOptions &&
+        projectOptions.length > 0 ? (
+          <select
+            value={task.project_path}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              e.stopPropagation();
+              onProjectChange(e.target.value);
+            }}
+            title="修改项目"
+            className="max-w-40 cursor-pointer truncate rounded-full border border-border/50 bg-muted py-0.5 pl-2 pr-6 text-[11px] font-medium text-muted-foreground outline-none transition-colors hover:border-primary/40"
+          >
+            {!projectOptions.some((o) => o.value === task.project_path) && (
+              <option value={task.project_path} disabled>
+                {task.project_path}
+              </option>
+            )}
+            {projectOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="max-w-full truncate rounded-full bg-muted px-2 py-0.5 font-medium text-muted-foreground">
+            {task.project_path}
+          </span>
+        )}
         <span
           className={`rounded-full px-2 py-0.5 font-semibold ${
             isClaude
