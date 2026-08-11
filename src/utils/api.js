@@ -225,7 +225,7 @@ export const api = {
       }),
   },
 
-  // Task endpoints — the task board (columns: backlog/todo/in_progress/in_review/done).
+  // Task endpoints — the task board (columns: todo/in_progress/in_review/done).
   tasks: {
     list: (params = {}) => {
       const qs = new URLSearchParams();

@@ -44,7 +44,7 @@ export function TaskDetailPage() {
   const savingRef = useRef(false);
   const [resultState, setResultState] = useState<TaskResultState>('idle');
   const [resultContent, setResultContent] = useState('');
-  // Project selector for backlog/todo tasks. `projects` mirrors the TaskBoard
+  // Project selector for todo tasks. `projects` mirrors the TaskBoard
   // create-form dropdown; `projectPath` is the pending selection (reverted on
   // cancel/failure).
   const [projects, setProjects] = useState<Project[]>([]);
