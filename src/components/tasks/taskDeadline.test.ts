@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { deadlineInfo } from './taskDeadline';
+import { deadlineInfo, taskDeadlineInfo } from './taskDeadline';
 
 const NOW = new Date('2026-08-11T12:00:00'); // 本地时间
 
@@ -15,4 +15,9 @@ test('deadlineInfo renders remaining/overdue labels', () => {
 
 test('deadlineInfo falls back to raw string on malformed input', () => {
   assert.equal(deadlineInfo('nonsense', NOW).label, 'nonsense');
+});
+
+test('taskDeadlineInfo returns null when task has no deadline', () => {
+  assert.equal(taskDeadlineInfo({ deadline: null } as any, NOW), null);
+  assert.equal(taskDeadlineInfo({ deadline: '2026-08-12' } as any, NOW)?.label, '剩 1 天');
 });

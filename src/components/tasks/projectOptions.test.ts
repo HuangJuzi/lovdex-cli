@@ -19,6 +19,15 @@ test('taskFormProjects excludes main agent workspace and sorts starred first', (
   assert.deepEqual(out.map((p) => p.fullPath), ['/z', '/a']);
 });
 
+test('taskFormProjects sorts same-starred by displayName and does not mutate input', () => {
+  const zeta = mkProject({ displayName: 'zeta', fullPath: '/z' });
+  const alpha = mkProject({ displayName: 'alpha', fullPath: '/a' });
+  const input = [zeta, alpha];
+  const out = taskFormProjects(input);
+  assert.deepEqual(out.map((p) => p.fullPath), ['/a', '/z']);
+  assert.deepEqual(input.map((p) => p.fullPath), ['/z', '/a']); // 原数组未变
+});
+
 test('projectPathOf falls back from fullPath to path', () => {
   assert.equal(projectPathOf({ fullPath: '/x' } as Project), '/x');
   assert.equal(projectPathOf({ path: '/y' } as Project), '/y');
