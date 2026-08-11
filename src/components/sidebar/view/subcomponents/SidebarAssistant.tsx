@@ -1,5 +1,5 @@
-import { MessageSquare, Plus, Settings } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { MessageSquare, Plus, Settings, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../../../../shared/view/ui';
@@ -43,29 +43,65 @@ export default function SidebarAssistant() {
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<OperatorSession[]>([]);
   const [now, setNow] = useState(() => new Date());
+  // sessionId → true while a delete is in flight, so we can hide the row from
+  // the optimistic filter without losing its hover target mid-request.
+  const [deleting, setDeleting] = useState<Set<string>>(new Set());
+
+  const loadSessions = useCallback(async () => {
+    try {
+      const res = await api.operator.listSessions();
+      if (!res.ok) return;
+      const body = (await res.json()) as { data?: { sessions?: OperatorSession[] } };
+      setSessions(body?.data?.sessions ?? []);
+      setNow(new Date());
+    } catch {
+      // swallow — the list just stays empty
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await api.operator.listSessions();
-        if (!res.ok) return;
-        const body = (await res.json()) as { data?: { sessions?: OperatorSession[] } };
-        if (cancelled) return;
-        setSessions(body?.data?.sessions ?? []);
-        setNow(new Date());
-      } catch {
-        // swallow — the list just stays empty
-      }
+    const safeLoad = async () => {
+      await loadSessions();
+      if (cancelled) return;
     };
-    void load();
-    const onFocus = () => void load();
+    void safeLoad();
+    const onFocus = () => void safeLoad();
     window.addEventListener('focus', onFocus);
     return () => {
       cancelled = true;
       window.removeEventListener('focus', onFocus);
     };
-  }, []);
+  }, [loadSessions]);
+
+  async function deleteSession(sessionId: string) {
+    // Empty-operator sessions (created but never sent a message) pile up; the
+    // user wants them gone. Hard-delete removes the row + transcript file. The
+    // operator session has no task linkage (tasks link sessions, not vice
+    // versa) so a hard delete won't orphan a task — the task's session_id just
+    // resolves to no live run.
+    if (!window.confirm('删除该助手会话？历史对话记录将一并删除，不可恢复。')) return;
+    setDeleting((prev) => new Set(prev).add(sessionId));
+    // Optimistic: drop the row immediately so the list shrinks before the
+    // network round-trip; revert on failure by reloading.
+    setSessions((prev) => prev.filter((s) => s.session_id !== sessionId));
+    try {
+      const res = await api.deleteSession(sessionId, true);
+      if (!res.ok) {
+        console.error('delete operator session failed', res.status);
+        await loadSessions();
+      }
+    } catch (err) {
+      console.error('delete operator session failed', err);
+      await loadSessions();
+    } finally {
+      setDeleting((prev) => {
+        const next = new Set(prev);
+        next.delete(sessionId);
+        return next;
+      });
+    }
+  }
 
   return (
     <div className="md:group group flex-shrink-0 px-2 pt-1.5 md:px-1.5">
@@ -107,17 +143,30 @@ export default function SidebarAssistant() {
         {sessions.length > 0 && (
           <div className="mx-1 mb-1 mt-1 max-h-[28vh] overflow-y-auto rounded-lg bg-muted/20 p-1">
             {sessions.map((s) => (
-              <button
-                key={s.session_id}
-                className="block w-full truncate rounded-md px-2 py-1.5 text-left text-xs text-foreground hover:bg-accent/60"
-                onClick={() => openSession(s.session_id)}
-                title={s.summary ?? '新会话'}
-              >
-                <span className="block truncate">{s.summary ?? '新会话'}</span>
-                <span className="block text-[10px] text-muted-foreground/70">
-                  {formatRelativeTime(s.updated_at || s.created_at, now)}
-                </span>
-              </button>
+              <div key={s.session_id} className="group/row relative flex items-center">
+                <button
+                  className="block min-w-0 flex-1 truncate rounded-md px-2 py-1.5 text-left text-xs text-foreground hover:bg-accent/60"
+                  onClick={() => openSession(s.session_id)}
+                  title={s.summary ?? '新会话'}
+                >
+                  <span className="block truncate">{s.summary ?? '新会话'}</span>
+                  <span className="block text-[10px] text-muted-foreground/70">
+                    {formatRelativeTime(s.updated_at || s.created_at, now)}
+                  </span>
+                </button>
+                <button
+                  className="absolute right-1 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded text-muted-foreground/70 opacity-0 transition-opacity hover:bg-red-500/15 hover:text-red-500 group-hover/row:opacity-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void deleteSession(s.session_id);
+                  }}
+                  disabled={deleting.has(s.session_id)}
+                  title="删除会话"
+                  aria-label="删除会话"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
             ))}
           </div>
         )}
@@ -190,17 +239,30 @@ export default function SidebarAssistant() {
             会话记录
           </div>
           {sessions.map((s) => (
-            <button
-              key={s.session_id}
-              className="block w-full truncate rounded-md px-2 py-1.5 text-left hover:bg-accent/60"
-              onClick={() => openSession(s.session_id)}
-              title={s.summary ?? '新会话'}
-            >
-              <span className="block truncate text-xs text-foreground">{s.summary ?? '新会话'}</span>
-              <span className="block text-[10px] text-muted-foreground/70">
-                {formatRelativeTime(s.updated_at || s.created_at, now)}
-              </span>
-            </button>
+            <div key={s.session_id} className="group/row relative flex items-center">
+              <button
+                className="block min-w-0 flex-1 truncate rounded-md px-2 py-1.5 text-left hover:bg-accent/60"
+                onClick={() => openSession(s.session_id)}
+                title={s.summary ?? '新会话'}
+              >
+                <span className="block truncate text-xs text-foreground">{s.summary ?? '新会话'}</span>
+                <span className="block text-[10px] text-muted-foreground/70">
+                  {formatRelativeTime(s.updated_at || s.created_at, now)}
+                </span>
+              </button>
+              <button
+                className="absolute right-1 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded text-muted-foreground/70 opacity-0 transition-opacity hover:bg-red-500/15 hover:text-red-500 group-hover/row:opacity-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void deleteSession(s.session_id);
+                }}
+                disabled={deleting.has(s.session_id)}
+                title="删除会话"
+                aria-label="删除会话"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </div>
           ))}
         </div>
       )}
