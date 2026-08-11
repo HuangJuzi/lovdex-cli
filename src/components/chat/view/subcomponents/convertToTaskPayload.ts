@@ -9,7 +9,7 @@ export type SessionToTaskPayload = {
 };
 
 function isTaskEngine(value: unknown): value is TaskEngine {
-  return value === 'claude' || value === 'codex';
+  return value === 'claude' || value === 'codex' || value === 'sophcode';
 }
 
 /**

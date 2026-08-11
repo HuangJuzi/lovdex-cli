@@ -27,6 +27,7 @@ test('description defaults to summary', () => {
 
 test('provider kept when a task engine, else falls back to claude', () => {
   assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'codex' }), isRunning: false }).executorProvider, 'codex');
+  assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'sophcode' }), isRunning: false }).executorProvider, 'sophcode');
   assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'opencode' }), isRunning: false }).executorProvider, 'claude');
   assert.equal(buildSessionToTaskPayload({ session: makeSession({}), isRunning: false }).executorProvider, 'claude');
 });

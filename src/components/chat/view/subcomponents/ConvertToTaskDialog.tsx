@@ -110,6 +110,7 @@ export function ConvertToTaskDialog({
               >
                 <option value="claude">Claude</option>
                 <option value="codex">Codex</option>
+                <option value="sophcode">SophCode</option>
               </select>
             </label>
             <label className="flex flex-1 flex-col gap-1 text-sm">
