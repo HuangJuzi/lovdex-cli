@@ -85,7 +85,7 @@ export const TaskCard = memo(function TaskCard({
       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
         {task.is_operator === 1 && (
           <span className="rounded-full bg-violet-500/10 px-2 py-0.5 font-semibold text-violet-500 dark:text-violet-400">
-            🤖 助手
+            🤖 Lovdex助手
           </span>
         )}
         <span className="max-w-full truncate rounded-full bg-muted px-2 py-0.5 font-medium text-muted-foreground">

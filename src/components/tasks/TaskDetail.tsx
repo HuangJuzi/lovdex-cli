@@ -444,7 +444,7 @@ export function TaskDetailPage() {
             />
             {task.is_operator === 1 && (
               <span className="mt-1 inline-flex items-center rounded-full bg-violet-500/10 px-2 py-0.5 text-[11px] font-semibold text-violet-500 dark:text-violet-400">
-                🤖 Lovdex 助手
+                🤖 Lovdex助手
               </span>
             )}
             <p className="mt-1 font-mono text-xs text-muted-foreground">
@@ -516,10 +516,10 @@ export function TaskDetailPage() {
           let desc = '关联会话有一个待审批的权限请求，需要你处理。';
           if (task.sub_status === 'waiting_answer') {
             label = '等你回答';
-            desc = '助手在等你回答一个问题，去会话里回复它即可继续。';
+            desc = 'Lovdex助手在等你回答一个问题，去会话里回复它即可继续。';
           } else if (task.sub_status === 'waiting_plan') {
             label = '等你确认计划';
-            desc = '助手已出 plan，等你确认后才会开始执行。';
+            desc = 'Lovdex助手已出 plan，等你确认后才会开始执行。';
           }
           return (
             <div className="mt-4 flex flex-col gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">

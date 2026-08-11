@@ -289,7 +289,7 @@ export function TaskBoardPage() {
                   value={newProjectPath}
                   onChange={(e) => setNewProjectPath(e.target.value)}
                 >
-                  <option value={ASSISTANT_OPTION_VALUE}>🤖 Lovdex 助手</option>
+                  <option value={ASSISTANT_OPTION_VALUE}>🤖 Lovdex助手</option>
                   {taskFormProjects(projects).map((project) => {
                     const path = projectPathOf(project);
                     const name = project.displayName || path;
@@ -335,7 +335,7 @@ export function TaskBoardPage() {
               </div>
               {newProjectPath === ASSISTANT_OPTION_VALUE && (
                 <p className="col-span-full text-xs text-muted-foreground">
-                  🤖 助手任务固定使用 Claude + 默认模型，以上引擎/模型设置将被忽略。
+                  🤖 Lovdex助手任务固定使用 Claude + 默认模型，以上引擎/模型设置将被忽略。
                 </p>
               )}
               <div className="flex flex-col gap-1">

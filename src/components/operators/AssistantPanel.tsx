@@ -51,27 +51,27 @@ export function AssistantPanel() {
         if (cfgRes.ok) {
           const cfg = (await cfgRes.json()) as { interactive_chat_enabled?: boolean };
           if (cfg.interactive_chat_enabled === false) {
-            if (!cancelled) setError('交互式助手已在设置中关闭');
+            if (!cancelled) setError('交互式 Lovdex助手已在设置中关闭');
             return;
           }
         }
 
         const createRes = await api.operator.createSession();
         if (!createRes.ok) {
-          if (!cancelled) setError(`创建助手会话失败（${createRes.status}）`);
+          if (!cancelled) setError(`创建 Lovdex助手会话失败（${createRes.status}）`);
           return;
         }
         const created = (await createRes.json()) as { data?: { sessionId?: string } };
         const sessionId = created?.data?.sessionId;
         if (!sessionId) {
-          if (!cancelled) setError('创建助手会话失败：无 sessionId');
+          if (!cancelled) setError('创建 Lovdex助手会话失败：无 sessionId');
           return;
         }
         if (cancelled) return;
         // 整页跳转：触发 useProjectsState 重新加载（含 operator 工作区项目）。
         window.location.href = `${import.meta.env.BASE_URL}session/${sessionId}`.replace(/\/+/g, '/').replace(/^\/\//, '/');
       } catch (err) {
-        if (!cancelled) setError((err as Error).message ?? '启动助手失败');
+        if (!cancelled) setError((err as Error).message ?? '启动 Lovdex助手失败');
       }
     })();
     return () => {
@@ -95,7 +95,7 @@ export function AssistantPanel() {
 
   return (
     <div className="flex h-dvh items-center justify-center bg-background">
-      <div className="text-sm text-muted-foreground">正在启动助手…</div>
+      <div className="text-sm text-muted-foreground">正在启动 Lovdex助手…</div>
     </div>
   );
 }

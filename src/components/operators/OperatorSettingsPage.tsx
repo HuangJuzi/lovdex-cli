@@ -170,8 +170,8 @@ export function OperatorSettingsPage() {
                 onChange={(v) => patch({ enabled: v })}
               />
               <Toggle
-                label="启用交互式助手面板"
-                description="关闭后侧边栏不显示「助手」入口。"
+                label="启用 Lovdex助手面板"
+                description="关闭后侧边栏不显示「Lovdex助手」入口。"
                 checked={config.interactive_chat_enabled}
                 onChange={(v) => patch({ interactive_chat_enabled: v })}
               />
