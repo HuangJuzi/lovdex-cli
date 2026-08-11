@@ -109,7 +109,7 @@ export const TaskCard = memo(function TaskCard({
               onProjectChange(e.target.value);
             }}
             title="修改项目"
-            className="max-w-40 cursor-pointer truncate rounded-full border border-border/50 bg-muted py-0.5 pl-2 pr-6 text-[11px] font-medium text-muted-foreground outline-none transition-colors hover:border-primary/40"
+            className="max-w-56 cursor-pointer truncate rounded-full border border-border/50 bg-muted py-0.5 pl-2 pr-6 text-[11px] font-medium text-muted-foreground outline-none transition-colors hover:border-primary/40"
           >
             {!projectOptions.some((o) => o.value === task.project_path) && (
               <option value={task.project_path} disabled>

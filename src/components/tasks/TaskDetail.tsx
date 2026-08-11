@@ -2,8 +2,29 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useWebSocket } from '../../contexts/WebSocketContext';
-import { api } from '../../utils/api';
-import type { Project, Task, TaskLabel, TaskPriority, TaskStatus, TaskUpsertedEvent } from '../../types/app';
+import { api, authenticatedFetch } from '../../utils/api';
+import type {
+  Project,
+  ProviderModelOption,
+  Task,
+  TaskEngine,
+  TaskLabel,
+  TaskPriority,
+  TaskStatus,
+  TaskUpsertedEvent,
+} from '../../types/app';
+
+// Matches the `/api/providers/:provider/models` response consumed by
+// useChatProviderState: `{ success, data: { models: { OPTIONS, DEFAULT } } }`.
+type ProviderModelsApiResponse = {
+  success?: boolean;
+  data?: {
+    models?: {
+      OPTIONS?: ProviderModelOption[];
+      DEFAULT?: string;
+    };
+  };
+};
 
 import { buildTaskChatSend, TASK_RETRY_MESSAGE } from './taskExecution';
 import { TaskResultPanel } from './TaskResultPanel';
@@ -55,6 +76,10 @@ export function TaskDetailPage() {
   const [deadline, setDeadline] = useState('');
   const [label, setLabel] = useState<TaskLabel>('other');
   const [remark, setRemark] = useState('');
+  const [engine, setEngine] = useState<TaskEngine>('claude');
+  const [model, setModel] = useState('');
+  const [models, setModels] = useState<ProviderModelOption[]>([]);
+  const modelsRequestRef = useRef(0);
 
   const load = useCallback(async () => {
     if (!taskId) return;
@@ -76,6 +101,8 @@ export function TaskDetailPage() {
       setDeadline(data.deadline ?? '');
       setLabel(data.label ?? 'other');
       setRemark(data.remark ?? '');
+      setEngine(data.executor_provider);
+      setModel(data.executor_model ?? '');
       setLoadError(false);
     } catch (err) {
       console.error('load task failed', err);
@@ -119,6 +146,29 @@ export function TaskDetailPage() {
       cancelled = true;
     };
   }, []);
+
+  // Load the model list for the selected engine so 执行引擎/模型 are editable.
+  // Ignore stale responses when the engine is switched quickly.
+  useEffect(() => {
+    const requestId = ++modelsRequestRef.current;
+    const currentEngine = engine;
+    authenticatedFetch(`/api/providers/${currentEngine}/models`)
+      .then(async (res) => {
+        if (!res.ok) return [] as ProviderModelOption[];
+        const body = (await res.json()) as ProviderModelsApiResponse;
+        const options = body.success ? body.data?.models?.OPTIONS : undefined;
+        return Array.isArray(options) ? options : [];
+      })
+      .then((list) => {
+        if (modelsRequestRef.current !== requestId) return;
+        setModels(list);
+      })
+      .catch((err) => {
+        if (modelsRequestRef.current !== requestId) return;
+        console.error('load models for task detail failed', err);
+        setModels([]);
+      });
+  }, [engine]);
 
   const loadResult = useCallback(async (sessionId: string) => {
     const seq = ++resultSeq.current;
@@ -206,6 +256,8 @@ export function TaskDetailPage() {
       setDeadline(next.deadline ?? '');
       setLabel(next.label);
       setRemark(next.remark ?? '');
+      setEngine(next.executor_provider);
+      setModel(next.executor_model ?? '');
       const sid = next.session_id;
       if (!sid) return;
       if (next.status === 'in_progress' || next.status === 'in_review' || next.status === 'done') {
@@ -276,6 +328,26 @@ export function TaskDetailPage() {
       if (!res.ok) { const err = await res.json().catch(() => null); console.error('save remark failed', err?.error?.message ?? res.status); return; }
       setTask(await res.json());
     } catch (err) { console.error('save remark failed', err); }
+  }
+
+  async function saveEngine(nextEngine: TaskEngine) {
+    if (!task || nextEngine === task.executor_provider) return;
+    setEngine(nextEngine);
+    try {
+      const res = await api.tasks.update(task.task_id, { executorProvider: nextEngine });
+      if (!res.ok) { const err = await res.json().catch(() => null); console.error('save engine failed', err?.error?.message ?? res.status); return; }
+      setTask(await res.json());
+    } catch (err) { console.error('save engine failed', err); }
+  }
+
+  async function saveModel(nextModel: string) {
+    if (!task || nextModel === (task.executor_model ?? '')) return;
+    setModel(nextModel);
+    try {
+      const res = await api.tasks.update(task.task_id, { executorModel: nextModel || null });
+      if (!res.ok) { const err = await res.json().catch(() => null); console.error('save model failed', err?.error?.message ?? res.status); return; }
+      setTask(await res.json());
+    } catch (err) { console.error('save model failed', err); }
   }
 
   async function updateStatus(status: TaskStatus) {
@@ -604,7 +676,7 @@ export function TaskDetailPage() {
                   <span className="w-20 shrink-0 text-xs text-muted-foreground">所属项目</span>
                   {task.status === 'todo' && task.is_operator !== 1 ? (
                     <select
-                      className="h-9 w-60 rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                      className="h-9 w-72 rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
                       value={projectPath}
                       onChange={(e) => void changeProject(e.target.value)}
                     >
@@ -629,10 +701,32 @@ export function TaskDetailPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="w-20 shrink-0 text-xs text-muted-foreground">执行引擎</span>
-                  <div className="text-sm text-foreground">
-                    {task.executor_provider}
-                    {task.executor_model ? ` · ${task.executor_model}` : ''}
-                  </div>
+                  <select
+                    className="h-9 w-72 rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                    value={engine}
+                    onChange={(e) => void saveEngine(e.target.value as TaskEngine)}
+                  >
+                    <option value="claude">Claude Code</option>
+                    <option value="codex">Codex</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-20 shrink-0 text-xs text-muted-foreground">模型</span>
+                  <select
+                    className="h-9 w-72 rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                    value={model}
+                    onChange={(e) => void saveModel(e.target.value)}
+                  >
+                    <option value="">默认模型 (default)</option>
+                    {model && !models.some((m) => m.value === model) && (
+                      <option value={model} disabled>{model}（不在当前引擎列表）</option>
+                    )}
+                    {models.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label || m.value}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="w-20 shrink-0 text-xs text-muted-foreground">优先级</span>
