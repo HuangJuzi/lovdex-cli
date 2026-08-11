@@ -3,54 +3,31 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useWebSocket } from '../../contexts/WebSocketContext';
 import { api } from '../../utils/api';
-import type { Project, Task, TaskStatus, TaskUpsertedEvent, TaskVerdict } from '../../types/app';
+import type { Project, Task, TaskStatus, TaskUpsertedEvent } from '../../types/app';
 
 import { buildTaskChatSend, TASK_RETRY_MESSAGE } from './taskExecution';
 import { TaskResultPanel } from './TaskResultPanel';
 import { pickLastAssistantText } from './taskResult';
 import type { TaskResultState } from './taskResult';
-import { STATUS_META, STATUS_ORDER, taskSessionState } from './taskStatus';
+import { STATUS_META, STATUS_ORDER, SUB_STATUS_META } from './taskStatus';
 import { formatAbsoluteTime } from './taskTimestamp';
-import { VerdictBadge } from './VerdictBadge';
+import { SubStatusBadge } from './SubStatusBadge';
 import { ViewSwitcher } from './ViewSwitcher';
 
-const VERDICT_HEADER_LABEL: Record<TaskVerdict, string> = {
-  done: '已完成',
-  only_plan: '仅出计划',
-  needs_review: '待你判断',
-  blocked: '已卡住',
-};
-const VERDICT_HEADER_COLOR: Record<TaskVerdict, string> = {
-  done: '#34d399',
-  only_plan: '#3b82f6',
-  needs_review: '#eab308',
-  blocked: '#ef4444',
-};
-
 /**
- * Live status badge for the detail header. A running session shows "进行中"
- * (or 等你回答/等你确认计划/等你批准/执行失败) instead of the stale stored
- * status — mirrors the TaskCard indicator so the top of the page reads the
- * same as the board card. Falls back to the stored status label when idle.
+ * Live status badge for the detail header. Reads the effective `sub_status`
+ * (进行中/等你回答/等你确认计划/等你批准/执行失败/…) so the top of the page
+ * reads the same as the board card. Falls back to the stored status label
+ * when no sub_status is present.
  */
-function liveHeaderBadge(
-  task: Task,
-  operatorEnabled: boolean,
-): { label: string; color: string; pulse?: boolean } {
-  const sessionState = taskSessionState(task);
-  if (sessionState === 'running') {
-    if (task.failed) return { label: '执行失败', color: '#ef4444' };
-    if (task.approval_pending) {
-      const tool = task.pending_tool;
-      if (operatorEnabled && tool === 'AskUserQuestion') return { label: '等你回答', color: '#f59e0b', pulse: true };
-      if (operatorEnabled && (tool === 'ExitPlanMode' || tool === 'exit_plan_mode')) return { label: '等你确认计划', color: '#6366f1', pulse: true };
-      return { label: operatorEnabled ? '等你批准' : '待审批', color: '#f59e0b', pulse: true };
-    }
-    return { label: '进行中', color: '#3b82f6', pulse: true };
-  }
-  if (sessionState === 'review') {
-    if (task.verdict) return { label: VERDICT_HEADER_LABEL[task.verdict], color: VERDICT_HEADER_COLOR[task.verdict] };
-    return { label: '待你验收', color: '#a855f7' };
+function liveHeaderBadge(task: Task): { label: string; color: string; pulse?: boolean } {
+  if (task.sub_status) {
+    const meta = SUB_STATUS_META[task.sub_status];
+    return {
+      label: meta.label,
+      color: meta.color,
+      pulse: task.sub_status === 'running' || task.sub_status.startsWith('waiting_'),
+    };
   }
   return { label: STATUS_META[task.status].label, color: STATUS_META[task.status].color };
 }
@@ -72,7 +49,6 @@ export function TaskDetailPage() {
   // cancel/failure).
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectPath, setProjectPath] = useState('');
-  const [operatorEnabled, setOperatorEnabled] = useState(false);
   const resultSeq = useRef(0);
 
   const load = useCallback(async () => {
@@ -132,23 +108,6 @@ export function TaskDetailPage() {
         if (!cancelled) setProjects(list);
       })
       .catch((err) => console.error('load projects for task detail failed', err));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Whether the Operator Agent is enabled — gates the classified wait-reason
-  // label (等你回答/等你确认计划/等你批准) vs the generic 待审批 in the approval block.
-  useEffect(() => {
-    let cancelled = false;
-    api.operator
-      .settings()
-      .then(async (res) => {
-        if (!res.ok) return;
-        const cfg = (await res.json()) as { enabled?: boolean };
-        if (!cancelled) setOperatorEnabled(Boolean(cfg.enabled));
-      })
-      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -218,11 +177,10 @@ export function TaskDetailPage() {
               session_id: next.session_id,
               approval_pending: next.approval_pending,
               pending_tool: next.pending_tool,
-              failed: next.failed,
+              sub_status: next.sub_status,
               started_at: next.started_at,
               completed_at: next.completed_at,
               ai_summary: next.ai_summary,
-              verdict: next.verdict,
               verdict_reason: next.verdict_reason,
               verdict_at: next.verdict_at,
               updated_at: next.updated_at,
@@ -398,7 +356,7 @@ export function TaskDetailPage() {
       <div className="mx-auto max-w-6xl px-4 py-6 sm:p-8">
         <div className="mt-4 flex flex-wrap items-start gap-3">
           {(() => {
-            const badge = liveHeaderBadge(task, operatorEnabled);
+            const badge = liveHeaderBadge(task);
             return (
               <span
                 className="mt-2 inline-flex shrink-0 items-center gap-1.5 rounded-full bg-muted/40 px-2 py-0.5 text-[11px] font-semibold"
@@ -456,11 +414,13 @@ export function TaskDetailPage() {
                 }}
               />
             </div>
-            {task.verdict && (
+            {(task.ai_summary || task.verdict_reason || task.verdict_at) && (
               <div className="rounded-lg border border-border bg-card p-4">
                 <div className="mb-2 flex items-center justify-between">
                   <h4 className="text-xs uppercase tracking-wide text-muted-foreground">完成度</h4>
-                  <VerdictBadge verdict={task.verdict} />
+                  {task.sub_status && ['done', 'only_plan', 'needs_review', 'blocked'].includes(task.sub_status) && (
+                    <SubStatusBadge subStatus={task.sub_status} />
+                  )}
                 </div>
                 {task.ai_summary && (
                   <p className="text-sm text-foreground">{task.ai_summary}</p>
@@ -502,7 +462,7 @@ export function TaskDetailPage() {
               </div>
               <div className="mb-3">
                 <div className="mb-1 text-xs text-muted-foreground">所属项目</div>
-                {task.status === 'backlog' || task.status === 'todo' ? (
+                {task.status === 'todo' ? (
                   <select
                     className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
                     value={projectPath}
@@ -554,7 +514,7 @@ export function TaskDetailPage() {
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <h4 className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">执行</h4>
-              {task.failed && task.session_id && (
+              {task.sub_status === 'failed' && task.session_id && (
                 <div className="mb-3 rounded-md border border-red-500/40 bg-red-500/10 p-3">
                   <div className="flex items-center gap-1.5 text-sm font-semibold text-red-500">
                     <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> 执行失败
@@ -570,21 +530,18 @@ export function TaskDetailPage() {
                   </button>
                 </div>
               )}
-              {task.approval_pending && task.session_id && (() => {
-                const tool = task.pending_tool;
-                let label = '待审批';
+              {(task.sub_status === 'waiting_answer' ||
+                task.sub_status === 'waiting_plan' ||
+                task.sub_status === 'waiting_approval') &&
+                task.session_id && (() => {
+                let label = '等你批准';
                 let desc = '关联会话有一个待审批的权限请求，需要你处理。';
-                if (operatorEnabled) {
-                  if (tool === 'AskUserQuestion') {
-                    label = '等你回答';
-                    desc = '助手在等你回答一个问题，去会话里回复它即可继续。';
-                  } else if (tool === 'ExitPlanMode' || tool === 'exit_plan_mode') {
-                    label = '等你确认计划';
-                    desc = '助手已出 plan，等你确认后才会开始执行。';
-                  } else {
-                    label = '等你批准';
-                    desc = '关联会话有一个待审批的权限请求，需要你处理。';
-                  }
+                if (task.sub_status === 'waiting_answer') {
+                  label = '等你回答';
+                  desc = '助手在等你回答一个问题，去会话里回复它即可继续。';
+                } else if (task.sub_status === 'waiting_plan') {
+                  label = '等你确认计划';
+                  desc = '助手已出 plan，等你确认后才会开始执行。';
                 }
                 return (
                   <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
