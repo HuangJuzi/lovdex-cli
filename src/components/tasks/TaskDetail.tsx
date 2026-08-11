@@ -585,11 +585,11 @@ export function TaskDetailPage() {
           <div className="flex flex-col gap-3">
             <div className="rounded-lg border border-border bg-card p-4">
               <h4 className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">属性</h4>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 lg:grid-cols-4">
-                <div>
-                  <div className="mb-1 text-xs text-muted-foreground">状态</div>
+              <div className="flex max-w-xl flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="w-20 shrink-0 text-xs text-muted-foreground">状态</span>
                   <select
-                    className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                    className="h-9 w-60 rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
                     value={task.status}
                     onChange={(e) => updateStatus(e.target.value as TaskStatus)}
                   >
@@ -600,11 +600,11 @@ export function TaskDetailPage() {
                     ))}
                   </select>
                 </div>
-                <div>
-                  <div className="mb-1 text-xs text-muted-foreground">所属项目</div>
+                <div className="flex items-center gap-3">
+                  <span className="w-20 shrink-0 text-xs text-muted-foreground">所属项目</span>
                   {task.status === 'todo' && task.is_operator !== 1 ? (
                     <select
-                      className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                      className="h-9 w-60 rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
                       value={projectPath}
                       onChange={(e) => void changeProject(e.target.value)}
                     >
@@ -627,17 +627,17 @@ export function TaskDetailPage() {
                     <div className="text-sm text-foreground">{task.project_path}</div>
                   )}
                 </div>
-                <div>
-                  <div className="mb-1 text-xs text-muted-foreground">执行引擎</div>
+                <div className="flex items-center gap-3">
+                  <span className="w-20 shrink-0 text-xs text-muted-foreground">执行引擎</span>
                   <div className="text-sm text-foreground">
                     {task.executor_provider}
                     {task.executor_model ? ` · ${task.executor_model}` : ''}
                   </div>
                 </div>
-                <div>
-                  <div className="mb-1 text-xs text-muted-foreground">优先级</div>
+                <div className="flex items-center gap-3">
+                  <span className="w-20 shrink-0 text-xs text-muted-foreground">优先级</span>
                   <select
-                    className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                    className="h-9 w-60 rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
                     value={priority}
                     onChange={(e) => void savePriority(e.target.value as TaskPriority)}
                   >
@@ -646,19 +646,19 @@ export function TaskDetailPage() {
                     ))}
                   </select>
                 </div>
-                <div>
-                  <div className="mb-1 text-xs text-muted-foreground">截止日期</div>
+                <div className="flex items-center gap-3">
+                  <span className="w-20 shrink-0 text-xs text-muted-foreground">截止日期</span>
                   <input
                     type="date"
-                    className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                    className="h-9 w-60 rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
                     value={deadline}
                     onChange={(e) => void saveDeadline(e.target.value)}
                   />
                 </div>
-                <div>
-                  <div className="mb-1 text-xs text-muted-foreground">Label</div>
+                <div className="flex items-center gap-3">
+                  <span className="w-20 shrink-0 text-xs text-muted-foreground">Label</span>
                   <select
-                    className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                    className="h-9 w-60 rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
                     value={label}
                     onChange={(e) => void saveLabel(e.target.value as TaskLabel)}
                   >
@@ -667,33 +667,33 @@ export function TaskDetailPage() {
                     ))}
                   </select>
                 </div>
-                <div>
-                  <div className="mb-1 text-xs text-muted-foreground">备注</div>
+                <div className="flex items-center gap-3">
+                  <span className="w-20 shrink-0 text-xs text-muted-foreground">备注</span>
                   <input
-                    className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                    className="h-9 w-60 rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
                     value={remark}
                     placeholder="需求来源等，可留空"
                     onChange={(e) => setRemark(e.target.value)}
                     onBlur={() => { if (remark.trim() !== (task?.remark ?? '')) void saveRemark(remark); }}
                   />
                 </div>
-                <div>
-                  <div className="mb-1 text-xs text-muted-foreground">创建时间</div>
+                <div className="flex items-center gap-3">
+                  <span className="w-20 shrink-0 text-xs text-muted-foreground">创建时间</span>
                   <div className="text-sm text-foreground">{formatAbsoluteTime(task.created_at)}</div>
                 </div>
-                <div>
-                  <div className="mb-1 text-xs text-muted-foreground">更新时间</div>
+                <div className="flex items-center gap-3">
+                  <span className="w-20 shrink-0 text-xs text-muted-foreground">更新时间</span>
                   <div className="text-sm text-foreground">{formatAbsoluteTime(task.updated_at)}</div>
                 </div>
                 {task.started_at && (
-                  <div>
-                    <div className="mb-1 text-xs text-muted-foreground">开始时间</div>
+                  <div className="flex items-center gap-3">
+                    <span className="w-20 shrink-0 text-xs text-muted-foreground">开始时间</span>
                     <div className="text-sm text-foreground">{formatAbsoluteTime(task.started_at)}</div>
                   </div>
                 )}
                 {task.completed_at && (
-                  <div>
-                    <div className="mb-1 text-xs text-muted-foreground">完成时间</div>
+                  <div className="flex items-center gap-3">
+                    <span className="w-20 shrink-0 text-xs text-muted-foreground">完成时间</span>
                     <div className="text-sm text-foreground">{formatAbsoluteTime(task.completed_at)}</div>
                   </div>
                 )}

@@ -26,6 +26,9 @@ export const TaskCard = memo(function TaskCard({
   const timeLabel = taskTimeLabel(task);
   const now = new Date();
   const deadline = taskDeadlineInfo(task, now);
+  // 旧数据/未设置时回退到 DB 默认值，保证卡片始终显示 Label 与优先级。
+  const priority = task.priority ?? 'P2';
+  const label = task.label ?? 'other';
 
   return (
     <div
@@ -41,34 +44,22 @@ export const TaskCard = memo(function TaskCard({
           {task.title}
         </span>
       </div>
-      {task.description && (
-        <p className="mt-1 line-clamp-2 break-words text-xs text-muted-foreground">{task.description}</p>
-      )}
-      {task.ai_summary && (
-        <p className="mt-1 line-clamp-2 break-words text-xs text-muted-foreground/80">
-          {task.ai_summary}
-        </p>
-      )}
+      {/* 顶部标签条：Label / 优先级 / 截止日期 */}
       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
-        {task.label && LABEL_META[task.label] && (
+        {label && LABEL_META[label] && (
           <span
             className="rounded-full px-2 py-0.5 font-semibold"
-            style={{ color: LABEL_META[task.label].color, backgroundColor: `${LABEL_META[task.label].color}1a` }}
+            style={{ color: LABEL_META[label].color, backgroundColor: `${LABEL_META[label].color}1a` }}
           >
-            {LABEL_META[task.label].label}
+            {LABEL_META[label].label}
           </span>
         )}
-        {task.priority && PRIORITY_META[task.priority] && (
+        {priority && PRIORITY_META[priority] && (
           <span
             className="rounded-full px-2 py-0.5 font-semibold"
-            style={{ color: PRIORITY_META[task.priority].color, backgroundColor: `${PRIORITY_META[task.priority].color}1a` }}
+            style={{ color: PRIORITY_META[priority].color, backgroundColor: `${PRIORITY_META[priority].color}1a` }}
           >
-            {PRIORITY_META[task.priority].label}
-          </span>
-        )}
-        {task.is_operator === 1 && (
-          <span className="rounded-full bg-violet-500/10 px-2 py-0.5 font-semibold text-violet-500 dark:text-violet-400">
-            🤖 助手
+            {PRIORITY_META[priority].label}
           </span>
         )}
         {deadline && (
@@ -80,6 +71,21 @@ export const TaskCard = memo(function TaskCard({
             }`}
           >
             {deadline.overdue ? '⏰ ' : ''}{deadline.label}
+          </span>
+        )}
+      </div>
+      {task.description && (
+        <p className="mt-1 line-clamp-2 break-words text-xs text-muted-foreground">{task.description}</p>
+      )}
+      {task.ai_summary && (
+        <p className="mt-1 line-clamp-2 break-words text-xs text-muted-foreground/80">
+          {task.ai_summary}
+        </p>
+      )}
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+        {task.is_operator === 1 && (
+          <span className="rounded-full bg-violet-500/10 px-2 py-0.5 font-semibold text-violet-500 dark:text-violet-400">
+            🤖 助手
           </span>
         )}
         <span className="max-w-full truncate rounded-full bg-muted px-2 py-0.5 font-medium text-muted-foreground">
