@@ -385,38 +385,40 @@ export function TaskDetailPage() {
           </div>
         </div>
 
-        {/* 主操作 + 次要操作：手机主按钮整行、次按钮并排；web 主操作靠左、标记完成/删除靠右（拉开距离防误触） */}
-        <div className="mt-4 flex flex-col gap-2 sm:mt-5 sm:flex-row sm:items-center sm:justify-between">
-          {task.session_id ? (
-            <button
-              className="w-full rounded-md border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20 sm:w-auto"
-              onClick={() => navigate(`/session/${task.session_id}`)}
-            >
-              打开会话
-            </button>
-          ) : (
-            <button
-              className="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 sm:w-auto"
-              onClick={() => void startExecution()}
-            >
-              ▶ 开始执行
-            </button>
-          )}
-          <div className="flex gap-2 sm:gap-3">
-            {task.status !== 'done' && (
+        {/* 操作区：整体靠右；主操作（打开会话/开始执行）在标记完成/删除上方，宽度与两者之和一致 */}
+        <div className="mt-4 flex flex-col gap-2 sm:mt-5 sm:items-end">
+          <div className="flex w-full flex-col gap-2 sm:w-auto">
+            {task.session_id ? (
               <button
-                className="flex-1 rounded-md bg-green-500/15 px-4 py-2 text-sm font-semibold text-green-500 hover:bg-green-500/25 dark:text-green-400 sm:w-auto sm:flex-none"
-                onClick={() => updateStatus('done')}
+                className="w-full rounded-md border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20"
+                onClick={() => navigate(`/session/${task.session_id}`)}
               >
-                ✓ 标记完成
+                打开会话
+              </button>
+            ) : (
+              <button
+                className="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                onClick={() => void startExecution()}
+              >
+                ▶ 开始执行
               </button>
             )}
-            <button
-              className="flex-1 rounded-md bg-red-500/10 px-4 py-2 text-sm text-red-500 hover:bg-red-500/20 dark:text-red-400 sm:w-auto sm:flex-none"
-              onClick={remove}
-            >
-              删除
-            </button>
+            <div className="flex w-full gap-2 sm:gap-3">
+              {task.status !== 'done' && (
+                <button
+                  className="flex-1 rounded-md bg-green-500/15 px-4 py-2 text-sm font-semibold text-green-500 hover:bg-green-500/25 dark:text-green-400"
+                  onClick={() => updateStatus('done')}
+                >
+                  ✓ 标记完成
+                </button>
+              )}
+              <button
+                className="flex-1 rounded-md bg-red-500/10 px-4 py-2 text-sm text-red-500 hover:bg-red-500/20 dark:text-red-400"
+                onClick={remove}
+              >
+                删除
+              </button>
+            </div>
           </div>
         </div>
 
