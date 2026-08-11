@@ -406,14 +406,14 @@ export function TaskDetailPage() {
             <div className="flex w-full gap-2 sm:gap-3">
               {task.status !== 'done' && (
                 <button
-                  className="flex-1 rounded-md bg-green-500/15 px-4 py-2 text-sm font-semibold text-green-500 hover:bg-green-500/25 dark:text-green-400"
+                  className="flex-1 rounded-md bg-green-500/15 px-4 py-2 text-sm font-semibold text-green-500 hover:bg-green-500/25 dark:text-green-400 sm:w-auto sm:flex-none"
                   onClick={() => updateStatus('done')}
                 >
                   ✓ 标记完成
                 </button>
               )}
               <button
-                className="flex-1 rounded-md bg-red-500/10 px-4 py-2 text-sm text-red-500 hover:bg-red-500/20 dark:text-red-400"
+                className="flex-1 rounded-md bg-red-500/10 px-4 py-2 text-sm text-red-500 hover:bg-red-500/20 dark:text-red-400 sm:w-auto sm:flex-none"
                 onClick={remove}
               >
                 删除
