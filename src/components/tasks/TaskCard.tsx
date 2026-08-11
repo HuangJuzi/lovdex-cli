@@ -131,10 +131,12 @@ export const TaskCard = memo(function TaskCard({
           className={`rounded-full px-2 py-0.5 font-semibold ${
             isClaude
               ? 'bg-green-500/10 text-green-600 dark:text-green-400'
-              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+              : task.executor_provider === 'sophcode'
+                ? 'bg-violet-500/10 text-violet-600 dark:text-violet-400'
+                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
           }`}
         >
-          {isClaude ? '◈ Claude' : '◈ Codex'}
+          {isClaude ? '◈ Claude' : task.executor_provider === 'sophcode' ? '◈ SophCode' : '◈ Codex'}
         </span>
         {task.executor_model && (
           <span className="rounded-full bg-muted/60 px-2 py-0.5 font-mono text-muted-foreground">

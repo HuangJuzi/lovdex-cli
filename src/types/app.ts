@@ -87,7 +87,7 @@ export type SubStatus =
   | 'only_plan'
   | 'needs_review'
   | 'blocked';
-export type TaskEngine = 'claude' | 'codex';
+export type TaskEngine = 'claude' | 'codex' | 'sophcode';
 export type TaskPriority = 'P0' | 'P1' | 'P2' | 'P3';
 export type TaskLabel = 'bug' | 'feature' | 'optimization' | 'refactor' | 'docs' | 'other';
 
