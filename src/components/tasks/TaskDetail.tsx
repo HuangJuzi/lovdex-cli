@@ -383,21 +383,19 @@ export function TaskDetailPage() {
               {task.project_path} · {task.task_id.slice(0, 8)}
             </p>
           </div>
-        </div>
 
-        {/* 操作区：整体靠右；主操作（打开会话/开始执行）在标记完成/删除上方，宽度与两者之和一致 */}
-        <div className="mt-4 flex flex-col gap-2 sm:mt-5 sm:items-end">
-          <div className="flex w-full flex-col gap-2 sm:w-auto">
+          {/* 操作区：手机端换行到标题下方整宽（保持原样）；web 与标题同行靠右，按钮略加宽 */}
+          <div className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto">
             {task.session_id ? (
               <button
-                className="w-full rounded-md border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20"
+                className="w-full rounded-md border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20 sm:px-6"
                 onClick={() => navigate(`/session/${task.session_id}`)}
               >
                 打开会话
               </button>
             ) : (
               <button
-                className="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                className="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 sm:px-6"
                 onClick={() => void startExecution()}
               >
                 ▶ 开始执行
@@ -406,14 +404,14 @@ export function TaskDetailPage() {
             <div className="flex w-full gap-2 sm:gap-3">
               {task.status !== 'done' && (
                 <button
-                  className="flex-1 rounded-md bg-green-500/15 px-4 py-2 text-sm font-semibold text-green-500 hover:bg-green-500/25 dark:text-green-400 sm:w-auto sm:flex-none"
+                  className="flex-1 rounded-md bg-green-500/15 px-4 py-2 text-sm font-semibold text-green-500 hover:bg-green-500/25 dark:text-green-400 sm:w-auto sm:flex-none sm:px-6"
                   onClick={() => updateStatus('done')}
                 >
                   ✓ 标记完成
                 </button>
               )}
               <button
-                className="flex-1 rounded-md bg-red-500/10 px-4 py-2 text-sm text-red-500 hover:bg-red-500/20 dark:text-red-400 sm:w-auto sm:flex-none"
+                className="flex-1 rounded-md bg-red-500/10 px-4 py-2 text-sm text-red-500 hover:bg-red-500/20 dark:text-red-400 sm:w-auto sm:flex-none sm:px-6"
                 onClick={remove}
               >
                 删除
