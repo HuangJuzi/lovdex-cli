@@ -3,16 +3,57 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useWebSocket } from '../../contexts/WebSocketContext';
 import { api } from '../../utils/api';
-import type { Project, Task, TaskStatus, TaskUpsertedEvent } from '../../types/app';
+import type { Project, Task, TaskStatus, TaskUpsertedEvent, TaskVerdict } from '../../types/app';
 
 import { buildTaskChatSend, TASK_RETRY_MESSAGE } from './taskExecution';
 import { TaskResultPanel } from './TaskResultPanel';
 import { pickLastAssistantText } from './taskResult';
 import type { TaskResultState } from './taskResult';
-import { STATUS_META, STATUS_ORDER } from './taskStatus';
+import { STATUS_META, STATUS_ORDER, taskSessionState } from './taskStatus';
 import { formatAbsoluteTime } from './taskTimestamp';
 import { VerdictBadge } from './VerdictBadge';
 import { ViewSwitcher } from './ViewSwitcher';
+
+const VERDICT_HEADER_LABEL: Record<TaskVerdict, string> = {
+  done: '已完成',
+  only_plan: '仅出计划',
+  needs_review: '待你判断',
+  blocked: '已卡住',
+};
+const VERDICT_HEADER_COLOR: Record<TaskVerdict, string> = {
+  done: '#34d399',
+  only_plan: '#3b82f6',
+  needs_review: '#eab308',
+  blocked: '#ef4444',
+};
+
+/**
+ * Live status badge for the detail header. A running session shows "进行中"
+ * (or 等你回答/等你确认计划/等你批准/执行失败) instead of the stale stored
+ * status — mirrors the TaskCard indicator so the top of the page reads the
+ * same as the board card. Falls back to the stored status label when idle.
+ */
+function liveHeaderBadge(
+  task: Task,
+  operatorEnabled: boolean,
+): { label: string; color: string; pulse?: boolean } {
+  const sessionState = taskSessionState(task);
+  if (sessionState === 'running') {
+    if (task.failed) return { label: '执行失败', color: '#ef4444' };
+    if (task.approval_pending) {
+      const tool = task.pending_tool;
+      if (operatorEnabled && tool === 'AskUserQuestion') return { label: '等你回答', color: '#f59e0b', pulse: true };
+      if (operatorEnabled && (tool === 'ExitPlanMode' || tool === 'exit_plan_mode')) return { label: '等你确认计划', color: '#6366f1', pulse: true };
+      return { label: operatorEnabled ? '等你批准' : '待审批', color: '#f59e0b', pulse: true };
+    }
+    return { label: '进行中', color: '#3b82f6', pulse: true };
+  }
+  if (sessionState === 'review') {
+    if (task.verdict) return { label: VERDICT_HEADER_LABEL[task.verdict], color: VERDICT_HEADER_COLOR[task.verdict] };
+    return { label: '待你验收', color: '#a855f7' };
+  }
+  return { label: STATUS_META[task.status].label, color: STATUS_META[task.status].color };
+}
 
 export function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -356,10 +397,21 @@ export function TaskDetailPage() {
       </header>
       <div className="mx-auto max-w-6xl px-4 py-6 sm:p-8">
         <div className="mt-4 flex flex-wrap items-start gap-3">
-          <span
-            className="mt-2 h-3 w-3 shrink-0 rounded-full"
-            style={{ background: STATUS_META[task.status].color }}
-          />
+          {(() => {
+            const badge = liveHeaderBadge(task, operatorEnabled);
+            return (
+              <span
+                className="mt-2 inline-flex shrink-0 items-center gap-1.5 rounded-full bg-muted/40 px-2 py-0.5 text-[11px] font-semibold"
+                style={{ color: badge.color }}
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${badge.pulse ? 'animate-pulse' : ''}`}
+                  style={{ background: badge.color }}
+                />
+                {badge.label}
+              </span>
+            );
+          })()}
           <div className="min-w-0 flex-1">
             <input
               className="w-full bg-transparent text-xl font-bold text-foreground outline-none"
@@ -404,15 +456,6 @@ export function TaskDetailPage() {
                 }}
               />
             </div>
-            <TaskResultPanel
-              state={resultState}
-              content={resultContent}
-              onRefresh={() => {
-                if (task?.session_id) void loadResult(task.session_id);
-              }}
-            />
-          </div>
-          <div className="flex flex-col gap-3">
             {task.verdict && (
               <div className="rounded-lg border border-border bg-card p-4">
                 <div className="mb-2 flex items-center justify-between">
@@ -432,6 +475,15 @@ export function TaskDetailPage() {
                 )}
               </div>
             )}
+            <TaskResultPanel
+              state={resultState}
+              content={resultContent}
+              onRefresh={() => {
+                if (task?.session_id) void loadResult(task.session_id);
+              }}
+            />
+          </div>
+          <div className="flex flex-col gap-3">
             <div className="rounded-lg border border-border bg-card p-4">
               <h4 className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">属性</h4>
               <div className="mb-3">
