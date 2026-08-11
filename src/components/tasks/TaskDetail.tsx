@@ -3,13 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useWebSocket } from '../../contexts/WebSocketContext';
 import { api } from '../../utils/api';
-import type { Project, Task, TaskStatus, TaskUpsertedEvent } from '../../types/app';
+import type { Project, Task, TaskLabel, TaskPriority, TaskStatus, TaskUpsertedEvent } from '../../types/app';
 
 import { buildTaskChatSend, TASK_RETRY_MESSAGE } from './taskExecution';
 import { TaskResultPanel } from './TaskResultPanel';
 import { pickLastAssistantText } from './taskResult';
 import type { TaskResultState } from './taskResult';
-import { STATUS_META, STATUS_ORDER, SUB_STATUS_META } from './taskStatus';
+import { ASSISTANT_OPTION_VALUE, projectPathOf, taskFormProjects } from './projectOptions';
+import { LABEL_META, LABEL_ORDER, PRIORITY_META, PRIORITY_ORDER, STATUS_META, STATUS_ORDER, SUB_STATUS_META } from './taskStatus';
 import { formatAbsoluteTime } from './taskTimestamp';
 import { SubStatusBadge } from './SubStatusBadge';
 import { ViewSwitcher } from './ViewSwitcher';
@@ -50,6 +51,10 @@ export function TaskDetailPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectPath, setProjectPath] = useState('');
   const resultSeq = useRef(0);
+  const [priority, setPriority] = useState<TaskPriority>('P2');
+  const [deadline, setDeadline] = useState('');
+  const [label, setLabel] = useState<TaskLabel>('other');
+  const [remark, setRemark] = useState('');
 
   const load = useCallback(async () => {
     if (!taskId) return;
@@ -67,6 +72,10 @@ export function TaskDetailPage() {
       setTask(data);
       setTitle(data.title);
       setDescription(data.description ?? '');
+      setPriority(data.priority ?? 'P2');
+      setDeadline(data.deadline ?? '');
+      setLabel(data.label ?? 'other');
+      setRemark(data.remark ?? '');
       setLoadError(false);
     } catch (err) {
       console.error('load task failed', err);
@@ -74,13 +83,11 @@ export function TaskDetailPage() {
     }
   }, [taskId]);
 
-  const projectPathOf = (project: Project): string => project.fullPath || project.path || '';
-
   // `displayName` can collide across projects while the path stays unique — the
   // same disambiguation the TaskBoard create form uses.
   const duplicateProjectNames = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const project of projects) {
+    for (const project of taskFormProjects(projects)) {
       const name = project.displayName || projectPathOf(project);
       counts.set(name, (counts.get(name) ?? 0) + 1);
     }
@@ -184,6 +191,11 @@ export function TaskDetailPage() {
               verdict_reason: next.verdict_reason,
               verdict_at: next.verdict_at,
               updated_at: next.updated_at,
+              priority: next.priority ?? prev.priority,
+              deadline: next.deadline ?? prev.deadline,
+              is_operator: next.is_operator ?? prev.is_operator,
+              label: next.label ?? prev.label,
+              remark: next.remark ?? prev.remark,
             }
           : prev,
       );
@@ -214,6 +226,50 @@ export function TaskDetailPage() {
       savingRef.current = false;
     }
   }, [task, title, description]);
+
+  async function savePriority(nextPriority: TaskPriority) {
+    if (!task || nextPriority === task.priority) return;
+    setPriority(nextPriority);
+    try {
+      const res = await api.tasks.update(task.task_id, { priority: nextPriority });
+      if (!res.ok) { const err = await res.json().catch(() => null); console.error('save priority failed', err?.error?.message ?? res.status); return; }
+      setTask(await res.json());
+    } catch (err) { console.error('save priority failed', err); }
+  }
+
+  async function saveDeadline(nextDeadline: string) {
+    if (!task) return;
+    setDeadline(nextDeadline);
+    const value = nextDeadline || null;
+    if (value === task.deadline) return;
+    try {
+      const res = await api.tasks.update(task.task_id, { deadline: value });
+      if (!res.ok) { const err = await res.json().catch(() => null); console.error('save deadline failed', err?.error?.message ?? res.status); return; }
+      setTask(await res.json());
+    } catch (err) { console.error('save deadline failed', err); }
+  }
+
+  async function saveLabel(nextLabel: TaskLabel) {
+    if (!task || nextLabel === task.label) return;
+    setLabel(nextLabel);
+    try {
+      const res = await api.tasks.update(task.task_id, { label: nextLabel });
+      if (!res.ok) { const err = await res.json().catch(() => null); console.error('save label failed', err?.error?.message ?? res.status); return; }
+      setTask(await res.json());
+    } catch (err) { console.error('save label failed', err); }
+  }
+
+  async function saveRemark(nextRemark: string) {
+    if (!task) return;
+    setRemark(nextRemark);
+    const value = nextRemark.trim() || null;
+    if (value === task.remark) return;
+    try {
+      const res = await api.tasks.update(task.task_id, { remark: value });
+      if (!res.ok) { const err = await res.json().catch(() => null); console.error('save remark failed', err?.error?.message ?? res.status); return; }
+      setTask(await res.json());
+    } catch (err) { console.error('save remark failed', err); }
+  }
 
   async function updateStatus(status: TaskStatus) {
     if (!task) return;
@@ -379,6 +435,11 @@ export function TaskDetailPage() {
                 if (title !== task.title) void saveFields();
               }}
             />
+            {task.is_operator === 1 && (
+              <span className="mt-1 inline-flex items-center rounded-full bg-violet-500/10 px-2 py-0.5 text-[11px] font-semibold text-violet-500 dark:text-violet-400">
+                🤖 Lovdex 助手
+              </span>
+            )}
             <p className="mt-1 font-mono text-xs text-muted-foreground">
               {task.project_path} · {task.task_id.slice(0, 8)}
             </p>
@@ -534,13 +595,16 @@ export function TaskDetailPage() {
                 </div>
                 <div>
                   <div className="mb-1 text-xs text-muted-foreground">所属项目</div>
-                  {task.status === 'todo' ? (
+                  {task.status === 'todo' && task.is_operator !== 1 ? (
                     <select
                       className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
                       value={projectPath}
                       onChange={(e) => void changeProject(e.target.value)}
                     >
-                      {projects.map((project) => {
+                      {!taskFormProjects(projects).some((p) => projectPathOf(p) === projectPath) && (
+                        <option value={projectPath} disabled>{projectPath}</option>
+                      )}
+                      {taskFormProjects(projects).map((project) => {
                         const path = projectPathOf(project);
                         const name = project.displayName || path;
                         const label =
@@ -562,6 +626,49 @@ export function TaskDetailPage() {
                     {task.executor_provider}
                     {task.executor_model ? ` · ${task.executor_model}` : ''}
                   </div>
+                </div>
+                <div>
+                  <div className="mb-1 text-xs text-muted-foreground">优先级</div>
+                  <select
+                    className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                    value={priority}
+                    onChange={(e) => void savePriority(e.target.value as TaskPriority)}
+                  >
+                    {PRIORITY_ORDER.map((p) => (
+                      <option key={p} value={p}>{PRIORITY_META[p].label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <div className="mb-1 text-xs text-muted-foreground">截止日期</div>
+                  <input
+                    type="date"
+                    className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                    value={deadline}
+                    onChange={(e) => void saveDeadline(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <div className="mb-1 text-xs text-muted-foreground">Label</div>
+                  <select
+                    className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                    value={label}
+                    onChange={(e) => void saveLabel(e.target.value as TaskLabel)}
+                  >
+                    {LABEL_ORDER.map((l) => (
+                      <option key={l} value={l}>{LABEL_META[l].label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <div className="mb-1 text-xs text-muted-foreground">备注</div>
+                  <input
+                    className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                    value={remark}
+                    placeholder="需求来源等，可留空"
+                    onChange={(e) => setRemark(e.target.value)}
+                    onBlur={() => { if (remark.trim() !== (task?.remark ?? '')) void saveRemark(remark); }}
+                  />
                 </div>
                 <div>
                   <div className="mb-1 text-xs text-muted-foreground">创建时间</div>
