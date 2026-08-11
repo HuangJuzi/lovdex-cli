@@ -17,17 +17,6 @@ type OperatorSession = {
 const COLLAPSE_KEY = 'lovdex:assistant:sessions-collapsed';
 
 /**
- * 把 Lovdex助手 会话打开到 /session/:id。用整页跳转（不是 SPA navigate）这样
- * AppContent 的 useProjectsState 会重新拉项目列表（含 operator 工作区），
- * session 才能正确解析为 selectedSession。
- */
-function openSession(sessionId: string) {
-  window.location.href = `${import.meta.env.BASE_URL}session/${sessionId}`
-    .replace(/\/+/g, '/')
-    .replace(/^\/\//, '/');
-}
-
-/**
  * 侧边栏顶部的「Lovdex助手」入口 + 其会话记录列表。
  *
  * Lovdex助手 是一个特殊的 Project（operator 工作区）：项目列表里它的工作区
@@ -38,13 +27,19 @@ function openSession(sessionId: string) {
  * 会话列表（is_operator=1，按 updated_at 倒序）：
  *  - 每行 hover 出 [✎]（重命名）和 [🗑]（删除）；重命名走 api.renameSession，
  *    删除走 api.deleteSession(hard)。
- *  - 点击行打开 /session/:id（整页跳转）。
+ *  - 点击行用 SPA navigate 打开 /session/:id（不再整页跳转，避免闪屏）。
+ *    operator 工作区项目一直保留在全局 projects state 里（仅侧边栏渲染层
+ *    过滤），所以 useProjectsState 的 session 解析可以直接命中，无需 reload。
  *
  * 挂载时拉一次 + 窗口重新获焦时刷新。[+] → /assistant?new=1（强制新建）；
  * [⚙] → /settings/operator。
  */
 export default function SidebarAssistant() {
   const navigate = useNavigate();
+  /** SPA 打开 Lovdex助手 会话；点击行后由 useProjectsState 解析为 selectedSession。 */
+  const openSession = useCallback((sessionId: string) => {
+    navigate(`/session/${sessionId}`);
+  }, [navigate]);
   const [sessions, setSessions] = useState<OperatorSession[]>([]);
   const [now, setNow] = useState(() => new Date());
   const [deleting, setDeleting] = useState<Set<string>>(new Set());
