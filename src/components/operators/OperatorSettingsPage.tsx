@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { api } from '../../utils/api';
 import { Button } from '../../shared/view/ui';
+import { BackToTasksButton } from '../tasks/TaskBackNav';
 
 /**
  * Operator Agent 配置页。
@@ -75,7 +75,6 @@ function Toggle({
 }
 
 export function OperatorSettingsPage() {
-  const navigate = useNavigate();
   const [config, setConfig] = useState<OperatorConfig>(EMPTY);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -144,12 +143,7 @@ export function OperatorSettingsPage() {
   return (
     <div className="h-dvh overflow-y-auto bg-background">
       <header className="pwa-header-safe sticky top-0 z-10 flex flex-shrink-0 items-center gap-2 border-b border-border/60 bg-background px-3 py-1.5 sm:px-4 sm:py-2">
-        <button
-          className="text-sm text-muted-foreground hover:text-foreground"
-          onClick={() => navigate('/tasks')}
-        >
-          ← 返回任务面板
-        </button>
+        <BackToTasksButton />
         <h1 className="ml-2 text-sm font-semibold text-foreground">Operator Agent 设置</h1>
       </header>
 

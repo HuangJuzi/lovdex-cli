@@ -35,6 +35,7 @@ import { LABEL_META, LABEL_ORDER, PRIORITY_META, PRIORITY_ORDER, STATUS_META, ST
 import { formatAbsoluteTime } from './taskTimestamp';
 import { SubStatusBadge } from './SubStatusBadge';
 import { ViewSwitcher } from './ViewSwitcher';
+import { TaskBackNav } from './TaskBackNav';
 
 /**
  * Live status badge for the detail header. Reads the effective `sub_status`
@@ -472,21 +473,7 @@ export function TaskDetailPage() {
     <div className="h-dvh overflow-y-auto bg-background">
       <header className="pwa-header-safe sticky top-0 z-10 flex flex-shrink-0 items-center gap-2 border-b border-border/60 bg-background px-3 py-1.5 sm:px-4 sm:py-2">
         <ViewSwitcher active="tasks" className="w-40 flex-shrink-0 sm:w-44" />
-        <div className="ml-auto flex flex-shrink-0 items-center gap-2">
-          <button
-            className="text-sm text-muted-foreground hover:text-foreground"
-            onClick={() => navigate('/tasks')}
-          >
-            ← 返回任务面板
-          </button>
-          <span className="text-xs text-muted-foreground/50">·</span>
-          <button
-            className="text-sm text-muted-foreground hover:text-foreground"
-            onClick={() => navigate('/')}
-          >
-            返回主页
-          </button>
-        </div>
+        <TaskBackNav className="ml-auto flex flex-shrink-0 items-center gap-2" />
       </header>
       <div className="mx-auto w-full px-4 py-6 sm:p-8">
         <div className="mt-4 flex flex-wrap items-start gap-3">
