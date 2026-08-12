@@ -20,15 +20,14 @@ export function computeRefreshLimit(currentLength: number, opts?: { limit?: numb
 /**
  * 合并刷新结果与已加载消息（两者都按时间正序）。
  * - fetched 为空 → 原样返回 existing。
- * - fetched 覆盖了 existing 全窗口（existing.length ≤ fetched.length）→ 直接替换。
- * - 否则（用户已加载更多、fetched 是更短的尾部页）→ 保留不在 fetched 里的旧前缀，fetched 覆盖尾部。
+ * - 否则始终按 id 并集：保留不在 fetched 里的旧前缀（避免尾部因新消息右移时丢已加载行），
+ *   fetched 覆盖重叠 id（新版本优先）。
  */
 export function mergeRefreshedTail(
   existing: NormalizedMessage[],
   fetched: NormalizedMessage[],
 ): NormalizedMessage[] {
   if (fetched.length === 0) return existing;
-  if (existing.length <= fetched.length) return fetched;
   const fetchedIds = new Set(fetched.map((m) => m.id));
   const prefix = existing.filter((m) => !fetchedIds.has(m.id));
   return [...prefix, ...fetched];

@@ -30,3 +30,10 @@ test('mergeRefreshedTail returns existing unchanged when fetched is empty', () =
   const existing = [{ id: 'm1' }] as NormalizedMessage[];
   assert.equal(mergeRefreshedTail(existing, []), existing);
 });
+
+test('mergeRefreshedTail keeps older rows when the tail shifts (new messages arrived)', () => {
+  const existing = ['m1', 'm2', 'm3', 'm4'].map((id) => ({ id })) as NormalizedMessage[];
+  const fetched = ['m3', 'm4', 'm5'].map((id) => ({ id })) as NormalizedMessage[];
+  const merged = mergeRefreshedTail(existing, fetched);
+  assert.deepEqual(merged.map((m) => m.id), ['m1', 'm2', 'm3', 'm4', 'm5']);
+});

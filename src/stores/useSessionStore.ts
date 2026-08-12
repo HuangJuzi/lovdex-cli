@@ -729,16 +729,13 @@ export function useSessionStore() {
   }, [getSlot, notify, ensureRealtimeId]);
 
   /**
-   * Re-fetch serverMessages from the provider sessions endpoint.
-   */
-  /**
    * Re-fetch a bounded tail page from the provider sessions endpoint and merge
    * it into the slot.
    *
    * Bounded (default limit = max(current loaded, 20), capped at 200) so a
    * session with a long transcript never floods the store or the UI on
    * `complete` / reconnect / external refresh. Older already-loaded messages
-   * are preserved when the fetched page is shorter than the current window.
+   * are preserved; fetched rows override by id.
    */
   const refreshFromServer = useCallback(async (
     sessionId: string,
