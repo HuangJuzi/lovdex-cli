@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { API_BASE_URL } from '../constants/config';
 import { dbg } from '../dbg';
+import { buildWebSocketUrl } from '../utils/wsUrl';
 
 /**
  * One frame received from the chat websocket. The server guarantees every
@@ -41,18 +41,6 @@ export const useWebSocket = () => {
     throw new Error('useWebSocket must be used within a WebSocketProvider');
   }
   return context;
-};
-
-const buildWebSocketUrl = () => {
-  // When API_BASE_URL is set (cross-origin backend), derive the WS URL from it;
-  // otherwise fall back to same-origin (dev proxy / monolith deployment).
-  if (API_BASE_URL) {
-    const httpUrl = new URL(API_BASE_URL);
-    const protocol = httpUrl.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${protocol}//${httpUrl.host}/ws`;
-  }
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${protocol}//${window.location.host}/ws`;
 };
 
 const useWebSocketProviderState = (): WebSocketContextType => {
@@ -130,7 +118,9 @@ const useWebSocketProviderState = (): WebSocketContextType => {
   const connect = useCallback(() => {
     if (unmountedRef.current) return; // Prevent connection if unmounted
     try {
-      const wsUrl = buildWebSocketUrl();
+      const wsUrl = buildWebSocketUrl(
+        typeof localStorage !== 'undefined' ? localStorage.getItem('auth-token') : null
+      );
 
       const websocket = new WebSocket(wsUrl);
       activeSocketRef.current = websocket;
