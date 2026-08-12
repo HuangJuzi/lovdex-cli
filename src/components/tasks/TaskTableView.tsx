@@ -187,12 +187,6 @@ function TaskRow({
   const overdue = deadlineInfo?.overdue ?? false;
   const statusColor = STATUS_META[task.status].color;
 
-  const canOpenSession =
-    task.session_id &&
-    (task.status === 'in_progress' ||
-      task.status === 'in_review' ||
-      ['only_plan', 'needs_review', 'blocked'].includes(task.sub_status ?? ''));
-
   return (
     <tr
       className="cursor-pointer transition-transform hover:-translate-y-px"
@@ -343,11 +337,18 @@ function TaskRow({
               )}
             </>
           )}
-          {task.status === 'in_progress' && canOpenSession && onOpenSession && (
+          {task.status === 'in_progress' && task.session_id && onOpenSession && (
             <ActionBtn onClick={() => onOpenSession(task)} className="bg-muted text-muted-foreground">
               打开会话
             </ActionBtn>
           )}
+          {['only_plan', 'needs_review', 'blocked'].includes(task.sub_status ?? '') &&
+            task.session_id &&
+            onOpenSession && (
+              <ActionBtn onClick={() => onOpenSession(task)} className="bg-muted text-muted-foreground">
+                打开会话
+              </ActionBtn>
+            )}
         </div>
       </td>
     </tr>
