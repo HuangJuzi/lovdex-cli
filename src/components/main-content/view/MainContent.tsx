@@ -124,6 +124,7 @@ function MainContent({
                   externalMessageUpdate={externalMessageUpdate}
                   newSessionTrigger={newSessionTrigger}
                   onShowAllTasks={null}
+                  linkedTaskModel={linkedTask ? (linkedTask.executor_model ?? null) : undefined}
                 />
               </ErrorBoundary>
             </div>

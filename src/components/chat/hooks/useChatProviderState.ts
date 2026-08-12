@@ -68,6 +68,38 @@ type ProviderCapabilitiesApiResponse = {
 interface UseChatProviderStateArgs {
   selectedSession: ProjectSession | null;
   selectedProject: Project | null;
+  /**
+   * The linked task's `executor_model` for the selected session, when that
+   * session is linked to a task. `undefined` means "no linked task (or the
+   * reverse-lookup has not resolved yet)" and leaves the chat model untouched;
+   * `null`/string means the session belongs to a task.
+   *
+   * A task run sends `options.model = task.executor_model || undefined`, so the
+   * session actually executes with the task's model (or the provider default
+   * when blank). The composer indicator, however, reads the per-provider model
+   * stored in localStorage — a different source of truth. Syncing the provider
+   * model to the task's resolved model when the session opens keeps the task
+   * detail's 模型 field and the session's model indicator consistent.
+   */
+  linkedTaskModel?: string | null;
+}
+
+/**
+ * Compute the chat model a task-linked session should display / send with.
+ * - A task that names an `executor_model` → that model.
+ * - A task that leaves it blank (默认模型) → the provider catalog default (the
+ *   same model the backend run resolves when `chat.send` carries no model).
+ * - No linked task (`linkedTaskModel === undefined`) → null (no change).
+ * Returns null when the model is still unknown (catalog default not loaded).
+ */
+export function resolveLinkedTaskModel(
+  linkedTaskModel: string | null | undefined,
+  catalogDefault: string | undefined,
+): string | null {
+  if (linkedTaskModel === undefined) return null;
+  if (typeof linkedTaskModel === 'string' && linkedTaskModel.trim()) return linkedTaskModel.trim();
+  if (catalogDefault && catalogDefault.trim()) return catalogDefault.trim();
+  return null;
 }
 
 type ProviderModelsApiResponse = {
@@ -89,7 +121,7 @@ type ChangeActiveModelApiResponse = {
   };
 };
 
-export function useChatProviderState({ selectedSession, selectedProject: _selectedProject }: UseChatProviderStateArgs) {
+export function useChatProviderState({ selectedSession, selectedProject: _selectedProject, linkedTaskModel }: UseChatProviderStateArgs) {
   const [permissionMode, setPermissionMode] = useState<PermissionMode>('default');
   const [pendingPermissionRequests, setPendingPermissionRequests] = useState<PendingPermissionRequest[]>([]);
   const [provider, setProvider] = useState<LLMProvider>(readStoredProvider);
@@ -454,6 +486,36 @@ export function useChatProviderState({ selectedSession, selectedProject: _select
       setProviderEfforts((previous) => ({ ...previous, ...nextEfforts }));
     }
   }, [providerEfforts, providerModels, reconcileStoredEffort]);
+
+  // Sync the composer model to a task-linked session's resolved model when the
+  // session opens (and when the task link / provider catalog finishes loading).
+  // Task runs send `options.model = task.executor_model`, so this makes the
+  // session indicator agree with the task detail's 模型 field instead of showing
+  // whatever per-provider default happened to be in localStorage. Applies once
+  // per session id so an explicit in-session /model change is never reverted;
+  // opening a non-task session clears the one-shot marker so reopening the task
+  // session later re-syncs even if a plain chat in between changed the default.
+  const taskSessionModelSyncedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const sid = selectedSession?.id;
+    const sessionProvider = selectedSession?.__provider;
+    if (!sid || !sessionProvider) return;
+    if (linkedTaskModel === undefined) {
+      // Not (yet) a task session — forget the previous sync so a later reopen
+      // of a task session re-applies its model.
+      taskSessionModelSyncedRef.current = null;
+      return;
+    }
+    if (!PROVIDERS.includes(sessionProvider)) return;
+    if (taskSessionModelSyncedRef.current === sid) return;
+    const resolved = resolveLinkedTaskModel(
+      linkedTaskModel,
+      providerModelCatalog[sessionProvider]?.DEFAULT,
+    );
+    if (!resolved) return; // blank model + catalog default not loaded yet
+    taskSessionModelSyncedRef.current = sid;
+    setStoredProviderModel(sessionProvider, resolved);
+  }, [selectedSession?.id, selectedSession?.__provider, linkedTaskModel, providerModelCatalog, setStoredProviderModel]);
 
   useEffect(() => {
     const validModes = getPermissionModesForProvider(provider);

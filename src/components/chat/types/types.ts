@@ -140,4 +140,9 @@ export interface ChatInterfaceProps {
   newSessionTrigger?: number;
   onTaskClick?: (...args: unknown[]) => void;
   onShowAllTasks?: (() => void) | null;
+  /** The linked task's `executor_model` when the selected session is a task
+   *  session; `undefined` when there is no linked task (or it has not resolved
+   *  yet). Synced into the composer model so the session shows the same model
+   *  as the task detail. */
+  linkedTaskModel?: string | null;
 }
