@@ -37,13 +37,30 @@ export const authenticatedFetch = (url, options = {}) => {
     if (isValidRefreshedToken(refreshedToken)) {
       localStorage.setItem('auth-token', refreshedToken);
     }
+    if (response.status === 401) {
+      // Token expired or invalid mid-session: drop it and bounce to the login
+      // page (AuthGate listens for this event). Login itself uses raw fetch and
+      // never reaches this interceptor.
+      localStorage.removeItem('auth-token');
+      window.dispatchEvent(new Event('auth:unauthorized'));
+    }
     return response;
   });
 };
 
 // API endpoints
 export const api = {
-  // Auth removed — internal-only build.
+  // Auth endpoints. login is public (no token needed); me validates a stored
+  // token so the app can boot straight into an authenticated session.
+  auth: {
+    login: (email, code) =>
+      fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code }),
+      }),
+    me: () => authenticatedFetch('/api/auth/me'),
+  },
 
   // Protected endpoints
   // config endpoint removed - no longer needed (frontend uses window.location)
