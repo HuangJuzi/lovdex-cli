@@ -11,6 +11,12 @@ import type {
   ProjectSession,
 } from '../types/app';
 
+import {
+  clearLastOpenedSessionId,
+  findProjectSessionById,
+  readLastOpenedSessionId,
+  writeLastOpenedSessionId,
+} from './lastOpenedSession';
 import type { SessionActivityMap } from './useSessionProtection';
 
 type UseProjectsStateArgs = {
@@ -840,6 +846,36 @@ export function useProjectsState({
     });
   }, [sessionId, projects, selectedProject, selectedSession?.id, selectedSession?.__provider]);
 
+  // 持久化「上次打开的 session」：任何入口（打开会话/侧边栏/resume/助手会话）选中具体 session 时记录。
+  useEffect(() => {
+    if (selectedSession?.id) {
+      writeLastOpenedSessionId(selectedSession.id);
+    }
+  }, [selectedSession?.id]);
+
+  // 挂载且 URL 无 sessionId（非「打开会话」）时，恢复上次打开的 session。
+  // 每次 useProjectsState 挂载只恢复一次；AppContent 从 /tasks 等路由进入 / 会全新挂载。
+  const restoredOnceRef = useRef(false);
+  useEffect(() => {
+    if (sessionId || projects.length === 0 || restoredOnceRef.current) {
+      return;
+    }
+    const lastId = readLastOpenedSessionId();
+    if (!lastId) {
+      return;
+    }
+    const found = findProjectSessionById(projects, lastId);
+    if (!found) {
+      // 会话已删除 → 清掉无效 key
+      clearLastOpenedSessionId();
+      return;
+    }
+    restoredOnceRef.current = true;
+    const normalizedSession = normalizeSessionProvider(found.session);
+    setSelectedProject(found.project);
+    setSelectedSession(normalizedSession);
+  }, [sessionId, projects]);
+
   const handleProjectSelect = useCallback(
     (project: Project) => {
       setSelectedProject(project);
@@ -901,6 +937,7 @@ export function useProjectsState({
       setSelectedProject(project);
       setSelectedSession(null);
       setActiveTab('chat');
+      clearLastOpenedSessionId();
       setNewSessionTrigger((previous) => previous + 1);
       navigate('/');
 
