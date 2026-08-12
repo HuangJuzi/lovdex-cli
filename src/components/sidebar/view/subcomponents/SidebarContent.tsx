@@ -41,6 +41,7 @@ function HighlightedSnippet({ snippet, highlights }: { snippet: string; highligh
 type SidebarContentProps = {
   /** Currently open session id (URL / selection), used to highlight the Lovdex助手 row. */
   activeSessionId: string | null;
+  onAssistantSessionSelect?: (sessionId: string) => void;
   isPWA: boolean;
   isMobile: boolean;
   width: number;
@@ -77,6 +78,7 @@ type SidebarContentProps = {
 
 export default function SidebarContent({
   activeSessionId,
+  onAssistantSessionSelect,
   isPWA,
   isMobile,
   width,
@@ -134,7 +136,10 @@ export default function SidebarContent({
         t={t}
       />
 
-      <SidebarAssistant activeSessionId={activeSessionId} />
+      <SidebarAssistant
+        activeSessionId={activeSessionId}
+        onOpenSession={onAssistantSessionSelect}
+      />
 
       <ScrollArea className="flex-1 overflow-y-auto overscroll-contain md:px-1.5 md:py-2">
         {showConversationSearch && (

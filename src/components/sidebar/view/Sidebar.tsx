@@ -44,6 +44,7 @@ function Sidebar({
   attentionSessionIds,
   onProjectSelect,
   onSessionSelect,
+  onAssistantSessionSelect,
   onNewSession,
   onSessionDelete,
   onLoadMoreSessions,
@@ -271,6 +272,7 @@ function Sidebar({
         <>
         <SidebarContent
             activeSessionId={selectedSession?.id ?? null}
+            onAssistantSessionSelect={onAssistantSessionSelect}
             isPWA={isPWA}
             isMobile={isMobile}
             width={sidebarWidth}

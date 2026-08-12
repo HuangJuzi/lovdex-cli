@@ -31,6 +31,8 @@ export type SidebarProps = {
   attentionSessionIds: ReadonlySet<string>;
   onProjectSelect: (project: Project) => void;
   onSessionSelect: (session: ProjectSession) => void;
+  /** 打开 Lovdex助手 会话（移动端会顺带收起侧边栏）。 */
+  onAssistantSessionSelect?: (sessionId: string) => void;
   onNewSession: (project: Project) => void;
   onSessionDelete?: (sessionId: string) => void;
   onLoadMoreSessions?: (projectId: string) => Promise<void> | void;

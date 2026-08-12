@@ -66,14 +66,19 @@ const formatCompactSessionAge = (dateString: string, currentTime: Date): string 
  */
 type SidebarAssistantProps = {
   activeSessionId?: string | null;
+  onOpenSession?: (sessionId: string) => void;
 };
 
-export default function SidebarAssistant({ activeSessionId = null }: SidebarAssistantProps) {
+export default function SidebarAssistant({ activeSessionId = null, onOpenSession }: SidebarAssistantProps) {
   const navigate = useNavigate();
-  /** SPA 打开 Lovdex助手 会话；点击行后由 useProjectsState 解析为 selectedSession。 */
+  /** SPA 打开 Lovdex助手 会话；优先走外部回调（移动端收侧边栏），否则直接 navigate。 */
   const openSession = useCallback((sessionId: string) => {
+    if (onOpenSession) {
+      onOpenSession(sessionId);
+      return;
+    }
     navigate(`/session/${sessionId}`);
-  }, [navigate]);
+  }, [navigate, onOpenSession]);
   const [sessions, setSessions] = useState<OperatorSession[]>([]);
   const [now, setNow] = useState(() => new Date());
   const [deleting, setDeleting] = useState<Set<string>>(new Set());

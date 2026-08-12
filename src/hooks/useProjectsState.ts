@@ -880,6 +880,22 @@ export function useProjectsState({
     [activeTab, clearSessionAttention, isMobile, navigate, selectedProject?.projectId],
   );
 
+  /**
+   * Opens a Lovdex助手 (operator workspace) session from the sidebar. These
+   * sessions navigate directly because they are not guaranteed to carry the
+   * full ProjectSession shape; the URL-resolution effect selects them. On
+   * mobile, collapse the sidebar like project-session clicks do.
+   */
+  const handleAssistantSessionSelect = useCallback(
+    (targetSessionId: string) => {
+      navigate(`/session/${targetSessionId}`);
+      if (isMobile) {
+        setSidebarOpen(false);
+      }
+    },
+    [isMobile, navigate],
+  );
+
   const handleNewSession = useCallback(
     (project: Project) => {
       setSelectedProject(project);
@@ -1042,6 +1058,7 @@ export function useProjectsState({
       attentionSessionIds,
       onProjectSelect: handleProjectSelect,
       onSessionSelect: handleSessionSelect,
+      onAssistantSessionSelect: handleAssistantSessionSelect,
       onNewSession: handleNewSession,
       onSessionDelete: handleSessionDelete,
       onLoadMoreSessions: loadMoreProjectSessions,
@@ -1057,6 +1074,7 @@ export function useProjectsState({
     }),
     [
       attentionSessionIds,
+      handleAssistantSessionSelect,
       handleNewSession,
       handleProjectDelete,
       handleProjectSelect,
@@ -1100,6 +1118,7 @@ export function useProjectsState({
     sidebarSharedProps,
     handleProjectSelect,
     handleSessionSelect,
+    handleAssistantSessionSelect,
     handleNewSession,
     handleSessionDelete,
     loadMoreProjectSessions,
