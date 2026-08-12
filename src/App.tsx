@@ -4,6 +4,7 @@ import { I18nextProvider } from 'react-i18next';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
 import AppContent from './components/app/AppContent';
+import AuthGate from './components/auth/AuthGate';
 import { TaskBoardPage, TaskDetailPage } from './components/tasks';
 import { OperatorSettingsPage } from './components/operators/OperatorSettingsPage';
 import { AssistantPanel } from './components/operators/AssistantPanel';
@@ -105,18 +106,20 @@ export default function App() {
   return (
     <I18nextProvider i18n={i18n}>
       <ThemeProvider>
-        <WebSocketProvider>
-          <Router basename={routerBasename}>
-            <Routes>
-              <Route path="/" element={<AppContent />} />
-              <Route path="/session/:sessionId" element={<AppContent />} />
-              <Route path="/tasks" element={<TaskBoardPage />} />
-              <Route path="/task/:taskId" element={<TaskDetailPage />} />
-              <Route path="/assistant" element={<AssistantPanel />} />
-              <Route path="/settings/operator" element={<OperatorSettingsPage />} />
-            </Routes>
-          </Router>
-        </WebSocketProvider>
+        <AuthGate>
+          <WebSocketProvider>
+            <Router basename={routerBasename}>
+              <Routes>
+                <Route path="/" element={<AppContent />} />
+                <Route path="/session/:sessionId" element={<AppContent />} />
+                <Route path="/tasks" element={<TaskBoardPage />} />
+                <Route path="/task/:taskId" element={<TaskDetailPage />} />
+                <Route path="/assistant" element={<AssistantPanel />} />
+                <Route path="/settings/operator" element={<OperatorSettingsPage />} />
+              </Routes>
+            </Router>
+          </WebSocketProvider>
+        </AuthGate>
       </ThemeProvider>
     </I18nextProvider>
   );
