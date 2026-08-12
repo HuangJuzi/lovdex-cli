@@ -17,14 +17,37 @@ export function ViewSwitcher({ active, className }: { active: View; className?: 
   const navigate = useNavigate();
   const { t } = useTranslation('sidebar');
 
-  const items: { value: View; label: string; icon: LucideIcon; to: string }[] = [
-    { value: 'chat', label: t('navigation.chat'), icon: MessageSquare, to: '/' },
-    { value: 'tasks', label: t('navigation.tasks'), icon: ClipboardList, to: '/tasks' },
+  const items: {
+    value: View;
+    label: string;
+    icon: LucideIcon;
+    to: string;
+    /** 激活态实色胶囊（方案 C 全彩）。 */
+    activeClass: string;
+    /** 未激活时图标的品牌色。 */
+    iconClass: string;
+  }[] = [
+    {
+      value: 'chat',
+      label: t('navigation.chat'),
+      icon: MessageSquare,
+      to: '/',
+      activeClass: 'bg-sky-500 text-white shadow-sm shadow-sky-500/30',
+      iconClass: 'text-sky-500',
+    },
+    {
+      value: 'tasks',
+      label: t('navigation.tasks'),
+      icon: ClipboardList,
+      to: '/tasks',
+      activeClass: 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30',
+      iconClass: 'text-emerald-500',
+    },
   ];
 
   return (
     <div className={cn('flex rounded-lg bg-muted/50 p-0.5', className)}>
-      {items.map(({ value, label, icon: Icon, to }) => {
+      {items.map(({ value, label, icon: Icon, to, activeClass, iconClass }) => {
         const isActive = active === value;
         return (
           <button
@@ -36,12 +59,10 @@ export function ViewSwitcher({ active, className }: { active: View; className?: 
             }}
             className={cn(
               'flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-normal transition-all',
-              isActive
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground',
+              isActive ? activeClass : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            <Icon className="h-3 w-3 flex-shrink-0" />
+            <Icon className={cn('h-3 w-3 flex-shrink-0', isActive ? 'text-white' : iconClass)} />
             {label}
           </button>
         );
