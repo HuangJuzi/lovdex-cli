@@ -37,10 +37,10 @@ test('sortTasks: created desc orders newest first', () => {
   assert.deepEqual(out.map((t) => t.task_id), ['b', 'a']);
 });
 
-test('sortTasks: title asc uses localeCompare', () => {
-  const a = mkTask({ task_id: 'a', title: 'apple' });
-  const b = mkTask({ task_id: 'b', title: 'banana' });
-  const out = sortTasks([b, a], 'title', 'asc');
+test('sortTasks: title asc uses localeCompare (apple before Zebra)', () => {
+  const apple = mkTask({ task_id: 'a', title: 'apple' });
+  const zebra = mkTask({ task_id: 'b', title: 'Zebra' });
+  const out = sortTasks([zebra, apple], 'title', 'asc');
   assert.deepEqual(out.map((t) => t.task_id), ['a', 'b']);
 });
 
@@ -64,6 +64,14 @@ test('sortTasks: deadline asc puts no-deadline first then by date', () => {
   const earlier = mkTask({ task_id: 'c', deadline: '2026-08-10' });
   const out = sortTasks([later, noDeadline, earlier], 'deadline', 'asc');
   assert.deepEqual(out.map((t) => t.task_id), ['a', 'c', 'b']);
+});
+
+test('sortTasks: deadline desc puts no-deadline last', () => {
+  const noDeadline = mkTask({ task_id: 'a', deadline: null });
+  const later = mkTask({ task_id: 'b', deadline: '2026-08-20' });
+  const earlier = mkTask({ task_id: 'c', deadline: '2026-08-10' });
+  const out = sortTasks([later, noDeadline, earlier], 'deadline', 'desc');
+  assert.deepEqual(out.map((t) => t.task_id), ['b', 'c', 'a']);
 });
 
 test('sortTasks: does not mutate the input array', () => {
