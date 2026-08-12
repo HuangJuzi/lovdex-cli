@@ -270,6 +270,7 @@ function Sidebar({
       ) : (
         <>
         <SidebarContent
+            activeSessionId={selectedSession?.id ?? null}
             isPWA={isPWA}
             isMobile={isMobile}
             width={sidebarWidth}

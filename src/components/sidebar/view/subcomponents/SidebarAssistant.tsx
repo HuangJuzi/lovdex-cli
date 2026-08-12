@@ -2,10 +2,11 @@ import { ChevronDown, ChevronRight, Check, Edit2, MessageSquare, Plus, Settings,
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Button } from '../../../../shared/view/ui';
+import { Button, buttonVariants } from '../../../../shared/view/ui';
 import { cn } from '../../../../lib/utils';
 import { api } from '../../../../utils/api';
-import { formatRelativeTime } from '../../../tasks/taskTimestamp';
+import { resetOperatorSessionFlow } from '../../../operators/operatorSession';
+import { ACTIVE_WINDOW_MS, getSessionDotState } from '../../utils/utils';
 
 type OperatorSession = {
   session_id: string;
@@ -15,6 +16,34 @@ type OperatorSession = {
 };
 
 const COLLAPSE_KEY = 'lovdex:assistant:sessions-collapsed';
+
+/**
+ * Compact relative time for sidebar rows (matches SidebarSessionItem):
+ * <1m, Xm, Xhr, Xd.
+ */
+const formatCompactSessionAge = (dateString: string, currentTime: Date): string => {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const diffInMinutes = Math.floor(Math.max(0, currentTime.getTime() - date.getTime()) / (1000 * 60));
+  if (diffInMinutes < 1) {
+    return '<1m';
+  }
+
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes}m`;
+  }
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) {
+    return `${diffInHours}hr`;
+  }
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  return `${diffInDays}d`;
+};
 
 /**
  * 侧边栏顶部的「Lovdex助手」入口 + 其会话记录列表。
@@ -30,11 +59,16 @@ const COLLAPSE_KEY = 'lovdex:assistant:sessions-collapsed';
  *  - 点击行用 SPA navigate 打开 /session/:id（不再整页跳转，避免闪屏）。
  *    operator 工作区项目一直保留在全局 projects state 里（仅侧边栏渲染层
  *    过滤），所以 useProjectsState 的 session 解析可以直接命中，无需 reload。
+ *  - `activeSessionId`（当前打开的会话）所在行高亮，提示「正在看哪一个」。
  *
  * 挂载时拉一次 + 窗口重新获焦时刷新。[+] → /assistant?new=1（强制新建）；
  * [⚙] → /settings/operator。
  */
-export default function SidebarAssistant() {
+type SidebarAssistantProps = {
+  activeSessionId?: string | null;
+};
+
+export default function SidebarAssistant({ activeSessionId = null }: SidebarAssistantProps) {
   const navigate = useNavigate();
   /** SPA 打开 Lovdex助手 会话；点击行后由 useProjectsState 解析为 selectedSession。 */
   const openSession = useCallback((sessionId: string) => {
@@ -162,6 +196,14 @@ export default function SidebarAssistant() {
   const renderRow = (s: OperatorSession) => {
     const isEditing = editingId === s.session_id;
     const label = s.summary ?? '新会话';
+    // Strong selected indication, matching SidebarSessionItem: the currently
+    // open session gets a primary border + tint + left accent bar.
+    const isSelected = activeSessionId === s.session_id;
+    const sessionTimestamp = s.updated_at || s.created_at;
+    const sessionIsActive = now.getTime() - new Date(sessionTimestamp).getTime() < ACTIVE_WINDOW_MS;
+    const dotState = getSessionDotState(false, sessionIsActive);
+    const dotLabel = dotState === 'active' ? '会话活跃中' : '会话空闲';
+    const compactAge = formatCompactSessionAge(sessionTimestamp, now);
     return (
       <div key={s.session_id} className="group/row relative flex items-center">
         {isEditing ? (
@@ -202,19 +244,54 @@ export default function SidebarAssistant() {
           </div>
         ) : (
           <>
-            <button
-              className="block min-w-0 flex-1 truncate rounded-md px-2 py-1.5 text-left hover:bg-accent/60"
-              onClick={() => openSession(s.session_id)}
+            <a
+              href={`/session/${s.session_id}`}
+              className={cn(
+                buttonVariants({ variant: 'ghost' }),
+                'relative h-auto w-full justify-start rounded-md border bg-card p-2 text-left font-normal transition-all duration-150',
+                isSelected
+                  ? 'border-primary/50 bg-primary/10'
+                  : sessionIsActive
+                    ? 'border-green-500/30 bg-green-50/5 hover:bg-green-50/10 dark:bg-green-900/5 dark:hover:bg-green-900/10'
+                    : 'hover:bg-accent/50',
+              )}
+              // Left-click keeps in-app navigation; Ctrl/Cmd/middle-click and the
+              // native right-click menu use the href to open a new tab/window.
+              onClick={(event) => {
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                event.preventDefault();
+                openSession(s.session_id);
+              }}
               title={label}
             >
-              <span className="block truncate text-xs text-foreground">{label}</span>
-              <span className="block text-[10px] text-muted-foreground/70">
-                {formatRelativeTime(s.updated_at || s.created_at, now)}
-              </span>
-            </button>
-            <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover/row:opacity-100">
+              {isSelected && (
+                <span className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r bg-primary" />
+              )}
+              <div className="flex w-full min-w-0 items-center gap-2">
+                <span
+                  role="status"
+                  aria-label={dotLabel}
+                  className={cn(
+                    'flex-shrink-0 rounded-full',
+                    dotState === 'active' && 'h-2 w-2 bg-green-500',
+                    dotState === 'idle' && 'h-1.5 w-1.5 bg-amber-400',
+                  )}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className={cn('min-w-0 flex-1 truncate text-sm text-foreground', isSelected ? 'font-medium' : 'font-normal')}>{label}</span>
+                    {compactAge && (
+                      <span className="ml-auto flex-shrink-0 text-[11px] text-muted-foreground transition-opacity duration-200 group-hover/row:opacity-0">
+                        {compactAge}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </a>
+            <div className="absolute right-2 top-1/2 flex -translate-y-1/2 transform items-center gap-1 opacity-0 transition-all duration-200 group-hover/row:opacity-100">
               <button
-                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground/70 hover:bg-foreground/10 hover:text-foreground"
+                className="flex h-6 w-6 items-center justify-center rounded bg-gray-50 text-gray-600 hover:bg-gray-100 dark:bg-gray-900/20 dark:text-gray-400 dark:hover:bg-gray-900/40"
                 onClick={(e) => {
                   e.stopPropagation();
                   startEdit(s);
@@ -225,7 +302,7 @@ export default function SidebarAssistant() {
                 <Edit2 className="h-3 w-3" />
               </button>
               <button
-                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground/70 hover:bg-red-500/15 hover:text-red-500"
+                className="flex h-6 w-6 items-center justify-center rounded bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40"
                 onClick={(e) => {
                   e.stopPropagation();
                   void deleteSession(s.session_id);
@@ -280,6 +357,7 @@ export default function SidebarAssistant() {
               className="flex h-7 w-7 items-center justify-center rounded text-primary active:scale-90"
               onClick={(e) => {
                 e.stopPropagation();
+                resetOperatorSessionFlow(true);
                 navigate('/assistant?new=1');
               }}
               title="新建 Lovdex助手 会话"
@@ -327,12 +405,14 @@ export default function SidebarAssistant() {
             className="touch:opacity-100 flex h-7 w-7 cursor-pointer items-center justify-center rounded text-muted-foreground opacity-0 transition-all duration-150 hover:bg-primary/20 hover:text-primary hover:ring-1 hover:ring-primary/40 group-hover:opacity-100"
             onClick={(e) => {
               e.stopPropagation();
+              resetOperatorSessionFlow(true);
               navigate('/assistant?new=1');
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 e.stopPropagation();
+                resetOperatorSessionFlow(true);
                 navigate('/assistant?new=1');
               }
             }}

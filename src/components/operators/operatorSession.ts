@@ -80,11 +80,14 @@ export function ensureOperatorSession(
 
       const createRes = await deps.createSession();
       if (!createRes.ok) {
+        // Transient failure — do not poison later attempts with a sticky error.
+        flows.delete(forceNew);
         return { ok: false, reason: 'http', status: createRes.status };
       }
       const created = (await createRes.json()) as { data?: { sessionId?: string } };
       const sessionId = created?.data?.sessionId;
       if (!sessionId) {
+        flows.delete(forceNew);
         return { ok: false, reason: 'missing-id' };
       }
       return { ok: true, sessionId };

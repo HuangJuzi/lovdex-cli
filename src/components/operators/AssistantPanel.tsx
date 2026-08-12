@@ -11,9 +11,9 @@ import { ensureOperatorSession } from './operatorSession';
  * create_task / write_task_summary 等，无 Bash/Edit/Write）。
  *
  * 这里只负责「拿到一个 operator session 然后打开它」：复用现有 /session/:id
- * 聊天 UI，不重写一套 chat。用整页跳转（window.location）而非 SPA navigate，
- * 这样 AppContent 的 useProjectsState 会重新拉项目列表（含 operator 工作区
- * 这个项目 + 它的 session），session 才能正确解析为 selectedSession。
+ * 聊天 UI，不重写一套 chat。用 SPA navigate 跳到 /session/:id——/assistant 路由
+ * 下 AppContent 未挂载，跳转后它会全新挂载并重拉项目列表（含 operator 工作区
+ * 这个项目 + 它的 session），session 能正确解析为 selectedSession，且无整页刷新。
  *
  * 两种入口：
  *  - /assistant        → 复用最近一个 operator session，没有则新建
@@ -51,13 +51,16 @@ export function AssistantPanel() {
       }
       if (cancelled) return;
       const { sessionId } = result;
-      // 整页跳转：触发 useProjectsState 重新加载（含 operator 工作区项目）。
-      window.location.href = `${import.meta.env.BASE_URL}session/${sessionId}`.replace(/\/+/g, '/').replace(/^\/\//, '/');
+      // SPA 跳转而非整页刷新：/assistant 路由下 AppContent 未挂载，跳到
+      // /session/:id 后 AppContent 全新挂载、useProjectsState 重拉项目列表。
+      // 新建的 session 是最新的，必然出现在 operator 工作区项目的 payload 里，
+      // 解析循环能直接命中——无需整页 reload，避免白屏闪烁。
+      navigate(`/session/${sessionId}`);
     })();
     return () => {
       cancelled = true;
     };
-  }, [forceNew]);
+  }, [forceNew, navigate]);
 
   if (error) {
     return (

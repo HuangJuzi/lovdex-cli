@@ -1,130 +1,148 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { ensureOperatorSession, resetOperatorSessionFlow } from './operatorSession';
+import {
+  ensureOperatorSession,
+  resetOperatorSessionFlow,
+  type OperatorSessionDeps,
+} from './operatorSession';
 
-type FakeDepsOptions = {
-  interactiveChatEnabled?: boolean;
-  latestSessionId?: string | null;
-  createSession?: () => Promise<Response>;
-};
+const jsonResponse = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-/** Builds a full deps set; `createSession` is the only call site we count. */
-const fakeDeps = (opts: FakeDepsOptions = {}) => {
-  const createCalls: string[] = [];
-  const deps = {
-    settings: async () =>
-      new Response(JSON.stringify({ interactive_chat_enabled: opts.interactiveChatEnabled ?? true }), { status: 200 }),
-    listSessions: async () =>
-      new Response(
-        JSON.stringify({
-          data: {
-            sessions: opts.latestSessionId
-              ? [{ session_id: opts.latestSessionId }]
-              : [],
-          },
-        }),
-        { status: 200 },
-      ),
-    createSession: opts.createSession ?? (async () => {
-      createCalls.push('create');
-      await new Promise((resolve) => setTimeout(resolve, 5));
-      return new Response(JSON.stringify({ data: { sessionId: 's1' } }), { status: 201 });
-    }),
+type FakeCalls = { settings: number; listSessions: number; createSession: number };
+
+const makeDeps = (overrides: Partial<OperatorSessionDeps> & { latestSessionId?: string | null } = {}) => {
+  const calls: FakeCalls = { settings: 0, listSessions: 0, createSession: 0 };
+  const createdIds: string[] = [];
+  const { latestSessionId, ...depsOverrides } = overrides;
+  return {
+    calls,
+    createdIds,
+    deps: {
+      settings: async () => {
+        calls.settings++;
+        return jsonResponse({ interactive_chat_enabled: true });
+      },
+      listSessions: async () => {
+        calls.listSessions++;
+        return jsonResponse({
+          data: { sessions: latestSessionId ? [{ session_id: latestSessionId }] : [] },
+        });
+      },
+      createSession: async () => {
+        calls.createSession++;
+        const id = `s${calls.createSession}`;
+        createdIds.push(id);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        return jsonResponse({ data: { sessionId: id } }, 201);
+      },
+      ...depsOverrides,
+    } as OperatorSessionDeps,
   };
-  return { deps, createCalls };
 };
 
-test('concurrent ensureOperatorSession calls share one in-flight flow (StrictMode double-mount)', async () => {
-  resetOperatorSessionFlow();
-  const { deps, createCalls } = fakeDeps();
+// The module-level flows map is shared across tests — always start clean.
+const reset = () => resetOperatorSessionFlow();
 
-  // React.StrictMode in dev runs the effect twice back-to-back (mount →
-  // cleanup → mount); both runs call ensureOperatorSession synchronously while
-  // the first flow is still in flight. Only one createSession may leave.
-  const [a, b] = await Promise.all([
-    ensureOperatorSession(false, deps),
-    ensureOperatorSession(false, deps),
-  ]);
+test('StrictMode remount: two concurrent ensure calls share one createSession POST', async () => {
+  reset();
+  const { calls, deps } = makeDeps();
 
-  assert.equal(createCalls.length, 1, 'second run must reuse the first in-flight flow');
-  assert.deepEqual(a, { ok: true, sessionId: 's1' });
-  assert.deepEqual(b, { ok: true, sessionId: 's1' });
-});
-
-test('module-level flows map dedupes across StrictMode remounts', async () => {
-  resetOperatorSessionFlow();
-  const { deps, createCalls } = fakeDeps({ latestSessionId: null });
-
-  // forceNew=true skips the reuse step so both remounts land on createSession;
-  // the shared module-level flows map must make them share one POST.
+  // React.StrictMode in dev remounts the component; both mounts run the effect
+  // back-to-back. Both must resolve to the SAME flow → one POST total.
   const [a, b] = await Promise.all([
     ensureOperatorSession(true, deps),
     ensureOperatorSession(true, deps),
   ]);
 
-  assert.equal(createCalls.length, 1, 'both remounts must share one POST');
+  assert.equal(calls.createSession, 1, 'both mounts must share one createSession');
   assert.deepEqual(a, { ok: true, sessionId: 's1' });
   assert.deepEqual(b, { ok: true, sessionId: 's1' });
 });
 
-test('successful flow is sticky; resetOperatorSessionFlow clears it for a fresh request', async () => {
-  resetOperatorSessionFlow();
-  const { deps, createCalls } = fakeDeps();
+test('sticky flow: a call after the flow settled reuses the result (no duplicate POST)', async () => {
+  reset();
+  const { calls, deps } = makeDeps();
 
-  const first = await ensureOperatorSession(false, deps);
-  assert.equal(createCalls.length, 1);
+  const first = await ensureOperatorSession(true, deps);
+  // The second mount's flow can reach the create step AFTER the first mount's
+  // POST settled (they await their own settings()/listSessions() first). The
+  // sticky flow must return the same session instead of POSTing again.
+  const second = await ensureOperatorSession(true, deps);
 
-  // Sticky on success: a later call returns the cached flow without POSTing.
-  const second = await ensureOperatorSession(false, deps);
-  assert.equal(createCalls.length, 1, 'sticky success must not re-POST');
-  assert.deepEqual(second, first);
-
-  // Explicit "new session" intent (sidebar「+」) clears the cache.
-  resetOperatorSessionFlow(false);
-  const third = await ensureOperatorSession(false, deps);
-  assert.equal(createCalls.length, 2, 'reset must allow a fresh request');
-  assert.deepEqual(third, { ok: true, sessionId: 's1' });
+  assert.equal(calls.createSession, 1);
+  assert.deepEqual(first, { ok: true, sessionId: 's1' });
+  assert.deepEqual(second, { ok: true, sessionId: 's1' });
 });
 
-test('reuses the latest session when one exists and forceNew is false', async () => {
-  resetOperatorSessionFlow();
-  const { deps, createCalls } = fakeDeps({ latestSessionId: 'latest-s' });
+test('explicit reset clears the sticky flow so the next call creates a fresh session', async () => {
+  reset();
+  const { calls, deps } = makeDeps();
 
-  const result = await ensureOperatorSession(false, deps);
+  await ensureOperatorSession(true, deps);
+  resetOperatorSessionFlow(true);
+  const result = await ensureOperatorSession(true, deps);
 
-  assert.equal(createCalls.length, 0, 'reuse must not create a session');
-  assert.deepEqual(result, { ok: true, sessionId: 'latest-s' });
+  assert.equal(calls.createSession, 2, 'reset must force a new POST');
+  assert.deepEqual(result, { ok: true, sessionId: 's2' });
 });
 
-test('disabled settings surfaces as reason disabled', async () => {
-  resetOperatorSessionFlow();
-  const { deps, createCalls } = fakeDeps({ interactiveChatEnabled: false });
-
-  const result = await ensureOperatorSession(false, deps);
-
-  assert.equal(createCalls.length, 0, 'disabled must not create a session');
-  assert.deepEqual(result, { ok: false, reason: 'disabled' });
-});
-
-test('non-ok createSession response surfaces as an http failure', async () => {
-  resetOperatorSessionFlow();
-  const { deps } = fakeDeps({
+test('failure clears its own flow entry so a later call retries', async () => {
+  reset();
+  const { deps } = makeDeps({
     createSession: async () => new Response('{}', { status: 500 }),
   });
 
-  const result = await ensureOperatorSession(false, deps);
+  const failed = await ensureOperatorSession(true, deps);
+  assert.deepEqual(failed, { ok: false, reason: 'http', status: 500 });
 
-  assert.deepEqual(result, { ok: false, reason: 'http', status: 500 });
+  // Recover the deps to a working create and verify the next call retries fresh.
+  const { calls: calls2, deps: deps2 } = makeDeps();
+  const result = await ensureOperatorSession(true, deps2);
+  assert.equal(calls2.createSession, 1);
+  assert.deepEqual(result, { ok: true, sessionId: 's1' });
 });
 
-test('response without a sessionId surfaces as missing-id', async () => {
-  resetOperatorSessionFlow();
-  const { deps } = fakeDeps({
-    createSession: async () => new Response(JSON.stringify({ data: {} }), { status: 201 }),
+test('disabled interactive chat returns a disabled result without creating', async () => {
+  reset();
+  const { calls, deps } = makeDeps({
+    settings: async () => jsonResponse({ interactive_chat_enabled: false }),
   });
 
+  const result = await ensureOperatorSession(true, deps);
+
+  assert.deepEqual(result, { ok: false, reason: 'disabled' });
+  assert.equal(calls.createSession, 0);
+});
+
+test('reuse path returns the latest session without creating', async () => {
+  reset();
+  const { calls, deps } = makeDeps({ latestSessionId: 'existing-1' });
+
   const result = await ensureOperatorSession(false, deps);
+
+  assert.deepEqual(result, { ok: true, sessionId: 'existing-1' });
+  assert.equal(calls.createSession, 0);
+});
+
+test('reuse path with no sessions creates one', async () => {
+  reset();
+  const { calls, deps } = makeDeps();
+
+  const result = await ensureOperatorSession(false, deps);
+
+  assert.deepEqual(result, { ok: true, sessionId: 's1' });
+  assert.equal(calls.createSession, 1);
+});
+
+test('missing sessionId in the response surfaces as missing-id', async () => {
+  reset();
+  const { deps } = makeDeps({
+    createSession: async () => jsonResponse({ data: {} }, 201),
+  });
+
+  const result = await ensureOperatorSession(true, deps);
 
   assert.deepEqual(result, { ok: false, reason: 'missing-id' });
 });

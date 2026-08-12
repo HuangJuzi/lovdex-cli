@@ -40,6 +40,13 @@ function getSessionTitle(session: ProjectSession): string {
   return resolved || 'New Session';
 }
 
+// The operator workspace project's folder name ("operator-workspace") is
+// cryptic; brand it as Lovdex助手 wherever the project label is shown so a
+// chat header can't be mistaken for a regular project conversation.
+function getProjectLabel(project: Project): string {
+  return project.isOperatorWorkspace ? 'Lovdex助手' : project.displayName;
+}
+
 export default function MainContentTitle({
   activeTab,
   selectedProject,
@@ -65,19 +72,19 @@ export default function MainContentTitle({
             <h2 title={getSessionTitle(selectedSession)} className="truncate text-sm font-semibold leading-tight text-foreground">
               {getSessionTitle(selectedSession)}
             </h2>
-            <div className="truncate text-[11px] leading-tight text-muted-foreground">{selectedProject.displayName}</div>
+            <div className="truncate text-[11px] leading-tight text-muted-foreground">{getProjectLabel(selectedProject)}</div>
           </div>
         ) : showChatNewSession ? (
           <div className="min-w-0">
             <h2 className="text-base font-semibold leading-tight text-foreground">{t('mainContent.newSession')}</h2>
-            <div className="truncate text-xs leading-tight text-muted-foreground">{selectedProject.displayName}</div>
+            <div className="truncate text-xs leading-tight text-muted-foreground">{getProjectLabel(selectedProject)}</div>
           </div>
         ) : (
           <div className="min-w-0">
             <h2 className="text-sm font-semibold leading-tight text-foreground">
               {getTabTitle(activeTab, shouldShowTasksTab, t)}
             </h2>
-            <div className="truncate text-[11px] leading-tight text-muted-foreground">{selectedProject.displayName}</div>
+            <div className="truncate text-[11px] leading-tight text-muted-foreground">{getProjectLabel(selectedProject)}</div>
           </div>
         )}
       </div>
