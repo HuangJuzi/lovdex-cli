@@ -34,3 +34,17 @@ test('filter bar renders assistant option value and shows clear when active', ()
   assert.match(html, new RegExp(ASSISTANT_OPTION_VALUE));
   assert.match(html, /清除筛选/);
 });
+
+test('filter bar renders a mobile collapse trigger with a summary', () => {
+  const html = renderToStaticMarkup(
+    React.createElement(TaskFilterBar, {
+      projectOptions: [{ value: '/p', label: 'proj' }],
+      filter: { ...EMPTY_TASK_FILTER, preset: 'today' },
+      onChange: () => {},
+    }),
+  );
+  // 移动端触发行：筛选 + 摘要（项目：全部 · 日期：今天）
+  assert.match(html, /筛选/);
+  assert.match(html, /项目：全部 · 日期：今天/);
+  assert.match(html, /aria-expanded="false"/);
+});

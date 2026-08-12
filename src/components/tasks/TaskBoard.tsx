@@ -5,6 +5,7 @@ import { LayoutGrid, Table } from 'lucide-react';
 import { useWebSocket } from '../../contexts/WebSocketContext';
 import { useTasks } from '../../hooks/useTasks';
 import useLocalStorage from '../../hooks/useLocalStorage';
+import { useDeviceSettings } from '../../hooks/useDeviceSettings';
 import { cn } from '../../lib/utils';
 import { Button, Dialog, DialogContent, DialogTitle, Input } from '../../shared/view/ui';
 import type {
@@ -45,6 +46,10 @@ export function TaskBoardPage() {
   const { tasks, loading, loadError, refresh, upsert } = useTasks({}, subscribe);
   const [filter, setFilter] = useState<TaskFilter>(EMPTY_TASK_FILTER);
   const [viewMode, setViewMode] = useLocalStorage<'board' | 'table'>('taskViewMode', 'board');
+  // 移动端强制看板：表格在手机上体验差，且「表格」按钮已隐藏（hidden sm:inline-flex）。
+  // 断点 640 与 Tailwind `sm:` 对齐。
+  const { isMobile } = useDeviceSettings({ mobileBreakpoint: 640 });
+  const effectiveView = isMobile ? 'board' : viewMode;
   // `now` 每分钟刷新一次：避免页面跨午夜且无任务事件时，「今天/本周/本月/今年」的
   // 日期区间边界停留在上次重算值。任务/筛选变化仍会立即重算。
   const [now, setNow] = useState(() => new Date());
@@ -303,11 +308,11 @@ export function TaskBoardPage() {
         <div className="flex rounded-lg bg-muted/50 p-0.5">
           <button
             type="button"
-            aria-pressed={viewMode === 'board'}
+            aria-pressed={effectiveView === 'board'}
             onClick={() => setViewMode('board')}
             className={cn(
               'flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-normal transition-all',
-              viewMode === 'board'
+              effectiveView === 'board'
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground',
             )}
@@ -317,11 +322,11 @@ export function TaskBoardPage() {
           </button>
           <button
             type="button"
-            aria-pressed={viewMode === 'table'}
+            aria-pressed={effectiveView === 'table'}
             onClick={() => setViewMode('table')}
             className={cn(
-              'flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-normal transition-all',
-              viewMode === 'table'
+              'hidden items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-normal transition-all sm:flex',
+              effectiveView === 'table'
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground',
             )}
@@ -490,7 +495,7 @@ export function TaskBoardPage() {
       ) : (
         <div className="flex min-h-0 flex-1 flex-col">
           <TaskFilterBar projectOptions={projectOptions} filter={filter} onChange={setFilter} />
-          {viewMode === 'table' ? (
+          {effectiveView === 'table' ? (
             <TaskTableView
               tasks={filteredTasks}
               projectOptions={projectOptions}
