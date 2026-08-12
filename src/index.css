@@ -1014,3 +1014,8 @@
     }
   }
 }
+
+/* 空日期输入框：隐藏浏览器默认的灰色 yyyy-mm-dd 占位文字（填入值后正常显示）。 */
+input[type="date"].date-empty::-webkit-datetime-edit {
+  color: transparent;
+}

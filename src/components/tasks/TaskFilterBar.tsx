@@ -101,6 +101,7 @@ export function TaskFilterBar({ projectOptions, filter, onChange }: TaskFilterBa
             key={o.value}
             isActive={filter.dateField === o.value}
             onClick={() => onChange({ ...filter, dateField: o.value })}
+            className="px-2 py-1.5 text-xs"
           >
             {o.label}
           </Pill>
@@ -110,7 +111,12 @@ export function TaskFilterBar({ projectOptions, filter, onChange }: TaskFilterBa
       {/* 快捷项 */}
       <PillBar>
         {PRESET_OPTIONS.map((o) => (
-          <Pill key={o.value} isActive={presetActive(o.value)} onClick={() => pickPreset(o.value)}>
+          <Pill
+            key={o.value}
+            isActive={presetActive(o.value)}
+            onClick={() => pickPreset(o.value)}
+            className="px-2 py-1.5 text-xs"
+          >
             {o.label}
           </Pill>
         ))}
@@ -121,14 +127,18 @@ export function TaskFilterBar({ projectOptions, filter, onChange }: TaskFilterBa
         <span className="text-xs text-muted-foreground">从</span>
         <input
           type="date"
-          className="bg-transparent text-xs text-foreground outline-none"
+          className={`bg-transparent text-xs text-foreground outline-none ${
+            filter.customFrom === '' ? 'date-empty' : ''
+          }`}
           value={filter.customFrom}
           onChange={(e) => onChange({ ...filter, preset: 'all', customFrom: e.target.value })}
         />
         <span className="text-xs text-muted-foreground">至</span>
         <input
           type="date"
-          className="bg-transparent text-xs text-foreground outline-none"
+          className={`bg-transparent text-xs text-foreground outline-none ${
+            filter.customTo === '' ? 'date-empty' : ''
+          }`}
           value={filter.customTo}
           onChange={(e) => onChange({ ...filter, preset: 'all', customTo: e.target.value })}
         />
