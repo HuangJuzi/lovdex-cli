@@ -103,13 +103,14 @@ export function TaskFilterBar({ projectOptions, filter, onChange }: TaskFilterBa
         />
       </button>
 
-      {/* 控件区：移动端折叠展开；桌面端始终展开，一排居中、两边留白 */}
-      <div
-        className={cn(
-          'gap-x-3 gap-y-2 sm:mx-auto sm:flex sm:max-w-6xl sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-6 sm:px-4 sm:py-2',
-          open ? 'flex flex-col px-3 pb-2 pt-1' : 'hidden sm:flex',
-        )}
-      >
+      {/* 控件区：移动端折叠展开；桌面端固定一排（放不下时横向滚动），能放下则 mx-auto 居中留白 */}
+      <div className="sm:overflow-x-auto">
+        <div
+          className={cn(
+            'gap-x-3 gap-y-2 sm:mx-auto sm:flex sm:w-max sm:flex-row sm:flex-nowrap sm:items-center sm:gap-x-6 sm:px-4 sm:py-2',
+            open ? 'flex flex-col px-3 pb-2 pt-1' : 'hidden sm:flex',
+          )}
+        >
         {/* 左簇：项目 + 只看助手 */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5">
@@ -201,6 +202,7 @@ export function TaskFilterBar({ projectOptions, filter, onChange }: TaskFilterBa
               清除筛选
             </button>
           )}
+        </div>
         </div>
       </div>
     </div>
