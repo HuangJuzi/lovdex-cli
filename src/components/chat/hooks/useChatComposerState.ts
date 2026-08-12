@@ -664,6 +664,7 @@ export function useChatComposerState({
   });
 
   const { getRootProps, getInputProps, isDragActive } = allFilesDropzone;
+  const getImageInputProps = imagePickerDropzone.getInputProps;
   const openFilePicker = allFilesDropzone.open;
   const openImagePicker = imagePickerDropzone.open;
 
@@ -746,7 +747,7 @@ export function useChatComposerState({
       event.preventDefault();
       const currentInput = inputValueRef.current;
       dbg(`enter ilen=${currentInput.trim().length} hp=${selectedProject ? 1 : 0} il=${isLoading ? 1 : 0} prov=${provider} sid=${selectedSession?.id ?? currentSessionId ?? '-'}`);
-      if (!currentInput.trim() || !selectedProject) {
+      if ((!currentInput.trim() && attachedFiles.length === 0 && attachedImages.length === 0) || !selectedProject) {
         dbg('bail empty/noProject');
         return;
       }
@@ -1387,6 +1388,7 @@ export function useChatComposerState({
     openFilePicker,
     getRootProps,
     getInputProps,
+    getImageInputProps,
     isDragActive,
     openImagePicker,
     handleSubmit,

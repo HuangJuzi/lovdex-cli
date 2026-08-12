@@ -187,6 +187,7 @@ function ChatInterface({
     openFilePicker,
     getRootProps,
     getInputProps,
+    getImageInputProps,
     isDragActive,
     openImagePicker,
     handleSubmit,
@@ -516,7 +517,7 @@ function ChatInterface({
           onShowModelPicker={showModelsModal}
           slashCommandsCount={slashCommandsCount}
           onToggleCommandMenu={handleToggleCommandMenu}
-          hasInput={Boolean(input.trim())}
+          hasInput={Boolean(input.trim()) || attachedFiles.length > 0 || attachedImages.length > 0}
           onClearInput={handleClearInput}
           onSubmit={handleSubmit}
           isDragActive={isDragActive}
@@ -551,6 +552,7 @@ function ChatInterface({
           frequentCommands={commandQuery ? [] : frequentCommands}
           getRootProps={getRootProps as (...args: unknown[]) => Record<string, unknown>}
           getInputProps={getInputProps as (...args: unknown[]) => Record<string, unknown>}
+          getImageInputProps={getImageInputProps as (...args: unknown[]) => Record<string, unknown>}
           openImagePicker={openImagePicker}
           inputHighlightRef={inputHighlightRef}
           renderInputWithMentions={renderInputWithMentions}

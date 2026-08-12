@@ -101,6 +101,7 @@ interface ChatComposerProps {
   frequentCommands: SlashCommand[];
   getRootProps: (...args: unknown[]) => Record<string, unknown>;
   getInputProps: (...args: unknown[]) => Record<string, unknown>;
+  getImageInputProps: (...args: unknown[]) => Record<string, unknown>;
   openImagePicker: () => void;
   inputHighlightRef: RefObject<HTMLDivElement>;
   renderInputWithMentions: (text: string) => ReactNode;
@@ -165,6 +166,7 @@ export default function ChatComposer({
   frequentCommands,
   getRootProps,
   getInputProps,
+  getImageInputProps,
   openImagePicker,
   inputHighlightRef,
   renderInputWithMentions,
@@ -427,6 +429,7 @@ export default function ChatComposer({
           )}
 
           <input {...getInputProps()} />
+          <input {...getImageInputProps()} />
 
           <PromptInputBody>
             <div ref={inputHighlightRef} aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
@@ -637,7 +640,7 @@ export default function ChatComposer({
                         }
                       : undefined
               }
-              disabled={isLoading ? false : isRecording ? false : isTranscribing ? true : !input.trim()}
+              disabled={isLoading ? false : isRecording ? false : isTranscribing ? true : !input.trim() && attachedFiles.length === 0 && attachedImages.length === 0}
               aria-label={submitAriaLabel}
               title={submitAriaLabel}
               className="h-10 w-10 sm:h-10 sm:w-10"
