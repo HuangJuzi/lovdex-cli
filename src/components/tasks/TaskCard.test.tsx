@@ -41,7 +41,13 @@ const options: TaskProjectOption[] = [
 
 function render(
   task: Task,
-  props: { projectOptions?: TaskProjectOption[]; onProjectChange?: (nextPath: string) => void } = {},
+  props: {
+    projectOptions?: TaskProjectOption[];
+    onProjectChange?: (nextPath: string) => void;
+    onOpenSession?: () => void;
+    onStart?: () => void;
+    onStatusChange?: (status: Task['status']) => void;
+  } = {},
 ) {
   return renderToStaticMarkup(
     React.createElement(
@@ -86,4 +92,23 @@ test('card without projectOptions falls back to the plain project badge', () => 
   const html = render(baseTask);
   assert.doesNotMatch(html, /<select/);
   assert.match(html, /\/home\/user\/proj/);
+});
+
+// 「打开会话」去重回归：in_review/only_plan/needs_review/blocked 这些状态会同时
+// 命中旧的 in_review + sub_status 两个按钮分支，必须恰好渲染一个「打开会话」。
+test('board card renders exactly one open-session button for in_review with needs_review + session', () => {
+  const html = render(
+    { ...baseTask, status: 'in_review', sub_status: 'needs_review', session_id: 's1' },
+    { onOpenSession: () => {}, onStart: () => {}, onStatusChange: () => {} },
+  );
+  assert.match(html, /标记完成/);
+  assert.equal((html.match(/打开会话/g) || []).length, 1);
+});
+
+test('board card renders exactly one open-session button for in_progress with only_plan + session', () => {
+  const html = render(
+    { ...baseTask, status: 'in_progress', sub_status: 'only_plan', session_id: 's1' },
+    { onOpenSession: () => {}, onStart: () => {}, onStatusChange: () => {} },
+  );
+  assert.equal((html.match(/打开会话/g) || []).length, 1);
 });
