@@ -103,19 +103,19 @@ export function TaskFilterBar({ projectOptions, filter, onChange }: TaskFilterBa
         />
       </button>
 
-      {/* 控件区：移动端折叠展开，桌面端始终展开并铺满一行 */}
+      {/* 控件区：移动端折叠展开；桌面端始终展开，一排居中、两边留白 */}
       <div
         className={cn(
-          'gap-x-3 gap-y-2 sm:flex sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4 sm:py-2',
+          'gap-x-3 gap-y-2 sm:mx-auto sm:flex sm:max-w-6xl sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-6 sm:px-4 sm:py-2',
           open ? 'flex flex-col px-3 pb-2 pt-1' : 'hidden sm:flex',
         )}
       >
         {/* 左簇：项目 + 只看助手 */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1">
-            <span className="text-xs text-muted-foreground">项目</span>
+          <div className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5">
+            <span className="text-sm text-muted-foreground">项目</span>
             <select
-              className="bg-transparent text-xs text-foreground outline-none"
+              className="bg-transparent text-sm text-foreground outline-none"
               value={filter.projectPath}
               onChange={(e) => selectProject(e.target.value)}
             >
@@ -133,7 +133,7 @@ export function TaskFilterBar({ projectOptions, filter, onChange }: TaskFilterBa
             type="button"
             aria-pressed={filter.assistantOnly}
             onClick={toggleAssistant}
-            className={`rounded-md px-2.5 py-1.5 text-xs transition-colors ${
+            className={`rounded-md px-3 py-2 text-sm transition-colors ${
               filter.assistantOnly
                 ? 'bg-violet-500/15 text-violet-600 dark:text-violet-400'
                 : 'bg-muted/50 text-muted-foreground hover:text-foreground'
@@ -150,7 +150,6 @@ export function TaskFilterBar({ projectOptions, filter, onChange }: TaskFilterBa
               key={o.value}
               isActive={filter.dateField === o.value}
               onClick={() => onChange({ ...filter, dateField: o.value })}
-              className="px-2 py-1.5 text-xs"
             >
               {o.label}
             </Pill>
@@ -164,7 +163,6 @@ export function TaskFilterBar({ projectOptions, filter, onChange }: TaskFilterBa
               key={o.value}
               isActive={presetActive(o.value)}
               onClick={() => pickPreset(o.value)}
-              className="px-2 py-1.5 text-xs"
             >
               {o.label}
             </Pill>
@@ -173,20 +171,20 @@ export function TaskFilterBar({ projectOptions, filter, onChange }: TaskFilterBa
 
         {/* 右簇：自定义范围 + 清除 */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1">
-            <span className="text-xs text-muted-foreground">从</span>
+          <div className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5">
+            <span className="text-sm text-muted-foreground">从</span>
             <input
               type="date"
-              className={`bg-transparent text-xs text-foreground outline-none ${
+              className={`bg-transparent text-sm text-foreground outline-none ${
                 filter.customFrom === '' ? 'date-empty' : ''
               }`}
               value={filter.customFrom}
               onChange={(e) => onChange({ ...filter, preset: 'all', customFrom: e.target.value })}
             />
-            <span className="text-xs text-muted-foreground">至</span>
+            <span className="text-sm text-muted-foreground">至</span>
             <input
               type="date"
-              className={`bg-transparent text-xs text-foreground outline-none ${
+              className={`bg-transparent text-sm text-foreground outline-none ${
                 filter.customTo === '' ? 'date-empty' : ''
               }`}
               value={filter.customTo}
@@ -197,7 +195,7 @@ export function TaskFilterBar({ projectOptions, filter, onChange }: TaskFilterBa
           {hasFilter && (
             <button
               type="button"
-              className="rounded-md px-2 py-1.5 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              className="rounded-md px-2 py-1.5 text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
               onClick={() => onChange(EMPTY_TASK_FILTER)}
             >
               清除筛选
