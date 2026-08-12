@@ -81,6 +81,7 @@ export default function LoginPage() {
                 onChange={(event) => setCode(event.target.value)}
                 placeholder={t('login.placeholders.code')}
                 autoComplete="one-time-code"
+                autoFocus
               />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
