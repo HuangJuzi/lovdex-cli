@@ -1,7 +1,8 @@
-import { ArrowUpCircle, Bug, AlertTriangle } from 'lucide-react';
+import { ArrowUpCircle, Bug, AlertTriangle, LogOut } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import { IS_PLATFORM } from '../../../../constants/config';
 import type { ReleaseInfo } from '../../../../types/sharedTypes';
+import { useAuth } from '../../../auth/AuthGate';
 
 const GITHUB_ISSUES_URL = 'https://github.com/siteboon/claudecodeui/issues/new';
 const GITHUB_REPO_URL = 'https://github.com/siteboon/claudecodeui';
@@ -37,6 +38,7 @@ export default function SidebarFooter({
   onShowSettings,
   t,
 }: SidebarFooterProps) {
+  const { logout } = useAuth();
   return (
     <div className="flex-shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0)' }}>
       {/* Restart-required banner: the running server version differs from the
@@ -105,6 +107,22 @@ export default function SidebarFooter({
 
       {/* Operator Agent assistant + settings now live at the top of the sidebar
           (SidebarAssistant), so the footer is back to version banners only. */}
+
+      {/* Logout (OSS mode only — the login gate is backend-enforced). */}
+      {!IS_PLATFORM && (
+        <div className="px-2 pb-2">
+          <button
+            type="button"
+            onClick={logout}
+            title={t('auth:logout.button')}
+            aria-label={t('auth:logout.button')}
+            className="flex w-full items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            <span>{t('auth:logout.button')}</span>
+          </button>
+        </div>
+      )}
 
       {/* Desktop version brand line (OSS mode only) */}
       {!IS_PLATFORM && (
