@@ -1,11 +1,13 @@
 import { useState } from 'react';
 
 /**
- * Custom hook to persist state in localStorage.
+ * Hook to persist state in localStorage.
  *
+ * @template T
  * @param {string} key The key to use for localStorage.
- * @param {any} initialValue The initial value to use if nothing is in localStorage.
- * @returns {[any, Function]} A tuple containing the stored value and a setter function.
+ * @param {T} initialValue The initial value to use if nothing is in localStorage.
+ * @returns {[T, (value: T | ((prev: T) => T)) => void]} A tuple containing the
+ *   stored value and a setter function (which also accepts an updater function).
  */
 function useLocalStorage(key, initialValue) {
   const [storedValue, setStoredValue] = useState(() => {
