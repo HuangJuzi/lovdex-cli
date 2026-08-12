@@ -13,6 +13,7 @@ import { authenticatedFetch } from '../utils/api';
 import type { LLMProvider } from '../types/app';
 import { applyWorkflowEvent as applyWorkflowEventReducer, seedWorkflowStateFromHistory } from '../components/chat/tools/workflowState';
 import type { WorkflowEvent, WorkflowState } from '../components/chat/tools/workflowState';
+import { computeRefreshLimit, mergeRefreshedTail } from './sessionRefresh';
 
 // ─── NormalizedMessage (mirrors server/adapters/types.js) ────────────────────
 
@@ -730,18 +731,35 @@ export function useSessionStore() {
   /**
    * Re-fetch serverMessages from the provider sessions endpoint.
    */
+  /**
+   * Re-fetch a bounded tail page from the provider sessions endpoint and merge
+   * it into the slot.
+   *
+   * Bounded (default limit = max(current loaded, 20), capped at 200) so a
+   * session with a long transcript never floods the store or the UI on
+   * `complete` / reconnect / external refresh. Older already-loaded messages
+   * are preserved when the fetched page is shorter than the current window.
+   */
   const refreshFromServer = useCallback(async (
     sessionId: string,
+    opts: { limit?: number } = {},
   ) => {
     const slot = getSlot(sessionId);
     const fetchTicket = ++slot._fetchSeq;
+    const limit = computeRefreshLimit(slot.serverMessages.length, opts);
+
+    const params = new URLSearchParams();
+    params.append('limit', String(limit));
+    params.append('offset', '0');
+
     try {
-      const url = `/api/providers/sessions/${encodeURIComponent(sessionId)}/messages`;
+      const url = `/api/providers/sessions/${encodeURIComponent(sessionId)}/messages?${params.toString()}`;
       const response = await authenticatedFetch(url);
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const body = await response.json();
       const data = body?.data ?? body;
+      const fetched: NormalizedMessage[] = data.messages || [];
 
       // A later-started fetch already applied: applying this stale transcript
       // would erase rows the user has already seen (and re-prune realtime
@@ -751,10 +769,12 @@ export function useSessionStore() {
       }
       slot._appliedFetchSeq = fetchTicket;
 
-      slot.serverMessages = data.messages || [];
-      seedWorkflowStateFromMessages(slot.serverMessages);
+      slot.serverMessages = mergeRefreshedTail(slot.serverMessages, fetched);
+      seedWorkflowStateFromMessages(fetched);
       slot.total = data.total ?? slot.serverMessages.length;
       slot.hasMore = Boolean(data.hasMore);
+      // offset 语义 = 「已从尾部消费的条数」（与 fetchFromServer/fetchMore 累积一致）。
+      slot.offset = Math.min(slot.serverMessages.length, slot.total);
       slot.fetchedAt = Date.now();
       // Only drop realtime rows the server transcript now owns. A blind clear
       // here caused the chat pane to flash "Continue your conversation" after
