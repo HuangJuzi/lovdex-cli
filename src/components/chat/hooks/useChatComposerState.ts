@@ -31,6 +31,11 @@ import type {
 } from '../types/types';
 import type { Project, ProjectSession, LLMProvider, ProviderModelsCacheInfo } from '../../../types/app';
 import { escapeRegExp } from '../utils/chatFormatting';
+import {
+  MAX_FILE_UPLOAD_COUNT,
+  buildAttachmentPrefix,
+  validateFileUpload,
+} from '../utils/fileAttachments';
 
 import { useFileMentions } from './useFileMentions';
 import { type SlashCommand, useSlashCommands } from './useSlashCommands';
@@ -228,6 +233,8 @@ export function useChatComposerState({
   const [attachedImages, setAttachedImages] = useState<File[]>([]);
   const [uploadingImages, setUploadingImages] = useState<Map<string, number>>(new Map());
   const [imageErrors, setImageErrors] = useState<Map<string, string>>(new Map());
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [fileErrors, setFileErrors] = useState<Map<string, string>>(new Map());
   const [isTextareaExpanded, setIsTextareaExpanded] = useState(false);
   const [resumeOverlayOpen, setResumeOverlayOpen] = useState(false);
   const [branchOverlayOpen, setBranchOverlayOpen] = useState(false);
@@ -580,32 +587,72 @@ export function useChatComposerState({
     }
   }, []);
 
+  const handleFileFiles = useCallback((files: File[]) => {
+    const validFiles = files.filter((file) => {
+      const result = validateFileUpload(file);
+      if (!result.ok) {
+        setFileErrors((previous) => {
+          const next = new Map(previous);
+          next.set(file.name || 'Unknown file', result.error);
+          return next;
+        });
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length > 0) {
+      setAttachedFiles((previous) => [...previous, ...validFiles].slice(0, MAX_FILE_UPLOAD_COUNT));
+    }
+  }, []);
+
   const handlePaste = useCallback(
     (event: ClipboardEvent<HTMLTextAreaElement>) => {
       const items = Array.from(event.clipboardData.items);
 
       items.forEach((item) => {
-        if (!item.type.startsWith('image/')) {
-          return;
-        }
         const file = item.getAsFile();
-        if (file) {
+        if (!file) return;
+        if (item.type.startsWith('image/')) {
           handleImageFiles([file]);
+        } else {
+          handleFileFiles([file]);
         }
       });
 
       if (items.length === 0 && event.clipboardData.files.length > 0) {
         const files = Array.from(event.clipboardData.files);
         const imageFiles = files.filter((file) => file.type.startsWith('image/'));
-        if (imageFiles.length > 0) {
-          handleImageFiles(imageFiles);
-        }
+        const otherFiles = files.filter((file) => !file.type.startsWith('image/'));
+        if (imageFiles.length > 0) handleImageFiles(imageFiles);
+        if (otherFiles.length > 0) handleFileFiles(otherFiles);
       }
     },
-    [handleImageFiles],
+    [handleFileFiles, handleImageFiles],
   );
 
-  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+  const handleDroppedFiles = useCallback(
+    (files: File[]) => {
+      const imageFiles = files.filter((file) => file.type.startsWith('image/'));
+      const otherFiles = files.filter((file) => !file.type.startsWith('image/'));
+      if (imageFiles.length > 0) handleImageFiles(imageFiles);
+      if (otherFiles.length > 0) handleFileFiles(otherFiles);
+    },
+    [handleFileFiles, handleImageFiles],
+  );
+
+  // 全类型 dropzone：负责拖拽遮罩 + 附件（回形针）选择器。
+  // 注意：不设 maxSize —— 让超大文件落到 handleFileFiles 的 validateFileUpload，
+  // 在 chip 上显示「File too large (max 50 MB)」而不是被 dropzone 静默丢弃。
+  const allFilesDropzone = useDropzone({
+    maxFiles: MAX_FILE_UPLOAD_COUNT,
+    onDrop: handleDroppedFiles,
+    noClick: true,
+    noKeyboard: true,
+  });
+
+  // 图片专用 dropzone：仅用于图片按钮的选择器（保持图片上传只收图片）。
+  const imagePickerDropzone = useDropzone({
     accept: {
       'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'],
     },
@@ -615,6 +662,10 @@ export function useChatComposerState({
     noClick: true,
     noKeyboard: true,
   });
+
+  const { getRootProps, getInputProps, isDragActive } = allFilesDropzone;
+  const openFilePicker = allFilesDropzone.open;
+  const openImagePicker = imagePickerDropzone.open;
 
   // Snapshot of everything `chat.send` needs beyond the text itself. Built at
   // send time for immediate sends and at queue time for queued ones, so a
@@ -833,6 +884,44 @@ export function useChatComposerState({
         }
       }
 
+      let finalContent = messageContent;
+      if (attachedFiles.length > 0) {
+        const formData = new FormData();
+        attachedFiles.forEach((file) => {
+          formData.append('files', file);
+        });
+
+        try {
+          const projectId = selectedProject?.projectId ?? '';
+          const response = await authenticatedFetch(
+            `/api/assets/files?projectId=${encodeURIComponent(projectId)}`,
+            {
+              method: 'POST',
+              headers: {},
+              body: formData,
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error('Failed to upload files');
+          }
+
+          const result = await response.json();
+          const uploadedFiles = Array.isArray(result.files) ? result.files : [];
+          const prefix = buildAttachmentPrefix(uploadedFiles);
+          finalContent = prefix ? `${prefix}\n\n${messageContent}` : messageContent;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          console.error('File upload failed:', error);
+          addMessage({
+            type: 'error',
+            content: `Failed to upload files: ${message}`,
+            timestamp: new Date(),
+          });
+          return;
+        }
+      }
+
       const resolvedProjectPath = selectedProject.fullPath || selectedProject.path || '';
       const sessionSummary = getNotificationSessionSummary(selectedSession, currentInput);
 
@@ -884,7 +973,7 @@ export function useChatComposerState({
 
       const userMessage: ChatMessage = {
         type: 'user',
-        content: messageContent,
+        content: finalContent,
         images: uploadedImages as any,
         timestamp: new Date(),
       };
@@ -908,7 +997,7 @@ export function useChatComposerState({
       sendMessage({
         type: 'chat.send',
         sessionId: targetSessionId,
-        content: messageContent,
+        content: finalContent,
         options: {
           ...buildSendOptions(messageContent),
           images: uploadedImages,
@@ -921,6 +1010,8 @@ export function useChatComposerState({
       setAttachedImages([]);
       setUploadingImages(new Map());
       setImageErrors(new Map());
+      setAttachedFiles([]);
+      setFileErrors(new Map());
       setIsTextareaExpanded(false);
 
       if (textareaRef.current) {
@@ -932,6 +1023,7 @@ export function useChatComposerState({
     [
       selectedSession,
       attachedImages,
+      attachedFiles,
       buildSendOptions,
       currentSessionId,
       executeCommand,
@@ -1289,10 +1381,14 @@ export function useChatComposerState({
     setAttachedImages,
     uploadingImages,
     imageErrors,
+    attachedFiles,
+    setAttachedFiles,
+    fileErrors,
+    openFilePicker,
     getRootProps,
     getInputProps,
     isDragActive,
-    openImagePicker: open,
+    openImagePicker,
     handleSubmit,
     queuedDraft,
     editQueuedDraft,
