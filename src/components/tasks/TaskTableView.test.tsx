@@ -52,3 +52,27 @@ test('table shows empty state when no tasks', () => {
   );
   assert.match(html, /暂无任务/);
 });
+
+test('table renders exactly one open-session button for in_review with needs_review + session', () => {
+  const html = renderToStaticMarkup(
+    React.createElement(TaskTableView, {
+      tasks: [mkTask({ task_id: 'r1', status: 'in_review', sub_status: 'needs_review', session_id: 's1' })],
+      projectOptions: [],
+      onOpenSession: () => {},
+      onStatusChange: () => {},
+    }),
+  );
+  assert.match(html, /标记完成/);
+  assert.equal((html.match(/打开会话/g) || []).length, 1);
+});
+
+test('table renders exactly one open-session button for in_progress with only_plan + session', () => {
+  const html = renderToStaticMarkup(
+    React.createElement(TaskTableView, {
+      tasks: [mkTask({ task_id: 'p1', status: 'in_progress', sub_status: 'only_plan', session_id: 's1' })],
+      projectOptions: [],
+      onOpenSession: () => {},
+    }),
+  );
+  assert.equal((html.match(/打开会话/g) || []).length, 1);
+});

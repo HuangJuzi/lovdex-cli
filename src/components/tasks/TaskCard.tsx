@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Task, TaskStatus } from '../../types/app';
 
 import { STATUS_META, LABEL_META, PRIORITY_META } from './taskStatus';
+import { canOpenSession } from './taskActions';
 import { taskDeadlineInfo } from './taskDeadline';
 import { formatAbsoluteTime, formatRelativeTime, taskTimeLabel } from './taskTimestamp';
 import { SubStatusBadge } from './SubStatusBadge';
@@ -180,30 +181,17 @@ export const TaskCard = memo(function TaskCard({
           </button>
         )}
         {task.status === 'in_review' && (
-          <>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onStatusChange?.('done');
-              }}
-              className="min-h-9 min-w-0 flex-1 rounded-md bg-green-500/10 py-1.5 text-xs font-semibold text-green-600 transition-colors hover:bg-green-500/20 dark:text-green-400 sm:min-h-0"
-            >
-              ✓ 标记完成
-            </button>
-            {task.session_id && onOpenSession && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenSession();
-                }}
-                className="min-h-9 min-w-0 flex-1 rounded-md bg-primary/10 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20 sm:min-h-0"
-              >
-                打开会话
-              </button>
-            )}
-          </>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onStatusChange?.('done');
+            }}
+            className="min-h-9 min-w-0 flex-1 rounded-md bg-green-500/10 py-1.5 text-xs font-semibold text-green-600 transition-colors hover:bg-green-500/20 dark:text-green-400 sm:min-h-0"
+          >
+            ✓ 标记完成
+          </button>
         )}
-        {task.status === 'in_progress' && task.session_id && onOpenSession && (
+        {canOpenSession(task) && onOpenSession && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -214,19 +202,6 @@ export const TaskCard = memo(function TaskCard({
             打开会话
           </button>
         )}
-        {['only_plan', 'needs_review', 'blocked'].includes(task.sub_status ?? '') &&
-          task.session_id &&
-          onOpenSession && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenSession();
-              }}
-              className="min-h-9 min-w-0 flex-1 rounded-md bg-primary/10 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20 sm:min-h-0"
-            >
-              打开会话
-            </button>
-          )}
       </div>
     </div>
   );

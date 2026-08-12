@@ -3,6 +3,7 @@ import { Fragment, useMemo, useState, type ReactNode } from 'react';
 import type { Task, TaskStatus } from '../../types/app';
 
 import type { TaskProjectOption } from './TaskCard';
+import { canOpenSession } from './taskActions';
 import { SubStatusBadge } from './SubStatusBadge';
 import { sortTasks, type TaskSortDir, type TaskSortKey } from './taskTable';
 import { groupByStatus, LABEL_META, PRIORITY_META, STATUS_META, STATUS_ORDER } from './taskStatus';
@@ -323,32 +324,18 @@ function TaskRow({
             </ActionBtn>
           )}
           {task.status === 'in_review' && (
-            <>
-              <ActionBtn
-                onClick={() => onStatusChange?.(task, 'done')}
-                className="bg-green-500/10 text-green-600 dark:text-green-400"
-              >
-                ✓ 标记完成
-              </ActionBtn>
-              {task.session_id && onOpenSession && (
-                <ActionBtn onClick={() => onOpenSession(task)} className="bg-muted text-muted-foreground">
-                  打开会话
-                </ActionBtn>
-              )}
-            </>
+            <ActionBtn
+              onClick={() => onStatusChange?.(task, 'done')}
+              className="bg-green-500/10 text-green-600 dark:text-green-400"
+            >
+              ✓ 标记完成
+            </ActionBtn>
           )}
-          {task.status === 'in_progress' && task.session_id && onOpenSession && (
+          {canOpenSession(task) && onOpenSession && (
             <ActionBtn onClick={() => onOpenSession(task)} className="bg-muted text-muted-foreground">
               打开会话
             </ActionBtn>
           )}
-          {['only_plan', 'needs_review', 'blocked'].includes(task.sub_status ?? '') &&
-            task.session_id &&
-            onOpenSession && (
-              <ActionBtn onClick={() => onOpenSession(task)} className="bg-muted text-muted-foreground">
-                打开会话
-              </ActionBtn>
-            )}
         </div>
       </td>
     </tr>
