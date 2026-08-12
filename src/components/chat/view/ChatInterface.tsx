@@ -125,6 +125,7 @@ function ChatInterface({
     scrollToBottom,
     scrollToBottomAndReset,
     handleScroll,
+    handleLoadMore,
   } = useChatSessionState({
     selectedProject,
     selectedSession,
@@ -466,6 +467,7 @@ function ChatInterface({
           visibleMessageCount={visibleMessageCount}
           visibleMessages={visibleMessages}
           loadEarlierMessages={loadEarlierMessages}
+          onLoadMore={handleLoadMore}
           loadAllMessages={loadAllMessages}
           allMessagesLoaded={allMessagesLoaded}
           isLoadingAllMessages={isLoadingAllMessages}

@@ -10,8 +10,8 @@ import { createCachedDiffCalculator, type DiffCalculator } from '../utils/messag
 
 import { normalizedToChatMessages } from './useChatMessages';
 
-const MESSAGES_PER_PAGE = 20;
-const INITIAL_VISIBLE_MESSAGES = 100;
+const MESSAGES_PER_PAGE = 5;
+const INITIAL_VISIBLE_MESSAGES = 5;
 
 interface UseChatSessionStateArgs {
   selectedProject: Project | null;
@@ -128,7 +128,6 @@ export function useChatSessionState({
   const isLoadingSessionRef = useRef(false);
   const isLoadingMoreRef = useRef(false);
   const allMessagesLoadedRef = useRef(false);
-  const topLoadLockRef = useRef(false);
   const pendingScrollRestoreRef = useRef<ScrollRestoreState | null>(null);
   const pendingInitialScrollRef = useRef(true);
   const messagesOffsetRef = useRef(0);
@@ -189,7 +188,6 @@ export function useChatSessionState({
     setSearchTarget(null);
     wasNearTopRef.current = false;
     searchScrollActiveRef.current = false;
-    topLoadLockRef.current = false;
     pendingScrollRestoreRef.current = null;
     pendingInitialScrollRef.current = true;
     lastLoadedSessionKeyRef.current = null;
@@ -375,7 +373,7 @@ export function useChatSessionState({
     [hasMoreMessages, isLoadingMoreMessages, selectedProject, selectedSession, sessionStore],
   );
 
-  const handleScroll = useCallback(async () => {
+  const handleScroll = useCallback(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
 
@@ -384,7 +382,9 @@ export function useChatSessionState({
 
     const scrolledNearTop = container.scrollTop < 100;
 
-    // "Load all" prompt: appear (with fade-in) when the user reaches the top
+    // "Load all" prompt: appear (with fade-in) when the user reaches the top.
+    // Older messages are NOT auto-loaded on scroll — loading is click-driven
+    // via the "Load more" button.
     if (scrolledNearTop && hasMoreMessages && !allMessagesLoadedRef.current) {
       if (!wasNearTopRef.current) {
         wasNearTopRef.current = true;
@@ -399,17 +399,13 @@ export function useChatSessionState({
     } else if (!scrolledNearTop) {
       wasNearTopRef.current = false;
     }
+  }, [hasMoreMessages, isNearBottom]);
 
-    if (!allMessagesLoadedRef.current) {
-      if (!scrolledNearTop) { topLoadLockRef.current = false; return; }
-      if (topLoadLockRef.current) {
-        if (container.scrollTop > 20) topLoadLockRef.current = false;
-        return;
-      }
-      const didLoad = await loadOlderMessages(container);
-      if (didLoad) topLoadLockRef.current = true;
-    }
-  }, [hasMoreMessages, isNearBottom, loadOlderMessages]);
+  /** 点击「Load more」按钮时加载更早的一页（5 条）。 */
+  const handleLoadMore = useCallback(() => {
+    if (!scrollContainerRef.current) return;
+    void loadOlderMessages(scrollContainerRef.current);
+  }, [loadOlderMessages]);
 
   useLayoutEffect(() => {
     if (!pendingScrollRestoreRef.current || !scrollContainerRef.current) return;
@@ -426,7 +422,6 @@ export function useChatSessionState({
       pendingInitialScrollRef.current = true;
       setVisibleMessageCount(INITIAL_VISIBLE_MESSAGES);
     }
-    topLoadLockRef.current = false;
     pendingScrollRestoreRef.current = null;
     wasNearTopRef.current = false;
     setIsUserScrolledUp(false);
@@ -858,5 +853,6 @@ export function useChatSessionState({
     scrollToBottomAndReset,
     isNearBottom,
     handleScroll,
+    handleLoadMore,
   };
 }

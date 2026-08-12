@@ -4,8 +4,9 @@ import test from 'node:test';
 import { computeRefreshLimit, mergeRefreshedTail } from './sessionRefresh';
 import type { NormalizedMessage } from './useSessionStore';
 
-test('computeRefreshLimit defaults to max(current,20) capped at 200', () => {
-  assert.equal(computeRefreshLimit(0), 20);
+test('computeRefreshLimit defaults to max(current,5) capped at 200', () => {
+  assert.equal(computeRefreshLimit(0), 5);
+  assert.equal(computeRefreshLimit(5), 5);
   assert.equal(computeRefreshLimit(20), 20);
   assert.equal(computeRefreshLimit(60), 60);
   assert.equal(computeRefreshLimit(500), 200); // capped

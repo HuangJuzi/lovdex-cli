@@ -56,6 +56,8 @@ interface ChatMessagesPaneProps {
   visibleMessageCount: number;
   visibleMessages: ChatMessage[];
   loadEarlierMessages: () => void;
+  /** 点击「Load more」时再加载一页更早的消息（不再滚动自动加载）。 */
+  onLoadMore: () => void;
   loadAllMessages: () => void;
   allMessagesLoaded: boolean;
   isLoadingAllMessages: boolean;
@@ -110,6 +112,7 @@ function ChatMessagesPane({
   visibleMessageCount,
   visibleMessages,
   loadEarlierMessages,
+  onLoadMore,
   loadAllMessages,
   allMessagesLoaded,
   isLoadingAllMessages,
@@ -221,14 +224,20 @@ function ChatMessagesPane({
             </div>
           )}
 
-          {/* Indicator showing there are more messages to load (hide when all loaded) */}
+          {/* Indicator: click "Load more" to fetch an older page (no auto-load on scroll) */}
           {hasMoreMessages && !isLoadingMoreMessages && !allMessagesLoaded && (
             <div className="border-b border-gray-200 py-2 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
               {totalMessages > 0 && (
-                <span>
+                <>
                   {t('session.messages.showingOf', { shown: sessionMessagesCount, total: totalMessages })}{' '}
-                  <span className="text-xs">{t('session.messages.scrollToLoad')}</span>
-                </span>
+                  <button
+                    type="button"
+                    className="ml-1 text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                    onClick={onLoadMore}
+                  >
+                    {t('session.messages.loadMore')}
+                  </button>
+                </>
               )}
             </div>
           )}

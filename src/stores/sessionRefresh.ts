@@ -1,7 +1,7 @@
 import type { NormalizedMessage } from './useSessionStore';
 
-/** 有界刷新下限：至少覆盖初始加载页。 */
-export const REFRESH_LIMIT_FLOOR = 20;
+/** 有界刷新下限：至少覆盖初始加载页（默认 5 条）。 */
+export const REFRESH_LIMIT_FLOOR = 5;
 /** 有界刷新上限：防止拉全量刷屏。 */
 export const MAX_REFRESH_LIMIT = 200;
 
