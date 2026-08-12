@@ -45,7 +45,14 @@ export function TaskBoardPage() {
   const { tasks, loading, loadError, refresh, upsert } = useTasks({}, subscribe);
   const [filter, setFilter] = useState<TaskFilter>(EMPTY_TASK_FILTER);
   const [viewMode, setViewMode] = useLocalStorage<'board' | 'table'>('taskViewMode', 'board');
-  const filteredTasks = useMemo(() => filterTasks(tasks, filter, new Date()), [tasks, filter]);
+  // `now` 每分钟刷新一次：避免页面跨午夜且无任务事件时，「今天/本周/本月/今年」的
+  // 日期区间边界停留在上次重算值。任务/筛选变化仍会立即重算。
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const filteredTasks = useMemo(() => filterTasks(tasks, filter, now), [tasks, filter, now]);
   const groups = useMemo(() => groupByStatus(filteredTasks), [filteredTasks]);
 
   // Create-task form state.
