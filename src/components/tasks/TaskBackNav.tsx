@@ -41,7 +41,7 @@ export function TaskBackNav({ className }: { className?: string }) {
   return (
     <div className={cn('flex items-center gap-2', className)}>
       <BackToTasksButton />
-      <HomeButton />
+      <HomeButton className="hidden sm:inline-flex" />
     </div>
   );
 }
