@@ -60,6 +60,11 @@ export const api = {
         body: JSON.stringify({ email, code }),
       }),
     me: () => authenticatedFetch('/api/auth/me'),
+    changePassword: (currentCode, newCode) =>
+      authenticatedFetch('/api/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ currentCode, newCode }),
+      }),
   },
 
   // Protected endpoints
