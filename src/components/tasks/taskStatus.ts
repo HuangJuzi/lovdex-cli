@@ -45,6 +45,14 @@ export function groupByStatus(tasks: Task[]): Record<TaskStatus, Task[]> {
   return groups;
 }
 
+/** 切换某个看板列在表格状态筛选中的选中与否；返回新数组（不修改入参），按 STATUS_ORDER 排序。 */
+export function toggleStatus(selected: TaskStatus[], status: TaskStatus): TaskStatus[] {
+  const next = selected.includes(status)
+    ? selected.filter((s) => s !== status)
+    : [...selected, status];
+  return STATUS_ORDER.filter((s) => next.includes(s));
+}
+
 export function taskSessionState(t: Task): 'none' | 'running' | 'review' | 'done' {
   if (!t.session_id) return 'none';
   switch (t.status) {

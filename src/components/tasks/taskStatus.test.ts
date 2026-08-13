@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import type { Task } from '../../types/app';
+import type { Task, TaskStatus } from '../../types/app';
 import {
   STATUS_META, STATUS_ORDER, SUB_STATUS_META, SUB_STATUS_ORDER, groupByStatus,
   PRIORITY_ORDER, PRIORITY_META, LABEL_ORDER, LABEL_META,
+  toggleStatus,
 } from './taskStatus';
 
 function mkTask(task_id: string, status: Task['status']): Task {
@@ -53,4 +54,26 @@ test('PRIORITY_META covers all priorities', () => {
 test('LABEL_META covers all labels', () => {
   assert.deepEqual(LABEL_ORDER, ['bug', 'feature', 'optimization', 'refactor', 'docs', 'other']);
   for (const l of LABEL_ORDER) assert.ok(LABEL_META[l].label && LABEL_META[l].color);
+});
+
+test('toggleStatus adds an unselected status', () => {
+  assert.deepEqual(toggleStatus(['done'] as TaskStatus[], 'todo'), ['todo', 'done']);
+});
+
+test('toggleStatus removes a selected status', () => {
+  assert.deepEqual(
+    toggleStatus(['todo', 'in_progress', 'done'] as TaskStatus[], 'in_progress'),
+    ['todo', 'done'],
+  );
+});
+
+test('toggleStatus keeps result in STATUS_ORDER order', () => {
+  assert.deepEqual(toggleStatus(['done'] as TaskStatus[], 'in_review'), ['in_review', 'done']);
+});
+
+test('toggleStatus does not mutate the input array', () => {
+  const selected: TaskStatus[] = ['todo', 'done'];
+  const out = toggleStatus(selected, 'in_progress');
+  assert.deepEqual(selected, ['todo', 'done']);
+  assert.notEqual(out, selected);
 });
