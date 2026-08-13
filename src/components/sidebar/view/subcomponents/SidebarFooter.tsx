@@ -22,7 +22,6 @@ type SidebarFooterProps = {
   restartRequired: boolean;
   releaseInfo: ReleaseInfo | null;
   latestVersion: string | null;
-  currentVersion: string;
   onShowVersionModal: () => void;
   onShowSettings: () => void;
   t: TFunction;
@@ -33,7 +32,6 @@ export default function SidebarFooter({
   restartRequired,
   releaseInfo,
   latestVersion,
-  currentVersion,
   onShowVersionModal,
   onShowSettings,
   t,
@@ -124,14 +122,6 @@ export default function SidebarFooter({
         </div>
       )}
 
-      {/* Desktop version brand line (OSS mode only) */}
-      {!IS_PLATFORM && (
-        <div className="hidden px-3 py-2 text-center md:block">
-          <span className="text-[10px] text-muted-foreground/40">
-            Lovdex v{currentVersion} – {t('branding.openSource')}
-          </span>
-        </div>
-      )}
     </div>
   );
 }
