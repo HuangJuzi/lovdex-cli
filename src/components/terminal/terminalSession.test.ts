@@ -16,10 +16,12 @@ function makeFakeTerm(writes: string[]) {
 
 function makeFakeWs(sent: string[]) {
   const listeners = new Map<string, Array<(evt: { data: unknown }) => void>>();
+  const closeCalls = [] as number[];
   return {
     readyState: 1,
+    closeCalls,
     send(d: string) { sent.push(d); },
-    close() {},
+    close() { closeCalls.push(1); },
     addEventListener(type: string, cb: (evt: { data: unknown }) => void) {
       const arr = listeners.get(type) ?? [];
       arr.push(cb);
@@ -67,11 +69,17 @@ test('resize sends a resize frame', () => {
 });
 
 test('dispose closes the socket and disposes the terminal', () => {
+  const writes: string[] = [];
   const sent: string[] = [];
-  const term = makeFakeTerm([]);
+  const term = makeFakeTerm(writes);
   const ws = makeFakeWs(sent);
   const session = createTerminalSession(term, ws as never);
   session.dispose();
   session.dispose(); // idempotent
   assert.equal(term.disposed, true);
+  assert.equal(ws.closeCalls.length, 1); // close idempotent on the ws side too
+
+  // message listener was removed on dispose: post-close frames are ignored
+  ws.emitMessage(JSON.stringify({ type: 'output', data: 'after-close' }));
+  assert.deepEqual(writes, []);
 });
