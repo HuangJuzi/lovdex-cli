@@ -17,14 +17,20 @@ import { Eye, RefreshCw } from 'lucide-react';
 import MobileMenuButton from './subcomponents/MobileMenuButton';
 import MainContentTitle from './subcomponents/MainContentTitle';
 import MainContentStateView from './subcomponents/MainContentStateView';
+import MainContentTabs from './subcomponents/MainContentTabs';
 import ErrorBoundary from './ErrorBoundary';
+import { useEditorSidebar } from '../../code-editor/hooks/useEditorSidebar';
+import EditorSidebar from '../../code-editor/view/EditorSidebar';
+import FileTree from '../../file-tree/view/FileTree';
 
 // Simplified edition: only the chat tab remains. File tree, shell, git,
 // task-master, browser-use, plugin and code-editor panels were removed.
+// Files tab restored (Phase 1); git/shell/browser still removed.
 function MainContent({
   selectedProject,
   selectedSession,
   activeTab,
+  setActiveTab,
   ws,
   sendMessage,
   isMobile,
@@ -52,6 +58,18 @@ function MainContent({
   const [convertOpen, setConvertOpen] = useState(false);
   const sessionRunning = selectedSession ? processingSessions.has(selectedSession.id) : false;
 
+  const {
+    editingFile,
+    editorWidth,
+    editorExpanded,
+    hasManualWidth,
+    resizeHandleRef,
+    handleFileOpen: handleEditorOpen,
+    handleCloseEditor,
+    handleToggleEditorExpand,
+    handleResizeStart,
+  } = useEditorSidebar({ selectedProject, isMobile });
+
   // Resolve bare/partial refs (e.g. `foo.ts`) against the project file tree,
   // then open the read-only preview modal.
   const handleFileOpen = useFileOpenResolver(selectedProject, (filePath: string) => {
@@ -63,6 +81,11 @@ function MainContent({
       <header className="pwa-header-safe flex flex-shrink-0 items-center gap-2 border-b border-border/60 bg-background px-3 py-1.5 sm:px-4 sm:py-2">
         {isMobile && <MobileMenuButton onMenuClick={onMenuClick} />}
         <ViewSwitcher active="chat" className="w-40 flex-shrink-0 sm:w-44" />
+        <MainContentTabs
+          activeTab={activeTab}
+          onSelect={(tab) => setActiveTab(tab)}
+          className="ml-1 w-56 flex-shrink-0"
+        />
         {selectedProject && (
           <MainContentTitle
             activeTab={activeTab}
@@ -108,7 +131,7 @@ function MainContent({
         <MainContentStateView mode="empty" isMobile={isMobile} />
       ) : (
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          <div className="flex min-h-0 min-w-[200px] flex-1 flex-col overflow-hidden">
+          <div className={`flex min-h-0 min-w-[200px] flex-1 flex-col overflow-hidden ${activeTab === 'chat' ? 'block' : 'hidden'}`}>
             <div className="h-full">
               <ErrorBoundary showDetails>
                 <ChatInterface
@@ -137,8 +160,35 @@ function MainContent({
               </ErrorBoundary>
             </div>
           </div>
+
+          {activeTab === 'files' && (
+            <div className="h-full overflow-hidden">
+              <FileTree selectedProject={selectedProject} onFileOpen={handleEditorOpen} />
+            </div>
+          )}
+
+          {activeTab === 'git' && (
+            <div className="h-full overflow-hidden">
+              {/* Phase 2 会用真正的 GitPanel 替换此占位 */}
+              <MainContentStateView mode="empty" isMobile={isMobile} />
+            </div>
+          )}
         </div>
       )}
+
+      <EditorSidebar
+        editingFile={editingFile}
+        isMobile={isMobile}
+        editorExpanded={editorExpanded}
+        editorWidth={editorWidth}
+        hasManualWidth={hasManualWidth}
+        resizeHandleRef={resizeHandleRef}
+        onResizeStart={handleResizeStart}
+        onCloseEditor={handleCloseEditor}
+        onToggleEditorExpand={handleToggleEditorExpand}
+        projectPath={selectedProject?.fullPath}
+        fillSpace={activeTab === 'files'}
+      />
 
       <FilePreviewModal
         open={preview !== null}
