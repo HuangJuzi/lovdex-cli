@@ -1,4 +1,5 @@
-import { FolderOpen, GitBranch, MessageSquare } from 'lucide-react';
+import { ClipboardList, FolderOpen, GitBranch, MessageSquare } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import type { AppTab } from '../../../../types/app';
 import { cn } from '../../../../lib/utils';
 
@@ -9,19 +10,23 @@ type Props = {
 };
 
 /**
- * Project-scoped tabs inside the main content area (chat / files / git).
- * Persisted via useProjectsState's activeTab. The chat<->tasks switcher
- * (ViewSwitcher) remains route navigation and is unchanged.
+ * Merged workspace tabs: chat / files / git switch the in-place activeTab,
+ * and the tasks item navigates to the /tasks route. This keeps a single
+ * segmented control in the main-content header (Tasks stays an entry point
+ * without duplicating a separate chat/tasks switcher).
  */
 function MainContentTabs({ activeTab, onSelect, className }: Props) {
-  const items = [
-    { value: 'chat' as const, label: 'Chat', icon: MessageSquare },
-    { value: 'files' as const, label: 'Files', icon: FolderOpen },
-    { value: 'git' as const, label: 'Source Control', icon: GitBranch },
+  const navigate = useNavigate();
+
+  const workspace: { value: 'chat' | 'files' | 'git'; label: string; icon: typeof MessageSquare }[] = [
+    { value: 'chat', label: 'Chat', icon: MessageSquare },
+    { value: 'files', label: 'Files', icon: FolderOpen },
+    { value: 'git', label: 'Source Control', icon: GitBranch },
   ];
+
   return (
     <div className={cn('flex rounded-xl border border-border/70 bg-muted/50 p-0.5', className)}>
-      {items.map(({ value, label, icon: Icon }) => {
+      {workspace.map(({ value, label, icon: Icon }) => {
         const isActive = activeTab === value;
         return (
           <button
@@ -41,6 +46,18 @@ function MainContentTabs({ activeTab, onSelect, className }: Props) {
           </button>
         );
       })}
+      <button
+        type="button"
+        aria-pressed={false}
+        onClick={() => navigate('/tasks')}
+        className={cn(
+          'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-normal transition-all',
+          'text-muted-foreground hover:text-foreground',
+        )}
+      >
+        <ClipboardList className="h-3 w-3 flex-shrink-0 text-emerald-500" />
+        Tasks
+      </button>
     </div>
   );
 }

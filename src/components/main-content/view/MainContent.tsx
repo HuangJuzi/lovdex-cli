@@ -8,7 +8,6 @@ import { useLinkedTask } from '../../../hooks/useLinkedTask';
 import { FilePreviewModal } from '../../file-preview/FilePreviewModal';
 import { useUiPreferences } from '../../../hooks/useUiPreferences';
 import { STATUS_META } from '../../tasks/taskStatus';
-import { ViewSwitcher } from '../../tasks/ViewSwitcher';
 import { ConvertToTaskDialog } from '../../chat/view/subcomponents/ConvertToTaskDialog';
 import { TerminalToggleButton } from '../../terminal/TerminalToggleButton';
 import { Button } from '../../../shared/view/ui';
@@ -80,11 +79,10 @@ function MainContent({
     <div className="flex h-full flex-col">
       <header className="pwa-header-safe flex flex-shrink-0 items-center gap-2 border-b border-border/60 bg-background px-3 py-1.5 sm:px-4 sm:py-2">
         {isMobile && <MobileMenuButton onMenuClick={onMenuClick} />}
-        <ViewSwitcher active="chat" className="w-40 flex-shrink-0 sm:w-44" />
         <MainContentTabs
           activeTab={activeTab}
           onSelect={(tab) => setActiveTab(tab)}
-          className="ml-1 w-56 flex-shrink-0"
+          className="ml-1 flex-shrink-0"
         />
         {selectedProject && (
           <MainContentTitle
