@@ -5,6 +5,7 @@ import { IS_PLATFORM } from '../../../../constants/config';
 import type { ReleaseInfo } from '../../../../types/sharedTypes';
 import { useAuth } from '../../../auth/AuthGate';
 import ChangePasswordDialog from '../../../auth/ChangePasswordDialog';
+import { Button } from '../../../../shared/view/ui';
 
 const GITHUB_ISSUES_URL = 'https://github.com/siteboon/claudecodeui/issues/new';
 const GITHUB_REPO_URL = 'https://github.com/siteboon/claudecodeui';
@@ -112,29 +113,31 @@ export default function SidebarFooter({
       {/* Change password + logout (OSS mode only — the login gate is backend-enforced). */}
       {!IS_PLATFORM && (
         <>
-          <div className="px-2 pb-1">
-            <button
+          <div className="flex gap-1.5 px-2 pb-2">
+            <Button
               type="button"
+              variant="chunky"
+              size="sm"
               onClick={() => setShowChangePassword(true)}
               title={t('auth:changePassword.button')}
               aria-label={t('auth:changePassword.button')}
-              className="flex w-full items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
+              className="flex-1 px-2 text-xs"
             >
-              <KeyRound className="h-3.5 w-3.5" />
-              <span>{t('auth:changePassword.button')}</span>
-            </button>
-          </div>
-          <div className="px-2 pb-2">
-            <button
+              <KeyRound />
+              <span className="truncate">{t('auth:changePassword.button')}</span>
+            </Button>
+            <Button
               type="button"
+              variant="chunky"
+              size="sm"
               onClick={logout}
               title={t('auth:logout.button')}
               aria-label={t('auth:logout.button')}
-              className="flex w-full items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
+              className="flex-1 px-2 text-xs"
             >
-              <LogOut className="h-3.5 w-3.5" />
-              <span>{t('auth:logout.button')}</span>
-            </button>
+              <LogOut />
+              <span className="truncate">{t('auth:logout.button')}</span>
+            </Button>
           </div>
           <ChangePasswordDialog open={showChangePassword} onOpenChange={setShowChangePassword} />
         </>
