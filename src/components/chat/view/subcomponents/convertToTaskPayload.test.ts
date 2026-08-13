@@ -31,3 +31,18 @@ test('provider kept when a task engine, else falls back to claude', () => {
   assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'opencode' }), isRunning: false }).executorProvider, 'claude');
   assert.equal(buildSessionToTaskPayload({ session: makeSession({}), isRunning: false }).executorProvider, 'claude');
 });
+
+test('meta fields default to P2 / other / empty / empty', () => {
+  const p = buildSessionToTaskPayload({ session: makeSession(), isRunning: false });
+  assert.equal(p.priority, 'P2');
+  assert.equal(p.label, 'other');
+  assert.equal(p.deadline, '');
+  assert.equal(p.remark, '');
+});
+
+test('executorModel resolves provider fallback (localStorage absent in node:test)', () => {
+  assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'claude' }), isRunning: false }).executorModel, 'default');
+  assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'codex' }), isRunning: false }).executorModel, 'gpt-5.4');
+  assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'sophcode' }), isRunning: false }).executorModel, 'opencode/deepseek-v4-flash-free');
+  assert.equal(buildSessionToTaskPayload({ session: makeSession({}), isRunning: false }).executorModel, '');
+});
