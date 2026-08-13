@@ -113,7 +113,7 @@ export function TaskFilterBar({ projectOptions, filter, onChange }: TaskFilterBa
         >
         {/* 左簇：项目 + 只看助手 */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5">
+          <div className="flex items-center gap-1.5 rounded-xl border-2 border-border bg-card px-2.5 py-1.5">
             <span className="text-sm text-muted-foreground">项目</span>
             <select
               className="bg-transparent text-sm text-foreground outline-none"
@@ -134,7 +134,7 @@ export function TaskFilterBar({ projectOptions, filter, onChange }: TaskFilterBa
             type="button"
             aria-pressed={filter.assistantOnly}
             onClick={toggleAssistant}
-            className={`rounded-md px-3 py-2 text-sm transition-colors ${
+            className={`rounded-lg border border-border/70 px-3 py-2 text-sm transition-colors ${
               filter.assistantOnly
                 ? 'bg-violet-500/15 text-violet-600 dark:text-violet-400'
                 : 'bg-muted/50 text-muted-foreground hover:text-foreground'
@@ -172,7 +172,7 @@ export function TaskFilterBar({ projectOptions, filter, onChange }: TaskFilterBa
 
         {/* 右簇：自定义范围 + 清除 */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5">
+          <div className="flex items-center gap-1.5 rounded-xl border-2 border-border bg-card px-2.5 py-1.5">
             <span className="text-sm text-muted-foreground">从</span>
             <input
               type="date"
@@ -196,7 +196,7 @@ export function TaskFilterBar({ projectOptions, filter, onChange }: TaskFilterBa
           {hasFilter && (
             <button
               type="button"
-              className="rounded-md px-2 py-1.5 text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              className="rounded-lg px-2 py-1.5 text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
               onClick={() => onChange(EMPTY_TASK_FILTER)}
             >
               清除筛选
