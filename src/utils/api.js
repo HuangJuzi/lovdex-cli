@@ -11,6 +11,26 @@ export const isValidRefreshedToken = (token) =>
   typeof token === 'string' &&
   /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token);
 
+// Token helpers used by XHR-based flows (e.g. file uploads that need
+// upload.onprogress and therefore can't go through authenticatedFetch).
+// They mirror the inline auth handling in authenticatedFetch below.
+export const getStoredAuthToken = () => localStorage.getItem('auth-token');
+
+export const storeAuthToken = (token) => {
+  if (!isValidRefreshedToken(token)) {
+    return false;
+  }
+  localStorage.setItem('auth-token', token);
+  return true;
+};
+
+export const expireAuthSession = () => {
+  localStorage.removeItem('auth-token');
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('auth:unauthorized'));
+  }
+};
+
 // Utility function for authenticated API calls
 export const authenticatedFetch = (url, options = {}) => {
   const token = localStorage.getItem('auth-token');
