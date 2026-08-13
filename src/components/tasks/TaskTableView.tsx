@@ -1,10 +1,10 @@
 import { Fragment, useMemo, useState, type ReactNode } from 'react';
 
 import type { Task, TaskStatus } from '../../types/app';
+import { Pill, PillBar } from '../../shared/view/ui';
 
 import type { TaskProjectOption } from './TaskCard';
 import { canOpenSession } from './taskActions';
-import { Pill, PillBar } from '../../shared/view/ui';
 import { SubStatusBadge } from './SubStatusBadge';
 import { sortTasks, type TaskSortDir, type TaskSortKey } from './taskTable';
 import { groupByStatus, LABEL_META, PRIORITY_META, STATUS_META, STATUS_ORDER, toggleStatus } from './taskStatus';

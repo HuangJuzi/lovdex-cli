@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import type { Task, TaskStatus } from '../../types/app';
+
 import {
   STATUS_META, STATUS_ORDER, SUB_STATUS_META, SUB_STATUS_ORDER, groupByStatus,
   PRIORITY_ORDER, PRIORITY_META, LABEL_ORDER, LABEL_META,
