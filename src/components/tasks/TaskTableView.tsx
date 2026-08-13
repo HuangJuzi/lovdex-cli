@@ -46,7 +46,7 @@ function ActionBtn({
     <button
       type="button"
       onClick={onClick}
-      className={`whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-semibold transition-opacity hover:opacity-80 ${
+      className={`whitespace-nowrap rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-opacity hover:opacity-80 ${
         className ?? ''
       }`}
     >
@@ -93,7 +93,7 @@ export function TaskTableView({
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-x-auto px-2 pb-4 sm:px-4">
+    <div className="min-h-0 flex-1 overflow-x-auto rounded-2xl border border-border/70 bg-card text-card-foreground px-2 pb-4 shadow-[0_3px_0_rgba(30,27,50,0.07),0_12px_26px_rgba(35,33,41,0.07)] sm:px-4">
       <table
         className="w-full min-w-[1080px] border-separate text-sm"
         style={{ borderSpacing: '0 7px' }}
