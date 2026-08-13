@@ -1,9 +1,9 @@
 /**
  * i18n Configuration (simplified edition)
  *
- * Only English resources are bundled. Additional locales and the
- * codeEditor/tasks namespaces were removed along with the features that used
- * them.
+ * Only English resources are bundled. Additional locales and the tasks
+ * namespace were removed along with the features that used them. The
+ * codeEditor namespace is active (used by the ported Files-panel editor).
  */
 
 import i18n from 'i18next';
@@ -17,6 +17,7 @@ import enSettings from './locales/en/settings.json';
 import enAuth from './locales/en/auth.json';
 import enSidebar from './locales/en/sidebar.json';
 import enChat from './locales/en/chat.json';
+import enCodeEditor from './locales/en/codeEditor.json';
 
 // Initialize i18next
 i18n
@@ -31,6 +32,7 @@ i18n
         auth: enAuth,
         sidebar: enSidebar,
         chat: enChat,
+        codeEditor: enCodeEditor,
       },
     },
 
@@ -44,7 +46,7 @@ i18n
     debug: false,
 
     // Namespaces - load only what's needed
-    ns: ['common', 'settings', 'auth', 'sidebar', 'chat'],
+    ns: ['common', 'settings', 'auth', 'sidebar', 'chat', 'codeEditor'],
     defaultNS: 'common',
 
     // Key separator for nested keys (default: '.')
