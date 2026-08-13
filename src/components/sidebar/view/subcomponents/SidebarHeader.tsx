@@ -73,7 +73,7 @@ export default function SidebarHeader({
   ];
 
   const FilterToggle = () => (
-    <div className="flex rounded-lg bg-muted/50 p-0.5">
+    <div className="flex rounded-xl border border-border/70 bg-muted/60 p-[3px]">
       {filterButtons.map(({ value, label, icon: Icon }) => {
         const isActive = projectFilter === value;
         const showBadge = value === 'active' && runningSessionsCount > 0;
@@ -84,7 +84,9 @@ export default function SidebarHeader({
             aria-pressed={isActive}
             className={cn(
               "flex-1 flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-normal transition-all",
-              isActive ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
+              isActive
+                ? "bg-card text-foreground shadow-[0_2px_0_rgba(30,27,50,0.10),0_4px_10px_rgba(35,33,41,0.06)]"
+                : "text-muted-foreground hover:text-foreground",
               value === 'active' && isActive && "ring-1 ring-emerald-500/15",
             )}
           >
@@ -127,7 +129,7 @@ export default function SidebarHeader({
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 w-7 rounded-lg p-0 text-muted-foreground hover:bg-accent/80 hover:text-foreground"
+              className="h-7 w-7 rounded-lg p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
               onClick={onRefresh}
               disabled={isRefreshing}
               title={t('tooltips.refresh')}
@@ -141,7 +143,7 @@ export default function SidebarHeader({
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 w-7 rounded-lg p-0 text-muted-foreground hover:bg-accent/80 hover:text-foreground"
+              className="h-7 w-7 rounded-lg p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
               onClick={onCreateProject}
               title={t('tooltips.createProject')}
             >
@@ -150,7 +152,7 @@ export default function SidebarHeader({
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 w-7 rounded-lg p-0 text-muted-foreground hover:bg-accent/80 hover:text-foreground"
+              className="h-7 w-7 rounded-lg p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
               onClick={onCollapseSidebar}
               title={t('tooltips.hideSidebar')}
             >
@@ -171,7 +173,7 @@ export default function SidebarHeader({
                 placeholder={searchPlaceholder}
                 value={searchFilter}
                 onChange={(event) => onSearchFilterChange(event.target.value)}
-                className="nav-search-input h-9 rounded-xl border-0 pl-9 pr-14 text-sm transition-all duration-200 placeholder:text-muted-foreground/40 focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="h-9 rounded-xl pl-9 pr-14 text-sm transition-all duration-200 placeholder:text-muted-foreground/40"
               />
               {searchFilter ? (
                 <button
@@ -245,7 +247,7 @@ export default function SidebarHeader({
                 placeholder={searchPlaceholder}
                 value={searchFilter}
                 onChange={(event) => onSearchFilterChange(event.target.value)}
-                className="nav-search-input h-10 rounded-xl border-0 pl-10 pr-9 text-sm transition-all duration-200 placeholder:text-muted-foreground/40 focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="h-10 rounded-xl pl-10 pr-9 text-sm transition-all duration-200 placeholder:text-muted-foreground/40"
               />
               {searchFilter && (
                 <button

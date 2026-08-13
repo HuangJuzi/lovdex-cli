@@ -113,7 +113,7 @@ export default function SidebarContent({
 
   return (
     <div
-      className="relative flex h-full flex-col bg-background/80 backdrop-blur-sm md:w-72 md:select-none"
+      className="relative flex h-full flex-col bg-card md:w-72 md:select-none"
       style={isMobile ? {} : { width }}
     >
       <SidebarHeader
@@ -196,7 +196,7 @@ export default function SidebarContent({
                     {projectResult.sessions.map((session) => (
                       <button
                         key={`${projectResult.projectId ?? projectResult.projectName}-${session.sessionId}`}
-                        className="w-full rounded-md px-2 py-2 text-left transition-colors hover:bg-accent/50"
+                        className="w-full rounded-md px-2 py-2 text-left transition-colors hover:bg-muted"
                         onClick={() => onConversationResultClick(
                           // Pass the DB projectId (preferred) so the parent can
                           // cross-reference with the loaded projects list.

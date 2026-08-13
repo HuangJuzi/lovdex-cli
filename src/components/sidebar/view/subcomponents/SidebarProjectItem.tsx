@@ -297,8 +297,9 @@ export default function SidebarProjectItem({
         <Button
           variant="ghost"
           className={cn(
-            'hidden md:flex w-full justify-between p-2 h-auto font-normal hover:bg-accent/50',
-            isSelected && 'bg-accent text-accent-foreground',
+            'hidden md:flex w-full justify-between p-2 h-auto font-normal hover:bg-muted',
+            isSelected &&
+              'bg-card font-medium text-card-foreground shadow-[0_3px_0_#d8d5cd,0_6px_16px_rgba(35,33,41,0.07)]',
             isStarred &&
               !isSelected &&
               'bg-yellow-50/50 dark:bg-yellow-900/10 hover:bg-yellow-100/50 dark:hover:bg-yellow-900/20',
@@ -311,7 +312,7 @@ export default function SidebarProjectItem({
                 'w-6 h-6 flex items-center justify-center rounded cursor-pointer transition-all duration-200',
                 isStarred
                   ? 'hover:bg-yellow-50 dark:hover:bg-yellow-900/20'
-                  : 'opacity-40 hover:opacity-100 hover:bg-accent',
+                  : 'opacity-40 hover:opacity-100 hover:bg-muted',
               )}
               onClick={(event) => {
                 event.stopPropagation();
