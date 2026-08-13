@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { Button, Dialog, DialogContent, Input } from '../../../../shared/view/ui';
-import { STATUS_META, STATUS_ORDER } from '../../../tasks/taskStatus';
+import { STATUS_META, STATUS_ORDER, PRIORITY_META, PRIORITY_ORDER, LABEL_META, LABEL_ORDER } from '../../../tasks/taskStatus';
 import { api } from '../../../../utils/api';
-import type { ProjectSession, TaskEngine, TaskStatus } from '../../../../types/app';
+import type { ProjectSession, TaskEngine, TaskStatus, TaskPriority, TaskLabel } from '../../../../types/app';
 import { buildSessionToTaskPayload } from './convertToTaskPayload';
 
 type ConvertToTaskDialogProps = {
@@ -24,7 +24,12 @@ export function ConvertToTaskDialog({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [executorProvider, setExecutorProvider] = useState<TaskEngine>('claude');
+  const [executorModel, setExecutorModel] = useState('');
   const [status, setStatus] = useState<TaskStatus>('todo');
+  const [priority, setPriority] = useState<TaskPriority>('P2');
+  const [label, setLabel] = useState<TaskLabel>('other');
+  const [deadline, setDeadline] = useState('');
+  const [remark, setRemark] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,7 +46,12 @@ export function ConvertToTaskDialog({
     setTitle(defaults.title);
     setDescription(defaults.description);
     setExecutorProvider(defaults.executorProvider);
+    setExecutorModel(defaults.executorModel);
     setStatus(defaults.status);
+    setPriority(defaults.priority);
+    setLabel(defaults.label);
+    setDeadline(defaults.deadline);
+    setRemark(defaults.remark);
     setError(null);
   }, [open, session, isRunning]);
 
@@ -57,7 +67,12 @@ export function ConvertToTaskDialog({
         title: trimmedTitle,
         description: description.trim() || null,
         executorProvider,
+        executorModel: executorModel.trim() || null,
         status,
+        priority,
+        label,
+        deadline: deadline || null,
+        remark: remark.trim() || null,
         sessionId: session.id,
       });
       if (!res.ok) {
@@ -80,6 +95,8 @@ export function ConvertToTaskDialog({
       setSubmitting(false);
     }
   }
+
+  const selectClass = 'h-9 rounded-md border border-input bg-transparent px-2 text-sm text-foreground';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -104,7 +121,7 @@ export function ConvertToTaskDialog({
             <label className="flex flex-1 flex-col gap-1 text-sm">
               <span className="text-muted-foreground">执行引擎</span>
               <select
-                className="h-9 rounded-md border border-input bg-transparent px-2 text-sm text-foreground"
+                className={selectClass}
                 value={executorProvider}
                 onChange={(e) => setExecutorProvider(e.target.value as TaskEngine)}
               >
@@ -116,7 +133,7 @@ export function ConvertToTaskDialog({
             <label className="flex flex-1 flex-col gap-1 text-sm">
               <span className="text-muted-foreground">状态</span>
               <select
-                className="h-9 rounded-md border border-input bg-transparent px-2 text-sm text-foreground"
+                className={selectClass}
                 value={status}
                 onChange={(e) => setStatus(e.target.value as TaskStatus)}
               >
@@ -126,6 +143,51 @@ export function ConvertToTaskDialog({
                   </option>
                 ))}
               </select>
+            </label>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <label className="flex flex-1 flex-col gap-1 text-sm">
+              <span className="text-muted-foreground">优先级</span>
+              <select
+                className={selectClass}
+                value={priority}
+                onChange={(e) => setPriority(e.target.value as TaskPriority)}
+              >
+                {PRIORITY_ORDER.map((p) => (
+                  <option key={p} value={p}>
+                    {PRIORITY_META[p].label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-1 flex-col gap-1 text-sm">
+              <span className="text-muted-foreground">标签</span>
+              <select
+                className={selectClass}
+                value={label}
+                onChange={(e) => setLabel(e.target.value as TaskLabel)}
+              >
+                {LABEL_ORDER.map((l) => (
+                  <option key={l} value={l}>
+                    {LABEL_META[l].label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <label className="flex flex-1 flex-col gap-1 text-sm">
+              <span className="text-muted-foreground">截止时间</span>
+              <input
+                type="date"
+                className="h-9 rounded-md border border-input bg-transparent px-2 text-sm text-foreground"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+              />
+            </label>
+            <label className="flex flex-1 flex-col gap-1 text-sm">
+              <span className="text-muted-foreground">备注</span>
+              <Input value={remark} onChange={(e) => setRemark(e.target.value)} placeholder="需求来源等，可留空" />
             </label>
           </div>
           {error && <div className="text-sm text-destructive">{error}</div>}
