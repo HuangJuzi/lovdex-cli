@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import { TerminalToggleButton } from './TerminalToggleButton';
 import { TerminalDrawerProvider } from '../../hooks/useTerminalDrawer';
+
+import { TerminalToggleButton } from './TerminalToggleButton';
 
 function renderToggle() {
   return renderToStaticMarkup(
