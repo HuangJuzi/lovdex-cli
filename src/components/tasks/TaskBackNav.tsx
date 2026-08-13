@@ -13,9 +13,12 @@ export function BackToTasksButton({ className }: { className?: string }) {
       size="toolbar"
       className={cn('gap-1.5', className)}
       onClick={() => navigate('/tasks')}
+      title="返回任务面板"
+      aria-label="返回任务面板"
     >
       <ArrowLeft />
-      返回任务面板
+      {/* 移动端（<640px）只留返回图标 */}
+      <span className="hidden sm:inline">返回任务面板</span>
     </Button>
   );
 }
