@@ -33,6 +33,8 @@ function MainContentTabs({ activeTab, onSelect, className }: Props) {
             key={value}
             type="button"
             aria-pressed={isActive}
+            title={label}
+            aria-label={label}
             onClick={() => !isActive && onSelect(value)}
             className={cn(
               'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-normal transition-all',
@@ -42,13 +44,15 @@ function MainContentTabs({ activeTab, onSelect, className }: Props) {
             )}
           >
             <Icon className={cn('h-3 w-3 flex-shrink-0', isActive ? 'text-primary' : 'text-muted-foreground')} />
-            {label}
+            {/* 移动端（<640px）只留图标，桌面端恢复文字；断点与 Task 页 isMobile(640) 对齐。 */}
+            <span className="hidden sm:inline">{label}</span>
           </button>
         );
       })}
       <button
         type="button"
         aria-pressed={false}
+        title="Tasks"
         onClick={() => navigate('/tasks')}
         className={cn(
           'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-normal transition-all',
