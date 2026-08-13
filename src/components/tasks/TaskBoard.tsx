@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutGrid, Table } from 'lucide-react';
+import { LayoutGrid, Plus, Table } from 'lucide-react';
 
 import { useWebSocket } from '../../contexts/WebSocketContext';
 import { useTasks } from '../../hooks/useTasks';
@@ -337,8 +337,9 @@ export function TaskBoardPage() {
           </button>
         </div>
         <div className="ml-auto">
-          <Button size="sm" className="h-8 px-3 text-sm" onClick={openCreateForm} disabled={creating}>
-            ＋ 新建任务
+          <Button size="toolbar" variant="chunkyPrimary" onClick={openCreateForm} disabled={creating}>
+            <Plus />
+            新建任务
           </Button>
         </div>
         <TerminalToggleButton />
