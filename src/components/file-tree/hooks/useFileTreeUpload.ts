@@ -139,7 +139,7 @@ const uploadFormDataWithProgress = (
       if (refreshedToken) {
         storeAuthToken(refreshedToken);
       }
-      if (xhr.getResponseHeader('X-Auth-Error')) {
+      if (xhr.getResponseHeader('X-Auth-Error') || xhr.status === 401) {
         expireAuthSession();
       }
 
