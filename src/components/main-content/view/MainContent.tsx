@@ -117,12 +117,9 @@ function MainContent({
             title="查看任务"
             aria-label="查看任务"
           >
-            <span
-              className="h-2 w-2 rounded-full"
-              style={{ background: STATUS_META[linkedTask.status].color }}
-            />
-            <Eye />
-            {/* 移动端（<640px）只留圆点 + 图标 */}
+            {/* 眼睛颜色 = 任务状态色（待办黄/进行中蓝/评审紫/完成绿），不再单独画状态圆点 */}
+            <Eye style={{ color: STATUS_META[linkedTask.status].color }} />
+            {/* 移动端（<640px）只留状态色眼睛图标 */}
             <span className="hidden sm:inline">查看任务</span>
           </Button>
         )}
