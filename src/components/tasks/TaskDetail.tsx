@@ -37,6 +37,7 @@ import { SubStatusBadge } from './SubStatusBadge';
 import { ViewSwitcher } from './ViewSwitcher';
 import { TaskBackNav } from './TaskBackNav';
 import { TerminalToggleButton } from '../terminal/TerminalToggleButton';
+import { useTerminalDrawer } from '../../hooks/useTerminalDrawer';
 
 /**
  * Live status badge for the detail header. Reads the effective `sub_status`
@@ -60,6 +61,7 @@ export function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
   const { sendMessage, subscribe } = useWebSocket();
+  const { setCwd } = useTerminalDrawer();
   const [task, setTask] = useState<Task | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -131,6 +133,12 @@ export function TaskDetailPage() {
   useEffect(() => {
     if (task) setProjectPath(task.project_path);
   }, [task?.project_path]);
+
+  // The task detail page's "current project" is the task's own project, so the
+  // terminal drawer should open there.
+  useEffect(() => {
+    setCwd(task?.project_path || null);
+  }, [task?.project_path, setCwd]);
 
   useEffect(() => {
     let cancelled = false;

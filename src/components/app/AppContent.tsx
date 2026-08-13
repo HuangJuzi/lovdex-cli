@@ -9,6 +9,7 @@ import { useDeviceSettings } from '../../hooks/useDeviceSettings';
 import { useSessionProtection } from '../../hooks/useSessionProtection';
 import { useProjectsState } from '../../hooks/useProjectsState';
 import { useQueuedMessageAutoSend } from '../../hooks/useQueuedMessageAutoSend';
+import { useTerminalDrawer } from '../../hooks/useTerminalDrawer';
 import { api } from '../../utils/api';
 
 type RunningSessionApiItem = {
@@ -79,6 +80,14 @@ function AppContentInner() {
     isMobile,
     activeSessions: processingSessions,
   });
+
+  const { setCwd } = useTerminalDrawer();
+
+  // Keep the terminal drawer's starting directory in sync with the project the
+  // user is currently in, so opening the terminal lands in that project (not ~).
+  useEffect(() => {
+    setCwd(selectedProject?.fullPath || selectedProject?.path || null);
+  }, [selectedProject, setCwd]);
 
   // Queued messages for sessions that finish while another session (or none)
   // is being viewed are sent from here; the viewed session's composer handles

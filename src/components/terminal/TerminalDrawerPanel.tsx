@@ -44,7 +44,7 @@ export function TerminalDrawerPanel({ open, onClose, pane }: TerminalDrawerPanel
             ✕
           </button>
         </div>
-        {open && <div className="min-h-0 flex-1">{pane}</div>}
+        {open && <div className="relative min-h-0 flex-1">{pane}</div>}
       </div>
     </div>
   );

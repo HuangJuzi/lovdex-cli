@@ -8,13 +8,18 @@ type TerminalDrawerContextValue = {
   open: boolean;
   setOpen: (open: boolean) => void;
   toggle: () => void;
+  /** The directory the terminal should open in (the current project path), if any. */
+  cwd: string | null;
+  setCwd: (cwd: string | null) => void;
 };
 
 const TerminalDrawerContext = createContext<TerminalDrawerContextValue | null>(null);
 
 export function TerminalDrawerProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [cwd, setCwdState] = useState<string | null>(null);
   const toggle = useCallback(() => setOpen((prev) => !prev), []);
+  const setCwd = useCallback((next: string | null) => setCwdState(next), []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -28,7 +33,10 @@ export function TerminalDrawerProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const value = useMemo<TerminalDrawerContextValue>(() => ({ open, setOpen, toggle }), [open, toggle]);
+  const value = useMemo<TerminalDrawerContextValue>(
+    () => ({ open, setOpen, toggle, cwd, setCwd }),
+    [open, toggle, cwd, setCwd]
+  );
   return <TerminalDrawerContext.Provider value={value}>{children}</TerminalDrawerContext.Provider>;
 }
 
