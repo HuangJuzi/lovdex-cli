@@ -11,6 +11,8 @@ import { STATUS_META } from '../../tasks/taskStatus';
 import { ViewSwitcher } from '../../tasks/ViewSwitcher';
 import { ConvertToTaskDialog } from '../../chat/view/subcomponents/ConvertToTaskDialog';
 import { TerminalToggleButton } from '../../terminal/TerminalToggleButton';
+import { Button } from '../../../shared/view/ui';
+import { Eye, RefreshCw } from 'lucide-react';
 
 import MobileMenuButton from './subcomponents/MobileMenuButton';
 import MainContentTitle from './subcomponents/MainContentTitle';
@@ -70,28 +72,32 @@ function MainContent({
           />
         )}
         {selectedProject && selectedSession && !linkedTask && (
-          <button
-            type="button"
+          <Button
+            variant="chunky"
+            size="toolbar"
+            className="ml-auto"
             onClick={() => setConvertOpen(true)}
-            className="ml-auto flex h-8 flex-shrink-0 items-center gap-1.5 rounded-md border border-border/60 bg-card px-3 text-sm text-foreground transition-colors hover:bg-accent"
             title="转为任务"
           >
+            <RefreshCw />
             转为任务
-          </button>
+          </Button>
         )}
         {selectedProject && linkedTask && (
-          <button
-            type="button"
+          <Button
+            variant="chunky"
+            size="toolbar"
+            className="ml-auto"
             onClick={() => navigate(`/task/${linkedTask.task_id}`)}
-            className="ml-auto flex h-8 flex-shrink-0 items-center gap-1.5 rounded-md border border-border/60 bg-card px-3 text-sm text-foreground transition-colors hover:bg-accent"
             title="查看任务"
           >
             <span
               className="h-2 w-2 rounded-full"
               style={{ background: STATUS_META[linkedTask.status].color }}
             />
+            <Eye />
             查看任务
-          </button>
+          </Button>
         )}
         <TerminalToggleButton />
       </header>
