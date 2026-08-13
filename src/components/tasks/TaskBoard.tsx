@@ -337,9 +337,10 @@ export function TaskBoardPage() {
           </button>
         </div>
         <div className="ml-auto">
-          <Button size="toolbar" variant="chunkyPrimary" onClick={openCreateForm} disabled={creating}>
+          <Button size="toolbar" variant="chunkyPrimary" onClick={openCreateForm} disabled={creating} title="新建任务" aria-label="新建任务">
             <Plus />
-            新建任务
+            {/* 移动端（<640px）只留 + 号 */}
+            <span className="hidden sm:inline">新建任务</span>
           </Button>
         </div>
         <TerminalToggleButton />
