@@ -10,6 +10,7 @@ import { useUiPreferences } from '../../../hooks/useUiPreferences';
 import { STATUS_META } from '../../tasks/taskStatus';
 import { ViewSwitcher } from '../../tasks/ViewSwitcher';
 import { ConvertToTaskDialog } from '../../chat/view/subcomponents/ConvertToTaskDialog';
+import { TerminalToggleButton } from '../../terminal/TerminalToggleButton';
 
 import MobileMenuButton from './subcomponents/MobileMenuButton';
 import MainContentTitle from './subcomponents/MainContentTitle';
@@ -92,6 +93,7 @@ function MainContent({
             查看任务
           </button>
         )}
+        <TerminalToggleButton />
       </header>
 
       {isLoading ? (

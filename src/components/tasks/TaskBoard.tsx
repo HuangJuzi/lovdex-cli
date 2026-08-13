@@ -39,6 +39,7 @@ import { LABEL_META, LABEL_ORDER, PRIORITY_META, PRIORITY_ORDER, STATUS_META, ST
 import { TaskFilterBar } from './TaskFilterBar';
 import { TaskTableView } from './TaskTableView';
 import { EMPTY_TASK_FILTER, filterTasks, type TaskFilter } from './taskFilter';
+import { TerminalToggleButton } from '../terminal/TerminalToggleButton';
 
 export function TaskBoardPage() {
   const navigate = useNavigate();
@@ -340,6 +341,7 @@ export function TaskBoardPage() {
             ＋ 新建任务
           </Button>
         </div>
+        <TerminalToggleButton />
       </header>
       <Dialog open={creating} onOpenChange={(open) => { if (!open) closeCreateForm(); }}>
         <DialogContent className="max-h-[85vh] w-full max-w-lg overflow-y-auto">

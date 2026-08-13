@@ -18,6 +18,7 @@ export function TerminalDrawerProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.repeat) return;
       if (isTerminalShortcut(event)) {
         event.preventDefault();
         setOpen((prev) => !prev);
