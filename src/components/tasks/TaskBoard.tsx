@@ -306,7 +306,7 @@ export function TaskBoardPage() {
     <div className="flex h-dvh flex-col bg-background">
       <header className="pwa-header-safe flex flex-shrink-0 items-center gap-2 border-b border-border/60 bg-background px-3 py-1.5 sm:px-4 sm:py-2">
         <ViewSwitcher active="tasks" className="w-40 flex-shrink-0 sm:w-44" />
-        <div className="flex rounded-lg bg-muted/50 p-0.5">
+        <div className="hidden rounded-lg bg-muted/50 p-0.5 sm:flex">
           <button
             type="button"
             aria-pressed={effectiveView === 'board'}
