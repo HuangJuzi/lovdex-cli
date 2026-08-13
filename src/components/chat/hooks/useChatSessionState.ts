@@ -10,8 +10,10 @@ import { createCachedDiffCalculator, type DiffCalculator } from '../utils/messag
 
 import { normalizedToChatMessages } from './useChatMessages';
 
-const MESSAGES_PER_PAGE = 5;
-const INITIAL_VISIBLE_MESSAGES = 5;
+const MESSAGES_PER_PAGE = 20;
+/** 点击「Load more」每次加载的更早消息条数。 */
+const LOAD_MORE_PAGE_SIZE = 10;
+const INITIAL_VISIBLE_MESSAGES = 20;
 
 interface UseChatSessionStateArgs {
   selectedProject: Project | null;
@@ -335,7 +337,7 @@ export function useChatSessionState({
 
       try {
         const slot = await sessionStore.fetchMore(selectedSession.id, {
-          limit: MESSAGES_PER_PAGE,
+          limit: LOAD_MORE_PAGE_SIZE,
         });
         if (!slot) return false;
         if (slot.serverMessages.length === 0) {
@@ -355,7 +357,7 @@ export function useChatSessionState({
         pendingScrollRestoreRef.current = { height: previousScrollHeight, top: previousScrollTop };
         setHasMoreMessages(slot.hasMore);
         setTotalMessages(slot.total);
-        setVisibleMessageCount((prev) => prev + MESSAGES_PER_PAGE);
+        setVisibleMessageCount((prev) => prev + LOAD_MORE_PAGE_SIZE);
         if (!slot.hasMore) {
           allMessagesLoadedRef.current = true;
           setAllMessagesLoaded(true);
