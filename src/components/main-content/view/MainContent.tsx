@@ -173,22 +173,22 @@ function MainContent({
               <MainContentStateView mode="empty" isMobile={isMobile} />
             </div>
           )}
+
+          <EditorSidebar
+            editingFile={editingFile}
+            isMobile={isMobile}
+            editorExpanded={editorExpanded}
+            editorWidth={editorWidth}
+            hasManualWidth={hasManualWidth}
+            resizeHandleRef={resizeHandleRef}
+            onResizeStart={handleResizeStart}
+            onCloseEditor={handleCloseEditor}
+            onToggleEditorExpand={handleToggleEditorExpand}
+            projectPath={selectedProject?.fullPath}
+            fillSpace={activeTab === 'files'}
+          />
         </div>
       )}
-
-      <EditorSidebar
-        editingFile={editingFile}
-        isMobile={isMobile}
-        editorExpanded={editorExpanded}
-        editorWidth={editorWidth}
-        hasManualWidth={hasManualWidth}
-        resizeHandleRef={resizeHandleRef}
-        onResizeStart={handleResizeStart}
-        onCloseEditor={handleCloseEditor}
-        onToggleEditorExpand={handleToggleEditorExpand}
-        projectPath={selectedProject?.fullPath}
-        fillSpace={activeTab === 'files'}
-      />
 
       <FilePreviewModal
         open={preview !== null}
