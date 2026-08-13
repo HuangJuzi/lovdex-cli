@@ -39,7 +39,7 @@ export function TerminalDrawerPanel({ open, onClose, pane }: TerminalDrawerPanel
             type="button"
             onClick={onClose}
             aria-label="关闭终端"
-            className="ml-1 rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="ml-1 rounded-lg px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             ✕
           </button>

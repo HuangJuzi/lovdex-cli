@@ -99,7 +99,7 @@ export function ConvertToTaskDialog({
     }
   }
 
-  const selectClass = 'h-9 rounded-md border border-input bg-transparent px-2 text-sm text-foreground';
+  const selectClass = 'h-10 rounded-xl border-2 border-border bg-card px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -113,7 +113,7 @@ export function ConvertToTaskDialog({
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-muted-foreground">描述</span>
             <textarea
-              className="min-h-[64px] w-full resize-y rounded-md border border-input bg-transparent px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="min-h-[64px] w-full resize-y rounded-xl border-2 border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-primary/60"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="任务描述"
@@ -169,7 +169,7 @@ export function ConvertToTaskDialog({
               <span className="text-muted-foreground">截止时间</span>
               <input
                 type="date"
-                className="h-9 rounded-md border border-input bg-transparent px-2 text-sm text-foreground"
+                className="h-10 rounded-xl border-2 border-border bg-card px-2 text-sm text-foreground"
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
               />
