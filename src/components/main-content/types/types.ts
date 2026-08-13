@@ -47,6 +47,10 @@ export type MainContentProps = {
   selectedSession: ProjectSession | null;
   activeTab: AppTab;
   setActiveTab: Dispatch<SetStateAction<AppTab>>;
+  /** Switches the app to another project — used by the Worktrees view. */
+  onProjectSelect?: (project: import('../../../types/app').Project) => void;
+  /** Silently re-syncs the sidebar project list after worktree projects change. */
+  onProjectsRefresh?: () => void;
   ws: WebSocket | null;
   sendMessage: (message: unknown) => void;
   isMobile: boolean;

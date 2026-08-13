@@ -21,6 +21,7 @@ import ErrorBoundary from './ErrorBoundary';
 import { useEditorSidebar } from '../../code-editor/hooks/useEditorSidebar';
 import EditorSidebar from '../../code-editor/view/EditorSidebar';
 import FileTree from '../../file-tree/view/FileTree';
+import GitPanel from '../../git-panel/view/GitPanel';
 
 // Simplified edition: only the chat tab remains. File tree, shell, git,
 // task-master, browser-use, plugin and code-editor panels were removed.
@@ -30,6 +31,8 @@ function MainContent({
   selectedSession,
   activeTab,
   setActiveTab,
+  onProjectSelect,
+  onProjectsRefresh,
   ws,
   sendMessage,
   isMobile,
@@ -167,8 +170,13 @@ function MainContent({
 
           {activeTab === 'git' && (
             <div className="h-full overflow-hidden">
-              {/* Phase 2 会用真正的 GitPanel 替换此占位 */}
-              <MainContentStateView mode="empty" isMobile={isMobile} />
+              <GitPanel
+                selectedProject={selectedProject}
+                isMobile={isMobile}
+                onFileOpen={handleEditorOpen}
+                onProjectSelect={onProjectSelect}
+                onProjectsRefresh={onProjectsRefresh}
+              />
             </div>
           )}
 

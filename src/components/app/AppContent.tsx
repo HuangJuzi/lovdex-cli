@@ -69,6 +69,7 @@ function AppContentInner() {
     setIsInputFocused,
     openSettings,
     handleSessionSelect,
+    handleProjectSelect,
     refreshProjectsSilently,
     registerOptimisticSession,
     sidebarSharedProps,
@@ -242,6 +243,8 @@ function AppContentInner() {
           selectedSession={selectedSession}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
+          onProjectSelect={handleProjectSelect}
+          onProjectsRefresh={refreshProjectsSilently}
           ws={ws}
           sendMessage={sendMessage}
           isMobile={isMobile}
