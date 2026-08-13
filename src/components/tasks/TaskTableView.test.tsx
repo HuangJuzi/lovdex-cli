@@ -76,3 +76,14 @@ test('table renders exactly one open-session button for in_progress with only_pl
   );
   assert.equal((html.match(/打开会话/g) || []).length, 1);
 });
+
+test('table renders status filter row with 全部 reset pill', () => {
+  const html = renderToStaticMarkup(
+    React.createElement(TaskTableView, {
+      tasks: [mkTask({ task_id: 't1', title: '表格任务' })],
+      projectOptions: [],
+    }),
+  );
+  assert.match(html, /data-testid="status-filter"/);
+  assert.match(html, /全部/);
+});

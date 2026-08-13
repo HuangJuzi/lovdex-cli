@@ -4,9 +4,10 @@ import type { Task, TaskStatus } from '../../types/app';
 
 import type { TaskProjectOption } from './TaskCard';
 import { canOpenSession } from './taskActions';
+import { Pill, PillBar } from '../../shared/view/ui';
 import { SubStatusBadge } from './SubStatusBadge';
 import { sortTasks, type TaskSortDir, type TaskSortKey } from './taskTable';
-import { groupByStatus, LABEL_META, PRIORITY_META, STATUS_META, STATUS_ORDER } from './taskStatus';
+import { groupByStatus, LABEL_META, PRIORITY_META, STATUS_META, STATUS_ORDER, toggleStatus } from './taskStatus';
 import { taskDeadlineInfo } from './taskDeadline';
 import { formatAbsoluteTime } from './taskTimestamp';
 
@@ -70,6 +71,7 @@ export function TaskTableView({
 }: TaskTableViewProps) {
   const [sortKey, setSortKey] = useState<TaskSortKey>('created');
   const [sortDir, setSortDir] = useState<TaskSortDir>('desc');
+  const [selected, setSelected] = useState<TaskStatus[]>(() => [...STATUS_ORDER]);
   const groups = useMemo(() => groupByStatus(tasks), [tasks]);
   const now = new Date();
 
@@ -92,72 +94,111 @@ export function TaskTableView({
     );
   }
 
+  const visibleStatuses = STATUS_ORDER.filter((s) => selected.includes(s));
+  const hasVisibleRows = visibleStatuses.some((s) => groups[s].length > 0);
+
   return (
-    <div className="min-h-0 flex-1 overflow-x-auto rounded-2xl border border-border/70 bg-card text-card-foreground px-2 pb-4 shadow-[0_3px_0_rgba(30,27,50,0.07),0_12px_26px_rgba(35,33,41,0.07)] sm:px-4">
-      <table
-        className="w-full min-w-[1080px] border-separate text-sm"
-        style={{ borderSpacing: '0 7px' }}
+    <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-border/70 bg-card text-card-foreground shadow-[0_3px_0_rgba(30,27,50,0.07),0_12px_26px_rgba(35,33,41,0.07)]">
+      {/* 状态筛选行：固定，不随表格横向滚动 */}
+      <div
+        data-testid="status-filter"
+        className="flex flex-shrink-0 items-center gap-2 border-b border-border/60 px-3 py-2.5 sm:px-4"
       >
-        <thead>
-          <tr>
-            {COLUMNS.map((col) => {
-              const sortable = col.key !== undefined;
+        <PillBar>
+          <Pill
+            isActive={selected.length === STATUS_ORDER.length}
+            onClick={() => setSelected([...STATUS_ORDER])}
+          >
+            全部
+          </Pill>
+          {STATUS_ORDER.map((status) => (
+            <Pill
+              key={status}
+              isActive={selected.includes(status)}
+              onClick={() => setSelected((sel) => toggleStatus(sel, status))}
+            >
+              <span className="h-2 w-2 rounded-full" style={{ background: STATUS_META[status].color }} />
+              {STATUS_META[status].label}
+              <span className="text-xs text-muted-foreground">{groups[status].length}</span>
+            </Pill>
+          ))}
+        </PillBar>
+      </div>
+
+      {/* 表格滚动区 */}
+      <div className="min-h-0 flex-1 overflow-x-auto px-2 pb-4 sm:px-4">
+        <table
+          className="w-full min-w-[1080px] border-separate text-sm"
+          style={{ borderSpacing: '0 7px' }}
+        >
+          <thead>
+            <tr>
+              {COLUMNS.map((col) => {
+                const sortable = col.key !== undefined;
+                return (
+                  <th
+                    key={col.label}
+                    onClick={sortable ? () => toggleSort(col.key as TaskSortKey) : undefined}
+                    className={`whitespace-nowrap px-4 pb-1 text-xs font-semibold text-muted-foreground ${
+                      col.alignRight ? 'text-right' : 'text-left'
+                    } ${sortable ? 'cursor-pointer select-none hover:text-foreground' : ''}`}
+                  >
+                    {col.label}
+                    {sortable && sortKey === col.key && (
+                      <span className="ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {visibleStatuses.map((status) => {
+              const rows = sorted(status);
+              if (rows.length === 0) return null;
               return (
-                <th
-                  key={col.label}
-                  onClick={sortable ? () => toggleSort(col.key as TaskSortKey) : undefined}
-                  className={`whitespace-nowrap px-4 pb-1 text-xs font-semibold text-muted-foreground ${
-                    col.alignRight ? 'text-right' : 'text-left'
-                  } ${sortable ? 'cursor-pointer select-none hover:text-foreground' : ''}`}
-                >
-                  {col.label}
-                  {sortable && sortKey === col.key && (
-                    <span className="ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
-                  )}
-                </th>
+                <Fragment key={status}>
+                  <tr>
+                    <td colSpan={9} className="px-2 pb-1">
+                      <div className="flex items-center gap-2 px-2 text-sm font-semibold">
+                        <span
+                          className="h-2 w-2 rounded-full"
+                          style={{ background: STATUS_META[status].color }}
+                        />
+                        {STATUS_META[status].label}
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                          {rows.length}
+                        </span>
+                        <span className="h-px flex-1 bg-border" />
+                      </div>
+                    </td>
+                  </tr>
+                  {rows.map((task) => (
+                    <TaskRow
+                      key={task.task_id}
+                      task={task}
+                      projectOptions={projectOptions}
+                      now={now}
+                      onStart={onStart}
+                      onStatusChange={onStatusChange}
+                      onOpenSession={onOpenSession}
+                      onProjectChange={onProjectChange}
+                      onOpenTask={onOpenTask}
+                    />
+                  ))}
+                </Fragment>
               );
             })}
-          </tr>
-        </thead>
-        <tbody>
-          {STATUS_ORDER.map((status) => {
-            const rows = sorted(status);
-            if (rows.length === 0) return null;
-            return (
-              <Fragment key={status}>
-                <tr>
-                  <td colSpan={9} className="px-2 pb-1">
-                    <div className="flex items-center gap-2 px-2 text-sm font-semibold">
-                      <span
-                        className="h-2 w-2 rounded-full"
-                        style={{ background: STATUS_META[status].color }}
-                      />
-                      {STATUS_META[status].label}
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                        {rows.length}
-                      </span>
-                      <span className="h-px flex-1 bg-border" />
-                    </div>
-                  </td>
-                </tr>
-                {rows.map((task) => (
-                  <TaskRow
-                    key={task.task_id}
-                    task={task}
-                    projectOptions={projectOptions}
-                    now={now}
-                    onStart={onStart}
-                    onStatusChange={onStatusChange}
-                    onOpenSession={onOpenSession}
-                    onProjectChange={onProjectChange}
-                    onOpenTask={onOpenTask}
-                  />
-                ))}
-              </Fragment>
-            );
-          })}
-        </tbody>
-      </table>
+            {!hasVisibleRows && (
+              <tr>
+                <td colSpan={9} className="px-4 py-16 text-center text-sm text-muted-foreground">
+                  暂无任务
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
