@@ -13,7 +13,7 @@ type Props = {
  * Persisted via useProjectsState's activeTab. The chat<->tasks switcher
  * (ViewSwitcher) remains route navigation and is unchanged.
  */
-export function MainContentTabs({ activeTab, onSelect, className }: Props) {
+function MainContentTabs({ activeTab, onSelect, className }: Props) {
   const items = [
     { value: 'chat' as const, label: 'Chat', icon: MessageSquare },
     { value: 'files' as const, label: 'Files', icon: FolderOpen },
