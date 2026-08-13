@@ -41,7 +41,7 @@ export const TaskCard = memo(function TaskCard({
 
   return (
     <div
-      className="cursor-pointer rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/50"
+      className="cursor-pointer rounded-2xl border border-border/70 bg-card p-3 transition-all shadow-[0_3px_0_rgba(30,27,50,0.07),0_8px_18px_rgba(35,33,41,0.05)] hover:-translate-y-0.5 hover:shadow-[0_5px_0_rgba(30,27,50,0.08),0_12px_24px_rgba(35,33,41,0.10)]"
       onClick={() => navigate(`/task/${task.task_id}`)}
     >
       <div className="flex items-start gap-2">
@@ -164,7 +164,7 @@ export const TaskCard = memo(function TaskCard({
               e.stopPropagation();
               onStart();
             }}
-            className="min-h-9 min-w-0 flex-1 rounded-md bg-primary py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:min-h-0"
+            className="min-h-9 min-w-0 flex-1 rounded-lg bg-primary py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:min-h-0 shadow-[0_2px_0_#1c3fa8]"
           >
             ▶ 开始执行
           </button>
@@ -175,7 +175,7 @@ export const TaskCard = memo(function TaskCard({
               e.stopPropagation();
               onStart();
             }}
-            className="min-h-9 min-w-0 flex-1 rounded-md bg-primary py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:min-h-0"
+            className="min-h-9 min-w-0 flex-1 rounded-lg bg-primary py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:min-h-0 shadow-[0_2px_0_#1c3fa8]"
           >
             ↻ 重试
           </button>
@@ -186,7 +186,7 @@ export const TaskCard = memo(function TaskCard({
               e.stopPropagation();
               onStatusChange?.('done');
             }}
-            className="min-h-9 min-w-0 flex-1 rounded-md bg-green-500/10 py-1.5 text-xs font-semibold text-green-600 transition-colors hover:bg-green-500/20 dark:text-green-400 sm:min-h-0"
+            className="min-h-9 min-w-0 flex-1 rounded-lg bg-green-500/10 py-1.5 text-xs font-semibold text-green-600 transition-colors hover:bg-green-500/20 dark:text-green-400 sm:min-h-0 shadow-[0_2px_0_rgba(30,27,50,0.08)]"
           >
             ✓ 标记完成
           </button>
@@ -197,7 +197,7 @@ export const TaskCard = memo(function TaskCard({
               e.stopPropagation();
               onOpenSession();
             }}
-            className="min-h-9 min-w-0 flex-1 rounded-md bg-primary/10 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20 sm:min-h-0"
+            className="min-h-9 min-w-0 flex-1 rounded-lg bg-primary/10 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20 sm:min-h-0 shadow-[0_2px_0_rgba(30,27,50,0.08)]"
           >
             打开会话
           </button>

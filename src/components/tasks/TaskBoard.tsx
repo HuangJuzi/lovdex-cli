@@ -355,7 +355,7 @@ export function TaskBoardPage() {
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-muted-foreground">任务提示词</label>
                 <textarea
-                  className="min-h-[64px] w-full resize-y rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/60"
+                  className="min-h-[64px] w-full resize-y rounded-xl border-2 border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-primary/60"
                   placeholder="发给 agent 执行的内容"
                   value={newPrompt}
                   onChange={(e) => setNewPrompt(e.target.value)}
@@ -375,7 +375,7 @@ export function TaskBoardPage() {
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-muted-foreground">项目</label>
                 <select
-                  className="h-9 w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                  className="h-10 w-full rounded-xl border-2 border-border bg-card px-3 py-1.5 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
                   value={newProjectPath}
                   onChange={(e) => setNewProjectPath(e.target.value)}
                 >
@@ -513,7 +513,7 @@ export function TaskBoardPage() {
               {STATUS_ORDER.map((status) => (
                 <div
                   key={status}
-                  className="flex w-full flex-col rounded-xl border border-border bg-muted/30 sm:min-w-64 sm:flex-1"
+                  className="flex w-full flex-col rounded-2xl border border-border/70 bg-muted/30 shadow-[0_3px_0_rgba(30,27,50,0.07),0_12px_26px_rgba(35,33,41,0.07)] sm:min-w-64 sm:flex-1"
                 >
                   <div className="flex items-center gap-2 px-3 py-2.5">
                     <span
@@ -523,7 +523,7 @@ export function TaskBoardPage() {
                     <span className="text-sm font-semibold text-foreground">
                       {STATUS_META[status].label}
                     </span>
-                    <span className="ml-auto rounded-full bg-card px-2 py-0.5 text-[11px] text-muted-foreground">
+                    <span className="ml-auto rounded-full border border-border/70 bg-card px-2 py-0.5 text-[11px] text-muted-foreground">
                       {groups[status].length}
                     </span>
                   </div>
