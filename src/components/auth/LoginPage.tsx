@@ -14,12 +14,10 @@ import {
 } from '../../shared/view/ui';
 import { useAuth } from './AuthGate';
 
-const FIXED_EMAIL = 'zhiju.huang@sophgo.com';
-
 export default function LoginPage() {
   const { t } = useTranslation('auth');
   const { login } = useAuth();
-  const [email, setEmail] = useState(FIXED_EMAIL);
+  const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -67,6 +65,7 @@ export default function LoginPage() {
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder={t('login.placeholders.email')}
                 autoComplete="email"
+                autoFocus
               />
             </div>
             <div className="space-y-2">
@@ -75,13 +74,11 @@ export default function LoginPage() {
               </label>
               <Input
                 id="login-code"
-                type="text"
-                inputMode="numeric"
+                type="password"
                 value={code}
                 onChange={(event) => setCode(event.target.value)}
                 placeholder={t('login.placeholders.code')}
-                autoComplete="one-time-code"
-                autoFocus
+                autoComplete="current-password"
               />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
