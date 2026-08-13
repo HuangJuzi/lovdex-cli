@@ -459,7 +459,7 @@ export function TaskDetailPage() {
       <div className="flex h-dvh flex-col items-center justify-center gap-3 bg-background">
         <div className="text-sm text-muted-foreground">加载任务失败</div>
         <button
-          className="rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 shadow-[0_2px_0_#1c3fa8]"
           onClick={() => void load()}
         >
           重试
@@ -524,7 +524,7 @@ export function TaskDetailPage() {
               </button>
             ) : (
               <button
-                className="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 sm:px-6"
+                className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 sm:px-6 shadow-[0_2px_0_#1c3fa8]"
                 onClick={() => void startExecution()}
               >
                 ▶ 开始执行
@@ -562,7 +562,7 @@ export function TaskDetailPage() {
               </div>
             </div>
             <button
-              className="w-full shrink-0 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 sm:w-auto"
+              className="w-full shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 sm:w-auto shadow-[0_2px_0_#1c3fa8]"
               onClick={() => retryTask()}
             >
               ↻ 重试
@@ -603,7 +603,7 @@ export function TaskDetailPage() {
 
         <div className="mt-6 flex flex-col gap-6">
           <div className="flex flex-col gap-6">
-            <div className="rounded-lg border border-border bg-card p-4">
+            <div className="rounded-2xl border border-border/70 bg-card text-card-foreground shadow-[0_3px_0_rgba(30,27,50,0.07),0_12px_26px_rgba(35,33,41,0.07)] p-4">
               <textarea
                 className="min-h-[160px] w-full resize-y bg-transparent text-sm text-muted-foreground outline-none"
                 value={description}
@@ -615,7 +615,7 @@ export function TaskDetailPage() {
               />
             </div>
             {(task.ai_summary || task.verdict_reason || task.verdict_at) && (
-              <div className="rounded-lg border border-border bg-card p-4">
+              <div className="rounded-2xl border border-border/70 bg-card text-card-foreground shadow-[0_3px_0_rgba(30,27,50,0.07),0_12px_26px_rgba(35,33,41,0.07)] p-4">
                 <div className="mb-2 flex items-center justify-between">
                   <h4 className="text-xs uppercase tracking-wide text-muted-foreground">完成度</h4>
                   {task.sub_status && ['done', 'only_plan', 'needs_review', 'blocked'].includes(task.sub_status) && (
@@ -644,7 +644,7 @@ export function TaskDetailPage() {
             />
           </div>
           <div className="flex flex-col gap-3">
-            <div className="rounded-lg border border-border bg-card p-4">
+            <div className="rounded-2xl border border-border/70 bg-card text-card-foreground shadow-[0_3px_0_rgba(30,27,50,0.07),0_12px_26px_rgba(35,33,41,0.07)] p-4">
               <h4 className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">属性</h4>
               <div className="flex max-w-xl flex-col gap-3">
                 <div className="flex items-center gap-3">
