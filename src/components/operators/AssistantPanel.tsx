@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { ensureOperatorSession } from './operatorSession';
+import { Button } from '../../shared/view/ui';
 
 /**
  * 助手面板入口（路由组件 /assistant）。
@@ -66,12 +67,9 @@ export function AssistantPanel() {
     return (
       <div className="flex h-dvh flex-col items-center justify-center gap-3 bg-background">
         <div className="text-sm text-red-500">{error}</div>
-        <button
-          className="rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-          onClick={() => navigate('/tasks')}
-        >
+        <Button variant="chunky" size="sm" onClick={() => navigate('/tasks')}>
           返回任务面板
-        </button>
+        </Button>
       </div>
     );
   }
