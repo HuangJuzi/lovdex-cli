@@ -23,9 +23,8 @@ import EditorSidebar from '../../code-editor/view/EditorSidebar';
 import FileTree from '../../file-tree/view/FileTree';
 import GitPanel from '../../git-panel/view/GitPanel';
 
-// Simplified edition: only the chat tab remains. File tree, shell, git,
-// task-master, browser-use, plugin and code-editor panels were removed.
-// Files tab restored (Phase 1); git/shell/browser still removed.
+// Simplified edition: chat, files and git tabs remain. Shell, task-master,
+// browser-use and plugin panels were removed.
 function MainContent({
   selectedProject,
   selectedSession,
