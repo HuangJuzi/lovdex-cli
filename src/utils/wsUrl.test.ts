@@ -19,3 +19,11 @@ test('same-origin URL without a token is bare', () => {
 test('token is URL-encoded', () => {
   assert.equal(buildWebSocketUrl('a/b+c'), 'wss://lovdex.example.com/ws?token=a%2Fb%2Bc');
 });
+
+test('custom pathname is honored', () => {
+  assert.equal(buildWebSocketUrl('abc', '/ws/terminal'), 'wss://lovdex.example.com/ws/terminal?token=abc');
+});
+
+test('pathname defaults to /ws', () => {
+  assert.equal(buildWebSocketUrl('abc'), 'wss://lovdex.example.com/ws?token=abc');
+});
