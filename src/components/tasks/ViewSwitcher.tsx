@@ -32,7 +32,7 @@ export function ViewSwitcher({ active, className }: { active: View; className?: 
       label: t('navigation.chat'),
       icon: MessageSquare,
       to: '/',
-      activeClass: 'bg-sky-500 text-white shadow-sm shadow-sky-500/30',
+      activeClass: 'bg-card text-card-foreground shadow-[0_2px_0_rgba(30,27,50,0.10),0_4px_10px_rgba(35,33,41,0.06)]',
       iconClass: 'text-sky-500',
     },
     {
@@ -40,13 +40,13 @@ export function ViewSwitcher({ active, className }: { active: View; className?: 
       label: t('navigation.tasks'),
       icon: ClipboardList,
       to: '/tasks',
-      activeClass: 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30',
+      activeClass: 'bg-card text-card-foreground shadow-[0_2px_0_rgba(30,27,50,0.10),0_4px_10px_rgba(35,33,41,0.06)]',
       iconClass: 'text-emerald-500',
     },
   ];
 
   return (
-    <div className={cn('flex rounded-lg bg-muted/50 p-0.5', className)}>
+    <div className={cn('flex rounded-xl border border-border/70 bg-muted/50 p-0.5', className)}>
       {items.map(({ value, label, icon: Icon, to, activeClass, iconClass }) => {
         const isActive = active === value;
         return (
@@ -58,11 +58,11 @@ export function ViewSwitcher({ active, className }: { active: View; className?: 
               if (!isActive) navigate(to);
             }}
             className={cn(
-              'flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-normal transition-all',
+              'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-normal transition-all',
               isActive ? activeClass : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            <Icon className={cn('h-3 w-3 flex-shrink-0', isActive ? 'text-white' : iconClass)} />
+            <Icon className={cn('h-3 w-3 flex-shrink-0', isActive ? 'text-primary' : iconClass)} />
             {label}
           </button>
         );
