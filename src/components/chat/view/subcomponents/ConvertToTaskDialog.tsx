@@ -23,6 +23,9 @@ export function ConvertToTaskDialog({
 }: ConvertToTaskDialogProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  // executorProvider + executorModel are determined from the session (its
+  // provider / current model) and carried silently into the create body — the
+  // dialog never renders them as editable fields.
   const [executorProvider, setExecutorProvider] = useState<TaskEngine>('claude');
   const [executorModel, setExecutorModel] = useState('');
   const [status, setStatus] = useState<TaskStatus>('todo');
@@ -119,18 +122,6 @@ export function ConvertToTaskDialog({
           </label>
           <div className="flex flex-col gap-3 sm:flex-row">
             <label className="flex flex-1 flex-col gap-1 text-sm">
-              <span className="text-muted-foreground">执行引擎</span>
-              <select
-                className={selectClass}
-                value={executorProvider}
-                onChange={(e) => setExecutorProvider(e.target.value as TaskEngine)}
-              >
-                <option value="claude">Claude</option>
-                <option value="codex">Codex</option>
-                <option value="sophcode">SophCode</option>
-              </select>
-            </label>
-            <label className="flex flex-1 flex-col gap-1 text-sm">
               <span className="text-muted-foreground">状态</span>
               <select
                 className={selectClass}
@@ -144,8 +135,6 @@ export function ConvertToTaskDialog({
                 ))}
               </select>
             </label>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
             <label className="flex flex-1 flex-col gap-1 text-sm">
               <span className="text-muted-foreground">优先级</span>
               <select
@@ -160,6 +149,8 @@ export function ConvertToTaskDialog({
                 ))}
               </select>
             </label>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
             <label className="flex flex-1 flex-col gap-1 text-sm">
               <span className="text-muted-foreground">标签</span>
               <select
@@ -174,8 +165,6 @@ export function ConvertToTaskDialog({
                 ))}
               </select>
             </label>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
             <label className="flex flex-1 flex-col gap-1 text-sm">
               <span className="text-muted-foreground">截止时间</span>
               <input
@@ -185,11 +174,11 @@ export function ConvertToTaskDialog({
                 onChange={(e) => setDeadline(e.target.value)}
               />
             </label>
-            <label className="flex flex-1 flex-col gap-1 text-sm">
-              <span className="text-muted-foreground">备注</span>
-              <Input value={remark} onChange={(e) => setRemark(e.target.value)} placeholder="需求来源等，可留空" />
-            </label>
           </div>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-muted-foreground">备注</span>
+            <Input value={remark} onChange={(e) => setRemark(e.target.value)} placeholder="需求来源等，可留空" />
+          </label>
           {error && <div className="text-sm text-destructive">{error}</div>}
         </div>
         <div className="flex justify-end gap-2 pt-4">
