@@ -1,5 +1,5 @@
 // src/components/auth/ChangePasswordDialog.tsx
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyRound } from 'lucide-react';
 
@@ -19,10 +19,15 @@ export default function ChangePasswordDialog({ open, onOpenChange }: ChangePassw
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Clear the form whenever the dialog closes.
   useEffect(() => {
     if (!open) {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
       setCurrentCode('');
       setNewCode('');
       setConfirmCode('');
@@ -53,9 +58,11 @@ export default function ChangePasswordDialog({ open, onOpenChange }: ChangePassw
       const res = await api.auth.changePassword(currentCode, newCode);
       if (res.ok) {
         setSuccess(true);
-        setSubmitting(false);
-        // Brief success feedback, then close (the effect clears the form).
-        setTimeout(() => onOpenChange(false), 800);
+        // Keep submitting=true so the buttons stay disabled during the success flash.
+        closeTimerRef.current = setTimeout(() => {
+          closeTimerRef.current = null;
+          onOpenChange(false);
+        }, 800);
       } else {
         setError(
           res.status === 401

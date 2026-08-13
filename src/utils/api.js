@@ -60,11 +60,19 @@ export const api = {
         body: JSON.stringify({ email, code }),
       }),
     me: () => authenticatedFetch('/api/auth/me'),
-    changePassword: (currentCode, newCode) =>
-      authenticatedFetch('/api/auth/change-password', {
+    // changePassword uses a raw fetch (not authenticatedFetch) so a wrong
+    // current password (401) doesn't trigger the global "token expired" logout.
+    changePassword: (currentCode, newCode) => {
+      const token = localStorage.getItem('auth-token');
+      return fetch(`${API_BASE_URL}/api/auth/change-password`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(!IS_PLATFORM && token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ currentCode, newCode }),
-      }),
+      });
+    },
   },
 
   // Protected endpoints
