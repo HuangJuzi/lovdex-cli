@@ -101,9 +101,11 @@ function MainContent({
             className="ml-auto"
             onClick={() => setConvertOpen(true)}
             title="转为任务"
+            aria-label="转为任务"
           >
             <RefreshCw />
-            转为任务
+            {/* 移动端（<640px）只留图标 */}
+            <span className="hidden sm:inline">转为任务</span>
           </Button>
         )}
         {selectedProject && linkedTask && (
@@ -113,13 +115,15 @@ function MainContent({
             className="ml-auto"
             onClick={() => navigate(`/task/${linkedTask.task_id}`)}
             title="查看任务"
+            aria-label="查看任务"
           >
             <span
               className="h-2 w-2 rounded-full"
               style={{ background: STATUS_META[linkedTask.status].color }}
             />
             <Eye />
-            查看任务
+            {/* 移动端（<640px）只留圆点 + 图标 */}
+            <span className="hidden sm:inline">查看任务</span>
           </Button>
         )}
         <TerminalToggleButton />
