@@ -401,7 +401,8 @@ export function TaskBoardPage() {
                 >
                   <option value="claude">Claude Code</option>
                   <option value="codex">Codex</option>
-                  <option value="sophcode">SophCode</option>
+                  <option value="opencode">OpenCode</option>
+                  <option value="qoder">Qoder</option>
                 </select>
               </div>
               <div className="flex flex-col gap-1">

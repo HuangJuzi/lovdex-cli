@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import type { Task, TaskStatus } from '../../types/app';
+import type { Task, TaskEngine, TaskStatus } from '../../types/app';
 
 import { STATUS_META, LABEL_META, PRIORITY_META } from './taskStatus';
 import { canOpenSession } from './taskActions';
@@ -22,6 +22,14 @@ type TaskCardProps = {
   onProjectChange?: (nextPath: string) => void;
 };
 
+/** Executor 引擎徽标展示（任务卡 / 表格行共用文案与配色）。 */
+export const EXECUTOR_META: Record<TaskEngine, { label: string; badge: string }> = {
+  claude: { label: '◈ Claude', badge: 'bg-green-500/10 text-green-600 dark:text-green-400' },
+  codex: { label: '◈ Codex', badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+  opencode: { label: '◈ OpenCode', badge: 'bg-violet-500/10 text-violet-600 dark:text-violet-400' },
+  qoder: { label: '◈ Qoder', badge: 'bg-sky-500/10 text-sky-600 dark:text-sky-400' },
+};
+
 export const TaskCard = memo(function TaskCard({
   task,
   onStart,
@@ -31,7 +39,6 @@ export const TaskCard = memo(function TaskCard({
   onProjectChange,
 }: TaskCardProps) {
   const navigate = useNavigate();
-  const isClaude = task.executor_provider === 'claude';
   const timeLabel = taskTimeLabel(task);
   const now = new Date();
   const deadline = taskDeadlineInfo(task, now);
@@ -130,14 +137,10 @@ export const TaskCard = memo(function TaskCard({
         )}
         <span
           className={`rounded-full px-2 py-0.5 font-semibold ${
-            isClaude
-              ? 'bg-green-500/10 text-green-600 dark:text-green-400'
-              : task.executor_provider === 'sophcode'
-                ? 'bg-violet-500/10 text-violet-600 dark:text-violet-400'
-                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+            EXECUTOR_META[task.executor_provider].badge
           }`}
         >
-          {isClaude ? '◈ Claude' : task.executor_provider === 'sophcode' ? '◈ SophCode' : '◈ Codex'}
+          {EXECUTOR_META[task.executor_provider].label}
         </span>
         {task.executor_model && (
           <span className="rounded-full bg-muted/60 px-2 py-0.5 font-mono text-muted-foreground">

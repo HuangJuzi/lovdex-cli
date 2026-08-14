@@ -4,7 +4,7 @@ import type { Task, TaskStatus } from '../../types/app';
 import { Pill, PillBar } from '../../shared/view/ui';
 import useLocalStorage from '../../hooks/useLocalStorage';
 
-import type { TaskProjectOption } from './TaskCard';
+import { EXECUTOR_META, type TaskProjectOption } from './TaskCard';
 import { canOpenSession } from './taskActions';
 import { SubStatusBadge } from './SubStatusBadge';
 import { sortTasks, type TaskSortDir, type TaskSortKey } from './taskTable';
@@ -223,7 +223,6 @@ function TaskRow({
   onProjectChange?: (task: Task, nextPath: string) => void;
   onOpenTask?: (task: Task) => void;
 }) {
-  const isClaude = task.executor_provider === 'claude';
   const priority = task.priority ?? 'P2';
   const label = task.label ?? 'other';
   const deadlineInfo = taskDeadlineInfo(task, now);
@@ -250,16 +249,8 @@ function TaskRow({
               {LABEL_META[label].label}
             </span>
           )}
-          <span
-            className={`font-semibold ${
-              isClaude
-                ? 'text-green-600 dark:text-green-400'
-                : task.executor_provider === 'sophcode'
-                  ? 'text-violet-600 dark:text-violet-400'
-                  : 'text-amber-600 dark:text-amber-400'
-            }`}
-          >
-            {isClaude ? '◈ Claude' : task.executor_provider === 'sophcode' ? '◈ SophCode' : '◈ Codex'}
+          <span className={`font-semibold ${EXECUTOR_META[task.executor_provider].badge}`}>
+            {EXECUTOR_META[task.executor_provider].label}
           </span>
           {task.executor_model && <span className="font-mono">{task.executor_model}</span>}
         </div>

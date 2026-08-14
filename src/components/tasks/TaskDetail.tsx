@@ -695,7 +695,8 @@ export function TaskDetailPage() {
                   >
                     <option value="claude">Claude Code</option>
                     <option value="codex">Codex</option>
-                    <option value="sophcode">SophCode</option>
+                    <option value="opencode">OpenCode</option>
+                    <option value="qoder">Qoder</option>
                   </select>
                 </div>
                 <div className="flex items-center gap-3">
