@@ -41,6 +41,8 @@ function settingsKeyFor(provider: string): string {
       return 'codex-settings';
     case 'opencode':
       return 'opencode-settings';
+    case 'qoder':
+      return 'qoder-settings';
     default:
       return 'claude-settings';
   }

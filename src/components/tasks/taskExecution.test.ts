@@ -64,6 +64,25 @@ test('buildTaskChatSend passes through an arbitrary custom content', () => {
   assert.equal(frame.content, '继续完成');
 });
 
+test('buildTaskChatSend reads qoder tools settings from the qoder-settings key', () => {
+  const original = (globalThis as { localStorage?: unknown }).localStorage;
+  const store = new Map<string, string>();
+  (globalThis as { localStorage?: unknown }).localStorage = {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => void store.set(k, v),
+    removeItem: (k: string) => void store.delete(k),
+  };
+  try {
+    store.set('qoder-settings', JSON.stringify({ allowedTools: ['Read'], disallowedTools: [], skipPermissions: true }));
+    store.set('claude-settings', JSON.stringify({ allowedTools: ['Write'], disallowedTools: [], skipPermissions: false }));
+    const frame = buildTaskChatSend('s1', { ...task, executor_provider: 'qoder' });
+    assert.deepEqual(frame.options.toolsSettings, { allowedTools: ['Read'], disallowedTools: [], skipPermissions: true });
+    assert.equal(frame.options.skipPermissions, true);
+  } finally {
+    (globalThis as { localStorage?: unknown }).localStorage = original;
+  }
+});
+
 test('TASK_RETRY_MESSAGE is non-empty and mentions retrying', () => {
   assert.ok(TASK_RETRY_MESSAGE.length > 0);
   assert.match(TASK_RETRY_MESSAGE, /重试/);
