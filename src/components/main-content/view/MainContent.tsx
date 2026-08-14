@@ -163,13 +163,13 @@ function MainContent({
           </div>
 
           {activeTab === 'files' && (
-            <div className="h-full overflow-hidden">
+            <div className="h-full min-w-0 flex-1 overflow-hidden">
               <FileTree selectedProject={selectedProject} onFileOpen={handleEditorOpen} />
             </div>
           )}
 
           {activeTab === 'git' && (
-            <div className="h-full overflow-hidden">
+            <div className="h-full min-w-0 flex-1 overflow-hidden">
               <GitPanel
                 selectedProject={selectedProject}
                 isMobile={isMobile}

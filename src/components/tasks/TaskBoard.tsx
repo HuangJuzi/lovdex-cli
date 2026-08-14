@@ -45,7 +45,7 @@ export function TaskBoardPage() {
   const navigate = useNavigate();
   const { subscribe, sendMessage } = useWebSocket();
   const { tasks, loading, loadError, refresh, upsert } = useTasks({}, subscribe);
-  const [filter, setFilter] = useState<TaskFilter>(EMPTY_TASK_FILTER);
+  const [filter, setFilter] = useLocalStorage<TaskFilter>('taskFilter', EMPTY_TASK_FILTER);
   const [viewMode, setViewMode] = useLocalStorage<'board' | 'table'>('taskViewMode', 'board');
   // 移动端强制看板：表格在手机上体验差，且「表格」按钮已隐藏（hidden sm:inline-flex）。
   // 断点 640 与 Tailwind `sm:` 对齐。

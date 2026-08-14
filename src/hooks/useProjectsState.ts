@@ -846,6 +846,23 @@ export function useProjectsState({
     });
   }, [sessionId, projects, selectedProject, selectedSession?.id, selectedSession?.__provider]);
 
+  // 任何入口（URL 打开会话 / last-session 恢复 / 侧边栏 / 助手会话 / 新建会话）选中
+  // 具体 session 时，都把 activeTab 复位到 chat。工作区的 activeTab 是全局持久化的
+  // （localStorage 'activeTab'），AppContent 重新挂载时会恢复上次停留的 tab——从任务页
+  // 「打开会话」等路径进入时会偶尔落在 Files 界面，这里按「viewed session 变化」复位。
+  // 会话内手动切 Chat/Files/Git 不改变 session id，不会被强制拉回。
+  const viewedSessionIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const nextSessionId = selectedSession?.id ?? null;
+    if (nextSessionId === viewedSessionIdRef.current) {
+      return;
+    }
+    viewedSessionIdRef.current = nextSessionId;
+    if (nextSessionId) {
+      setActiveTab('chat');
+    }
+  }, [selectedSession?.id, setActiveTab]);
+
   // 持久化「上次打开的 session」：任何入口（打开会话/侧边栏/resume/助手会话）选中具体 session 时记录。
   useEffect(() => {
     if (selectedSession?.id) {

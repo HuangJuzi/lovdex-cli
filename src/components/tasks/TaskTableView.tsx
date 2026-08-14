@@ -1,7 +1,8 @@
-import { Fragment, useMemo, useState, type ReactNode } from 'react';
+import { Fragment, useMemo, type ReactNode } from 'react';
 
 import type { Task, TaskStatus } from '../../types/app';
 import { Pill, PillBar } from '../../shared/view/ui';
+import useLocalStorage from '../../hooks/useLocalStorage';
 
 import type { TaskProjectOption } from './TaskCard';
 import { canOpenSession } from './taskActions';
@@ -69,9 +70,9 @@ export function TaskTableView({
   onProjectChange,
   onOpenTask,
 }: TaskTableViewProps) {
-  const [sortKey, setSortKey] = useState<TaskSortKey>('created');
-  const [sortDir, setSortDir] = useState<TaskSortDir>('desc');
-  const [selected, setSelected] = useState<TaskStatus[]>(() => [...STATUS_ORDER]);
+  const [sortKey, setSortKey] = useLocalStorage<TaskSortKey>('taskTableSortKey', 'created');
+  const [sortDir, setSortDir] = useLocalStorage<TaskSortDir>('taskTableSortDir', 'desc');
+  const [selected, setSelected] = useLocalStorage<TaskStatus[]>('taskTableStatusFilter', [...STATUS_ORDER]);
   const groups = useMemo(() => groupByStatus(tasks), [tasks]);
   const now = new Date();
 
