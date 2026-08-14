@@ -25,7 +25,8 @@ import {
 const PROVIDER_META: { id: LLMProvider; name: string }[] = [
   { id: "claude", name: "Anthropic" },
   { id: "codex", name: "OpenAI" },
-  { id: "sophcode", name: "Sophcode" },
+  { id: "opencode", name: "OpenCode" },
+  { id: "qoder", name: "Qoder" },
 ];
 
 const MOD_KEY =
@@ -50,14 +51,12 @@ type ProviderSelectionEmptyStateProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   claudeModel: string;
   setClaudeModel: (model: string) => void;
-  cursorModel: string;
-  setCursorModel: (model: string) => void;
   codexModel: string;
   setCodexModel: (model: string) => void;
   opencodeModel: string;
   setOpenCodeModel: (model: string) => void;
-  sophcodeModel: string;
-  setSophcodeModel: (model: string) => void;
+  qoderModel: string;
+  setQoderModel: (model: string) => void;
   providerModelCatalog: Partial<Record<LLMProvider, ProviderModelsDefinition>>;
   providerModelsLoading: boolean;
   tasksEnabled: boolean;
@@ -83,24 +82,21 @@ function getModelConfig(
 function getCurrentModel(
   p: LLMProvider,
   c: string,
-  cu: string,
   co: string,
   o: string,
-  s: string,
+  q: string,
 ) {
   if (p === "claude") return c;
   if (p === "codex") return co;
   if (p === "opencode") return o;
-  if (p === "sophcode") return s;
-  return cu;
+  return q;
 }
 
 function getProviderDisplayName(p: LLMProvider) {
   if (p === "claude") return "Claude";
-  if (p === "cursor") return "Cursor";
   if (p === "codex") return "Codex";
   if (p === "opencode") return "OpenCode";
-  if (p === "sophcode") return "Sophcode";
+  if (p === "qoder") return "Qoder";
   return "Claude";
 }
 
@@ -112,14 +108,12 @@ export default function ProviderSelectionEmptyState({
   textareaRef,
   claudeModel,
   setClaudeModel,
-  cursorModel,
-  setCursorModel,
   codexModel,
   setCodexModel,
   opencodeModel,
   setOpenCodeModel,
-  sophcodeModel,
-  setSophcodeModel,
+  qoderModel,
+  setQoderModel,
   providerModelCatalog,
   providerModelsLoading,
   tasksEnabled,
@@ -145,10 +139,9 @@ export default function ProviderSelectionEmptyState({
   const currentModel = getCurrentModel(
     provider,
     claudeModel,
-    cursorModel,
     codexModel,
     opencodeModel,
-    sophcodeModel,
+    qoderModel,
   );
 
   const currentModelLabel = useMemo(() => {
@@ -170,15 +163,12 @@ export default function ProviderSelectionEmptyState({
       } else if (providerId === "opencode") {
         setOpenCodeModel(modelValue);
         localStorage.setItem("opencode-model", modelValue);
-      } else if (providerId === "sophcode") {
-        setSophcodeModel(modelValue);
-        localStorage.setItem("sophcode-model", modelValue);
       } else {
-        setCursorModel(modelValue);
-        localStorage.setItem("cursor-model", modelValue);
+        setQoderModel(modelValue);
+        localStorage.setItem("qoder-model", modelValue);
       }
     },
-    [setClaudeModel, setCursorModel, setCodexModel, setOpenCodeModel, setSophcodeModel],
+    [setClaudeModel, setCodexModel, setOpenCodeModel, setQoderModel],
   );
 
   const handleModelSelect = useCallback(
@@ -315,9 +305,6 @@ export default function ProviderSelectionEmptyState({
                 claude: t("providerSelection.readyPrompt.claude", {
                   model: claudeModel,
                 }),
-                cursor: t("providerSelection.readyPrompt.cursor", {
-                  model: cursorModel,
-                }),
                 codex: t("providerSelection.readyPrompt.codex", {
                   model: codexModel,
                 }),
@@ -325,9 +312,9 @@ export default function ProviderSelectionEmptyState({
                   model: opencodeModel,
                   defaultValue: "Ready with OpenCode {{model}}",
                 }),
-                sophcode: t("providerSelection.readyPrompt.sophcode", {
-                  model: sophcodeModel,
-                  defaultValue: "Ready with Sophcode {{model}}",
+                qoder: t("providerSelection.readyPrompt.qoder", {
+                  model: qoderModel,
+                  defaultValue: "Ready with Qoder {{model}}",
                 }),
               }[provider]
             }

@@ -154,15 +154,13 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
                   ? t('messageTypes.error')
                   : message.type === 'tool'
                     ? t('messageTypes.tool')
-                    : (provider === 'cursor'
-                        ? t('messageTypes.cursor')
-                        : provider === 'codex'
-                          ? t('messageTypes.codex')
-                          : provider === 'opencode'
-                              ? t('messageTypes.opencode', { defaultValue: 'OpenCode' })
-                              : provider === 'sophcode'
-                                ? t('messageTypes.sophcode', { defaultValue: 'Sophcode' })
-                                : t('messageTypes.claude'))}
+                    : (provider === 'codex'
+                        ? t('messageTypes.codex')
+                        : provider === 'opencode'
+                          ? t('messageTypes.opencode', { defaultValue: 'OpenCode' })
+                          : provider === 'qoder'
+                              ? t('messageTypes.qoder', { defaultValue: 'Qoder' })
+                              : t('messageTypes.claude'))}
               </div>
             </div>
           )}

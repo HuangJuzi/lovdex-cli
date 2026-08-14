@@ -48,12 +48,11 @@ interface UseChatComposerStateArgs {
   permissionMode: PermissionMode | string;
   cyclePermissionMode: () => void;
   resolvePermissionModeForProvider: (provider: LLMProvider, requestedMode: PermissionMode | string) => PermissionMode;
-  cursorModel: string;
   claudeModel: string;
   codexModel: string;
   currentProviderEffort: string;
   opencodeModel: string;
-  sophcodeModel: string;
+  qoderModel: string;
   isLoading: boolean;
   canAbortSession: boolean;
   tokenBudget: Record<string, unknown> | null;
@@ -201,12 +200,11 @@ export function useChatComposerState({
   permissionMode,
   cyclePermissionMode,
   resolvePermissionModeForProvider,
-  cursorModel,
   claudeModel,
   codexModel,
   currentProviderEffort,
   opencodeModel,
-  sophcodeModel,
+  qoderModel,
   isLoading,
   canAbortSession,
   tokenBudget,
@@ -390,15 +388,13 @@ export function useChatComposerState({
           // session's active model.
           sessionId: selectedSession?.id || currentSessionId || null,
           provider,
-          model: provider === 'cursor'
-            ? cursorModel
-            : provider === 'codex'
-              ? codexModel
-              : provider === 'opencode'
-                  ? opencodeModel
-                  : provider === 'sophcode'
-                    ? sophcodeModel
-                    : claudeModel,
+          model: provider === 'codex'
+            ? codexModel
+            : provider === 'opencode'
+              ? opencodeModel
+              : provider === 'qoder'
+                  ? qoderModel
+                  : claudeModel,
           tokenUsage: tokenBudget,
         };
 
@@ -450,9 +446,8 @@ export function useChatComposerState({
       claudeModel,
       codexModel,
       currentSessionId,
-      cursorModel,
       opencodeModel,
-      sophcodeModel,
+      qoderModel,
       handleBuiltInCommand,
       handleCustomCommand,
       input,
@@ -676,14 +671,12 @@ export function useChatComposerState({
     const getToolsSettings = () => {
       try {
         const settingsKey =
-          provider === 'cursor'
-            ? 'cursor-tools-settings'
-            : provider === 'codex'
-              ? 'codex-settings'
-              : provider === 'opencode'
-                  ? 'opencode-settings'
-                  : provider === 'sophcode'
-                    ? 'sophcode-settings'
+          provider === 'codex'
+            ? 'codex-settings'
+            : provider === 'opencode'
+              ? 'opencode-settings'
+              : provider === 'qoder'
+                  ? 'qoder-settings'
                 : 'claude-settings';
         const savedSettings = safeLocalStorage.getItem(settingsKey);
         if (savedSettings) {
@@ -702,15 +695,13 @@ export function useChatComposerState({
 
     const toolsSettings = getToolsSettings();
     const model =
-      provider === 'cursor'
-        ? cursorModel
-        : provider === 'codex'
-          ? codexModel
-          : provider === 'opencode'
-            ? opencodeModel
-            : provider === 'sophcode'
-              ? sophcodeModel
-              : claudeModel;
+      provider === 'codex'
+        ? codexModel
+        : provider === 'opencode'
+          ? opencodeModel
+          : provider === 'qoder'
+            ? qoderModel
+            : claudeModel;
 
     return {
       model,
@@ -731,9 +722,8 @@ export function useChatComposerState({
     claudeModel,
     codexModel,
     currentProviderEffort,
-    cursorModel,
     opencodeModel,
-    sophcodeModel,
+    qoderModel,
     permissionMode,
     provider,
     resolvePermissionModeForProvider,

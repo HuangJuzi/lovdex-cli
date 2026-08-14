@@ -59,10 +59,9 @@ type ModelOption = {
 
 const PROVIDER_LABELS: Record<string, string> = {
   claude: 'Claude',
-  cursor: 'Cursor',
   codex: 'Codex',
   opencode: 'OpenCode',
-  sophcode: 'Sophcode',
+  qoder: 'Qoder',
 };
 
 const FALLBACK_COMMANDS: CommandEntry[] = [

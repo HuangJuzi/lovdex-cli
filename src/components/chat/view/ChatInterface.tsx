@@ -68,8 +68,6 @@ function ChatInterface({
   const {
     provider,
     setProvider,
-    cursorModel,
-    setCursorModel,
     claudeModel,
     setClaudeModel,
     codexModel,
@@ -78,8 +76,8 @@ function ChatInterface({
     currentProviderEffortOptions,
     opencodeModel,
     setOpenCodeModel,
-    sophcodeModel,
-    setSophcodeModel,
+    qoderModel,
+    setQoderModel,
     permissionMode,
     pendingPermissionRequests,
     setPendingPermissionRequests,
@@ -221,12 +219,11 @@ function ChatInterface({
     provider,
     permissionMode,
     cyclePermissionMode,
-    cursorModel,
     claudeModel,
     codexModel,
     currentProviderEffort,
     opencodeModel,
-    sophcodeModel,
+    qoderModel,
     isLoading: isProcessing,
     canAbortSession,
     tokenBudget,
@@ -389,13 +386,11 @@ function ChatInterface({
   const currentModelValue =
     provider === 'codex'
       ? codexModel
-      : provider === 'cursor'
-        ? cursorModel
-        : provider === 'opencode'
-          ? opencodeModel
-          : provider === 'sophcode'
-            ? sophcodeModel
-            : claudeModel;
+      : provider === 'opencode'
+        ? opencodeModel
+        : provider === 'qoder'
+          ? qoderModel
+          : claudeModel;
   const currentModelLabel = useMemo(() => {
     const option = providerModelCatalog[provider]?.OPTIONS.find((o) => o.value === currentModelValue);
     const label = option?.label || currentModelValue;
@@ -406,15 +401,13 @@ function ChatInterface({
 
   if (!selectedProject) {
     const selectedProviderLabel =
-      provider === 'cursor'
-        ? t('messageTypes.cursor')
-        : provider === 'codex'
-          ? t('messageTypes.codex')
-          : provider === 'opencode'
-              ? t('messageTypes.opencode', { defaultValue: 'OpenCode' })
-              : provider === 'sophcode'
-                ? t('messageTypes.sophcode', { defaultValue: 'Sophcode' })
-                : t('messageTypes.claude');
+      provider === 'codex'
+        ? t('messageTypes.codex')
+        : provider === 'opencode'
+            ? t('messageTypes.opencode', { defaultValue: 'OpenCode' })
+            : provider === 'qoder'
+              ? t('messageTypes.qoder', { defaultValue: 'Qoder' })
+              : t('messageTypes.claude');
 
     return (
       <div className="flex h-full items-center justify-center">
@@ -448,14 +441,12 @@ function ChatInterface({
           textareaRef={textareaRef}
           claudeModel={claudeModel}
           setClaudeModel={setClaudeModel}
-          cursorModel={cursorModel}
-          setCursorModel={setCursorModel}
           codexModel={codexModel}
           setCodexModel={setCodexModel}
           opencodeModel={opencodeModel}
           setOpenCodeModel={setOpenCodeModel}
-          sophcodeModel={sophcodeModel}
-          setSophcodeModel={setSophcodeModel}
+          qoderModel={qoderModel}
+          setQoderModel={setQoderModel}
           providerModelCatalog={providerModelCatalog}
           providerModelsLoading={providerModelsLoading}
           tasksEnabled={false}
@@ -573,14 +564,12 @@ function ChatInterface({
           onInputFocusChange={handleInputFocusChange}
           placeholder={t('input.placeholder', {
             provider:
-              provider === 'cursor'
-                ? t('messageTypes.cursor')
-                : provider === 'codex'
-                  ? t('messageTypes.codex')
-                  : provider === 'opencode'
-                      ? t('messageTypes.opencode', { defaultValue: 'OpenCode' })
-                      : provider === 'sophcode'
-                        ? t('messageTypes.sophcode', { defaultValue: 'Sophcode' })
+              provider === 'codex'
+                ? t('messageTypes.codex')
+                : provider === 'opencode'
+                    ? t('messageTypes.opencode', { defaultValue: 'OpenCode' })
+                    : provider === 'qoder'
+                        ? t('messageTypes.qoder', { defaultValue: 'Qoder' })
                     : t('messageTypes.claude'),
           })}
           isTextareaExpanded={isTextareaExpanded}
