@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import type { ChangeEvent } from 'react';
-import { ChevronDown, Eye, FileText, FolderPlus, List, Loader2, RefreshCw, Search, TableProperties, Upload, X } from 'lucide-react';
+import { ChevronDown, Eye, FileText, FolderPlus, List, Loader2, RefreshCw, Search, TableProperties, Terminal, Upload, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button, Input } from '../../../shared/view/ui';
@@ -24,6 +24,9 @@ type FileTreeHeaderProps = {
   operationLoading?: boolean;
   isUploading?: boolean;
   uploadProgress?: number | null;
+  // Terminal panel toggle
+  terminalOpen?: boolean;
+  onToggleTerminal?: () => void;
 };
 
 export default function FileTreeHeader({
@@ -40,6 +43,8 @@ export default function FileTreeHeader({
   operationLoading,
   isUploading,
   uploadProgress,
+  terminalOpen,
+  onToggleTerminal,
 }: FileTreeHeaderProps) {
   const { t } = useTranslation();
   const uploadInputRef = useRef<HTMLInputElement>(null);
@@ -152,6 +157,19 @@ export default function FileTreeHeader({
               aria-label={t('fileTree.collapseAll', 'Collapse All')}
             >
               <ChevronDown className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          {onToggleTerminal && (
+            <Button
+              variant={terminalOpen ? 'default' : 'ghost'}
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={onToggleTerminal}
+              title="终端"
+              aria-label="终端"
+              aria-pressed={terminalOpen}
+            >
+              <Terminal className="h-3.5 w-3.5" />
             </Button>
           )}
           {/* Divider */}

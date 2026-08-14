@@ -14,6 +14,8 @@ import type { FileTreeImageSelection, FileTreeNode } from '../types/types';
 import { formatFileSize, formatRelativeTime, isImageFile } from '../utils/fileTreeUtils';
 import { Project } from '../../../types/app';
 import { ScrollArea, Input } from '../../../shared/view/ui';
+import { TerminalPanel } from '../../terminal/TerminalPanel';
+import { TerminalPane } from '../../terminal/TerminalPane';
 
 import FileTreeBody from './FileTreeBody';
 import FileTreeDetailedColumns from './FileTreeDetailedColumns';
@@ -34,6 +36,9 @@ export default function FileTree({ selectedProject, onFileOpen }: FileTreeProps)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const newItemInputRef = useRef<HTMLInputElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
+
+  // 终端面板开合是 Files 页本地状态：默认隐藏；切走 tab 即卸载、退出 shell。
+  const [terminalOpen, setTerminalOpen] = useState(false);
 
   // Show toast notification
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
@@ -159,6 +164,8 @@ export default function FileTree({ selectedProject, onFileOpen }: FileTreeProps)
         operationLoading={operationLoading}
         isUploading={upload.uploadProgress?.status === 'uploading'}
         uploadProgress={upload.uploadProgress?.progress ?? null}
+        terminalOpen={terminalOpen}
+        onToggleTerminal={() => setTerminalOpen((prev) => !prev)}
       />
 
       <FileTreeUploadProgress upload={upload.uploadProgress} />
@@ -226,6 +233,10 @@ export default function FileTree({ selectedProject, onFileOpen }: FileTreeProps)
           operationLoading={operationLoading}
         />
       </ScrollArea>
+
+      {terminalOpen && (
+        <TerminalPanel onClose={() => setTerminalOpen(false)} pane={<TerminalPane />} />
+      )}
 
       {selectedImage && (
         <ImageViewer
