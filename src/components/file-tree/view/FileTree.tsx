@@ -10,6 +10,7 @@ import { useFileTreeOperations } from '../hooks/useFileTreeOperations';
 import { useFileTreeSearch } from '../hooks/useFileTreeSearch';
 import { useFileTreeViewMode } from '../hooks/useFileTreeViewMode';
 import { useFileTreeUpload } from '../hooks/useFileTreeUpload';
+import { useTerminalResize } from '../hooks/useTerminalResize';
 import type { FileTreeImageSelection, FileTreeNode } from '../types/types';
 import { formatFileSize, formatRelativeTime, isImageFile } from '../utils/fileTreeUtils';
 import { Project } from '../../../types/app';
@@ -39,6 +40,7 @@ export default function FileTree({ selectedProject, onFileOpen }: FileTreeProps)
 
   // 终端面板开合是 Files 页本地状态：默认隐藏；切走 tab 即卸载、退出 shell。
   const [terminalOpen, setTerminalOpen] = useState(false);
+  const { terminalFraction, resizeHandleRef, handleResizeStart } = useTerminalResize();
 
   // Show toast notification
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
@@ -172,7 +174,7 @@ export default function FileTree({ selectedProject, onFileOpen }: FileTreeProps)
 
       {viewMode === 'detailed' && filteredFiles.length > 0 && <FileTreeDetailedColumns />}
 
-      <ScrollArea className="flex-1 px-2 py-1">
+      <ScrollArea className="min-h-0 flex-1 px-2 py-1">
         {/* New item input */}
         {operations.isCreating && (
           <div
@@ -235,7 +237,15 @@ export default function FileTree({ selectedProject, onFileOpen }: FileTreeProps)
       </ScrollArea>
 
       {terminalOpen && (
-        <TerminalPanel onClose={() => setTerminalOpen(false)} pane={<TerminalPane />} />
+        <>
+          <div
+            ref={resizeHandleRef}
+            onMouseDown={handleResizeStart}
+            className="h-1 flex-shrink-0 cursor-row-resize bg-border transition-colors hover:bg-blue-500"
+            title="拖拽调整终端高度"
+          />
+          <TerminalPanel style={{ height: `${terminalFraction * 100}%` }} pane={<TerminalPane />} />
+        </>
       )}
 
       {selectedImage && (

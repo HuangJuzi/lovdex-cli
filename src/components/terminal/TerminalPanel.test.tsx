@@ -6,24 +6,17 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import { TerminalPanel } from './TerminalPanel';
 
-test('renders the terminal header with close affordance', () => {
+test('renders the injected pane without a header bar', () => {
   const html = renderToStaticMarkup(
-    React.createElement(TerminalPanel, {
-      onClose: () => {},
-      pane: React.createElement('div', null, 'pane-stub'),
-    }),
-  );
-  assert.match(html, /终端/);
-  assert.match(html, /关闭即退出会话/);
-  assert.match(html, /关闭终端/);
-});
-
-test('renders the injected pane', () => {
-  const html = renderToStaticMarkup(
-    React.createElement(TerminalPanel, {
-      onClose: () => {},
-      pane: React.createElement('div', null, 'pane-stub'),
-    }),
+    React.createElement(TerminalPanel, { pane: React.createElement('div', null, 'pane-stub') }),
   );
   assert.match(html, /pane-stub/);
+  assert.doesNotMatch(html, /关闭即退出会话/);
+});
+
+test('renders a bordered container', () => {
+  const html = renderToStaticMarkup(
+    React.createElement(TerminalPanel, { pane: React.createElement('div', null, 'pane-stub') }),
+  );
+  assert.match(html, /border-t/);
 });
