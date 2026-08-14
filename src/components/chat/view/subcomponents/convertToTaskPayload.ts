@@ -16,14 +16,13 @@ export type SessionToTaskPayload = {
 /** 各 provider 的兜底模型（与 useChatProviderState 的私有副本同值，保持模块自包含）。 */
 const FALLBACK_DEFAULT_MODEL: Record<LLMProvider, string> = {
   claude: 'default',
-  cursor: 'gpt-5.3-codex',
   codex: 'gpt-5.4',
-  opencode: 'anthropic/claude-sonnet-4-5',
-  sophcode: 'opencode/deepseek-v4-flash-free',
+  opencode: 'opencode/deepseek-v4-flash-free',
+  qoder: 'auto',
 };
 
 function isTaskEngine(value: unknown): value is TaskEngine {
-  return value === 'claude' || value === 'codex' || value === 'sophcode';
+  return value === 'claude' || value === 'codex' || value === 'opencode' || value === 'qoder';
 }
 
 function resolveProviderModelDefault(provider: LLMProvider | undefined | null): string {

@@ -27,8 +27,9 @@ test('description defaults to summary', () => {
 
 test('provider kept when a task engine, else falls back to claude', () => {
   assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'codex' }), isRunning: false }).executorProvider, 'codex');
-  assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'sophcode' }), isRunning: false }).executorProvider, 'sophcode');
-  assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'opencode' }), isRunning: false }).executorProvider, 'claude');
+  assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'opencode' }), isRunning: false }).executorProvider, 'opencode');
+  assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'qoder' }), isRunning: false }).executorProvider, 'qoder');
+  assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'sophcode' as unknown as ProjectSession['provider'] }), isRunning: false }).executorProvider, 'claude');
   assert.equal(buildSessionToTaskPayload({ session: makeSession({}), isRunning: false }).executorProvider, 'claude');
 });
 
@@ -43,6 +44,7 @@ test('meta fields default to P2 / other / empty / empty', () => {
 test('executorModel resolves provider fallback (localStorage absent in node:test)', () => {
   assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'claude' }), isRunning: false }).executorModel, 'default');
   assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'codex' }), isRunning: false }).executorModel, 'gpt-5.4');
-  assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'sophcode' }), isRunning: false }).executorModel, 'opencode/deepseek-v4-flash-free');
+  assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'opencode' }), isRunning: false }).executorModel, 'opencode/deepseek-v4-flash-free');
+  assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'qoder' }), isRunning: false }).executorModel, 'auto');
   assert.equal(buildSessionToTaskPayload({ session: makeSession({}), isRunning: false }).executorModel, '');
 });
