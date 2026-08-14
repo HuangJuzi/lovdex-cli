@@ -9,7 +9,6 @@ import { FilePreviewModal } from '../../file-preview/FilePreviewModal';
 import { useUiPreferences } from '../../../hooks/useUiPreferences';
 import { STATUS_META } from '../../tasks/taskStatus';
 import { ConvertToTaskDialog } from '../../chat/view/subcomponents/ConvertToTaskDialog';
-import { TerminalToggleButton } from '../../terminal/TerminalToggleButton';
 import { Button } from '../../../shared/view/ui';
 import { Eye, RefreshCw } from 'lucide-react';
 
@@ -123,7 +122,6 @@ function MainContent({
             <span className="hidden sm:inline">查看任务</span>
           </Button>
         )}
-        <TerminalToggleButton />
       </header>
 
       {isLoading ? (

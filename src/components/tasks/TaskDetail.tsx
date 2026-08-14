@@ -36,8 +36,6 @@ import { formatAbsoluteTime } from './taskTimestamp';
 import { SubStatusBadge } from './SubStatusBadge';
 import { ViewSwitcher } from './ViewSwitcher';
 import { TaskBackNav } from './TaskBackNav';
-import { TerminalToggleButton } from '../terminal/TerminalToggleButton';
-import { useTerminalDrawer } from '../../hooks/useTerminalDrawer';
 
 /**
  * Live status badge for the detail header. Reads the effective `sub_status`
@@ -61,7 +59,6 @@ export function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
   const { sendMessage, subscribe } = useWebSocket();
-  const { setCwd } = useTerminalDrawer();
   const [task, setTask] = useState<Task | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -133,12 +130,6 @@ export function TaskDetailPage() {
   useEffect(() => {
     if (task) setProjectPath(task.project_path);
   }, [task?.project_path]);
-
-  // The task detail page's "current project" is the task's own project, so the
-  // terminal drawer should open there.
-  useEffect(() => {
-    setCwd(task?.project_path || null);
-  }, [task?.project_path, setCwd]);
 
   useEffect(() => {
     let cancelled = false;
@@ -483,7 +474,6 @@ export function TaskDetailPage() {
       <header className="pwa-header-safe sticky top-0 z-10 flex flex-shrink-0 items-center gap-2 border-b border-border/60 bg-background px-3 py-1.5 sm:px-4 sm:py-2">
         <ViewSwitcher active="tasks" className="w-40 flex-shrink-0 sm:w-44" />
         <TaskBackNav className="ml-auto flex-shrink-0" />
-        <TerminalToggleButton />
       </header>
       <div className="mx-auto w-full px-4 py-6 sm:p-8">
         <div className="mt-4 flex flex-wrap items-start gap-3">

@@ -8,7 +8,6 @@ import AuthGate from './components/auth/AuthGate';
 import { TaskBoardPage, TaskDetailPage } from './components/tasks';
 import { OperatorSettingsPage } from './components/operators/OperatorSettingsPage';
 import { AssistantPanel } from './components/operators/AssistantPanel';
-import { TerminalDrawer } from './components/terminal/TerminalDrawer';
 import { TerminalDrawerProvider } from './hooks/useTerminalDrawer';
 import i18n from './i18n/config.js';
 
@@ -120,7 +119,6 @@ export default function App() {
                   <Route path="/assistant" element={<AssistantPanel />} />
                   <Route path="/settings/operator" element={<OperatorSettingsPage />} />
                 </Routes>
-                <TerminalDrawer />
               </TerminalDrawerProvider>
             </Router>
           </WebSocketProvider>
