@@ -4,11 +4,11 @@ import type { Task, TaskStatus } from '../../types/app';
 import { Pill, PillBar } from '../../shared/view/ui';
 import useLocalStorage from '../../hooks/useLocalStorage';
 
-import { EXECUTOR_META, type TaskProjectOption } from './TaskCard';
+import type { TaskProjectOption } from './TaskCard';
 import { canOpenSession } from './taskActions';
 import { SubStatusBadge } from './SubStatusBadge';
 import { sortTasks, type TaskSortDir, type TaskSortKey } from './taskTable';
-import { groupByStatus, LABEL_META, PRIORITY_META, STATUS_META, STATUS_ORDER, toggleStatus } from './taskStatus';
+import { groupByStatus, LABEL_META, PRIORITY_META, STATUS_META, STATUS_ORDER, toggleStatus, EXECUTOR_META } from './taskStatus';
 import { taskDeadlineInfo } from './taskDeadline';
 import { formatAbsoluteTime } from './taskTimestamp';
 
@@ -249,9 +249,11 @@ function TaskRow({
               {LABEL_META[label].label}
             </span>
           )}
-          <span className={`font-semibold ${EXECUTOR_META[task.executor_provider].badge}`}>
-            {EXECUTOR_META[task.executor_provider].label}
-          </span>
+          {EXECUTOR_META[task.executor_provider] && (
+            <span className={`font-semibold ${EXECUTOR_META[task.executor_provider].badge}`}>
+              {EXECUTOR_META[task.executor_provider].label}
+            </span>
+          )}
           {task.executor_model && <span className="font-mono">{task.executor_model}</span>}
         </div>
       </td>

@@ -1,4 +1,4 @@
-import type { SubStatus, Task, TaskPriority, TaskLabel, TaskStatus } from '../../types/app';
+import type { SubStatus, Task, TaskEngine, TaskPriority, TaskLabel, TaskStatus } from '../../types/app';
 
 import { taskTimeLabel } from './taskTimestamp';
 
@@ -81,4 +81,12 @@ export const LABEL_META: Record<TaskLabel, { label: string; color: string }> = {
   refactor: { label: '重构', color: '#a855f7' },
   docs: { label: '文档', color: '#0891b2' },
   other: { label: '其他', color: '#6b7280' },
+};
+
+/** Executor 引擎徽标展示（任务卡 / 表格行共用文案与配色）。 */
+export const EXECUTOR_META: Record<TaskEngine, { label: string; badge: string }> = {
+  claude: { label: '◈ Claude', badge: 'bg-green-500/10 text-green-600 dark:text-green-400' },
+  codex: { label: '◈ Codex', badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+  opencode: { label: '◈ OpenCode', badge: 'bg-violet-500/10 text-violet-600 dark:text-violet-400' },
+  qoder: { label: '◈ Qoder', badge: 'bg-sky-500/10 text-sky-600 dark:text-sky-400' },
 };

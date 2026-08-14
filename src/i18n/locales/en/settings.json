@@ -343,9 +343,6 @@
       "claude": {
         "description": "Anthropic Claude AI assistant"
       },
-      "cursor": {
-        "description": "Cursor AI-powered code editor"
-      },
       "codex": {
         "description": "OpenAI Codex AI assistant"
       },
@@ -368,8 +365,7 @@
     "title": "Permission Settings",
     "skipPermissions": {
       "label": "Skip permission prompts (use with caution)",
-      "claudeDescription": "Equivalent to --dangerously-skip-permissions flag",
-      "cursorDescription": "Equivalent to -f flag in Cursor CLI"
+      "claudeDescription": "Equivalent to --dangerously-skip-permissions flag"
     },
     "allowedTools": {
       "title": "Allowed Tools",
@@ -444,7 +440,6 @@
     "title": "MCP Servers",
     "description": {
       "claude": "Model Context Protocol servers provide additional tools and data sources to Claude",
-      "cursor": "Model Context Protocol servers provide additional tools and data sources to Cursor",
       "codex": "Model Context Protocol servers provide additional tools and data sources to Codex",
       "opencode": "Model Context Protocol servers provide additional tools and data sources to OpenCode"
     },

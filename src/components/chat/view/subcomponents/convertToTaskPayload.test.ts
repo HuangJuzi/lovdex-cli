@@ -29,6 +29,9 @@ test('provider kept when a task engine, else falls back to claude', () => {
   assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'codex' }), isRunning: false }).executorProvider, 'codex');
   assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'opencode' }), isRunning: false }).executorProvider, 'opencode');
   assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'qoder' }), isRunning: false }).executorProvider, 'qoder');
+  // NOTE: 'sophcode' is a deliberately-killed legacy engine (not a member of
+  // TaskEngine). This negative case verifies unknown/old provider values fall
+  // back to claude instead of shipping a bogus engine into the DB. Keep it.
   assert.equal(buildSessionToTaskPayload({ session: makeSession({ provider: 'sophcode' as unknown as ProjectSession['provider'] }), isRunning: false }).executorProvider, 'claude');
   assert.equal(buildSessionToTaskPayload({ session: makeSession({}), isRunning: false }).executorProvider, 'claude');
 });

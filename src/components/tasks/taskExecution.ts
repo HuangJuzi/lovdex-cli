@@ -37,8 +37,6 @@ export type TaskChatSend = {
 // for interactive chats.
 function settingsKeyFor(provider: string): string {
   switch (provider) {
-    case 'cursor':
-      return 'cursor-tools-settings';
     case 'codex':
       return 'codex-settings';
     case 'opencode':
