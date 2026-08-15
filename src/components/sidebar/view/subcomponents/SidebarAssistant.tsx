@@ -2,10 +2,12 @@ import { ChevronDown, ChevronRight, Check, Edit2, MessageSquare, Plus, Settings,
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Button, buttonVariants } from '../../../../shared/view/ui';
+import { Button, buttonVariants, Dialog, DialogContent, DialogTitle } from '../../../../shared/view/ui';
 import { cn } from '../../../../lib/utils';
 import { api } from '../../../../utils/api';
-import { resetOperatorSessionFlow } from '../../../operators/operatorSession';
+import { createOperatorSession, resetOperatorCreateFlow } from '../../../operators/operatorSession';
+import SessionProviderLogo from '../../../llm-logo-provider/SessionProviderLogo';
+import type { LLMProvider } from '../../../../types/app';
 import { ACTIVE_WINDOW_MS, getSessionDotState } from '../../utils/utils';
 
 type OperatorSession = {
@@ -16,6 +18,28 @@ type OperatorSession = {
 };
 
 const COLLAPSE_KEY = 'lovdex:assistant:sessions-collapsed';
+
+/**
+ * Providers offered when creating a new Lovdex助手 session. Mirrors the chat
+ * composer's provider list; `claude` is the default (the operator closed tool
+ * set is Claude-only, but a session row is valid for every provider).
+ */
+const PROVIDER_OPTIONS: { id: LLMProvider; name: string }[] = [
+  { id: 'claude', name: 'Claude Code' },
+  { id: 'opencode', name: 'OpenCode' },
+  { id: 'codex', name: 'Codex' },
+  { id: 'qoder', name: 'Qoder' },
+];
+
+const readStoredProvider = (): LLMProvider => {
+  try {
+    const stored = localStorage.getItem('selected-provider');
+    if (PROVIDER_OPTIONS.some((p) => p.id === stored)) return stored as LLMProvider;
+  } catch {
+    // SSR / test environment without localStorage
+  }
+  return 'claude';
+};
 
 /**
  * Compact relative time for sidebar rows (matches SidebarSessionItem):
@@ -61,8 +85,8 @@ const formatCompactSessionAge = (dateString: string, currentTime: Date): string 
  *    过滤），所以 useProjectsState 的 session 解析可以直接命中，无需 reload。
  *  - `activeSessionId`（当前打开的会话）所在行高亮，提示「正在看哪一个」。
  *
- * 挂载时拉一次 + 窗口重新获焦时刷新。[+] → /assistant?new=1（强制新建）；
- * [⚙] → /settings/operator。
+ * 挂载时拉一次 + 窗口重新获焦时刷新。[+] 弹出 provider 选择框，确认后创建
+ * 会话并打开；[⚙] → /settings/operator。
  */
 type SidebarAssistantProps = {
   activeSessionId?: string | null;
@@ -92,6 +116,46 @@ export default function SidebarAssistant({ activeSessionId = null, onOpenSession
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const editContainerRef = useRef<HTMLDivElement>(null);
+
+  // New-session dialog (provider selection). Creation happens only on explicit
+  // confirm — the「+」button no longer navigates and no longer POSTs directly.
+  const [newDialogOpen, setNewDialogOpen] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<LLMProvider>(readStoredProvider);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const creatingRef = useRef(false);
+
+  function openNewDialog() {
+    // Clear any sticky create flow so this confirm always POSTs a fresh session.
+    resetOperatorCreateFlow();
+    setCreateError(null);
+    setNewDialogOpen(true);
+  }
+
+  async function confirmCreate() {
+    if (creatingRef.current) return;
+    creatingRef.current = true;
+    setCreateError(null);
+    try {
+      const result = await createOperatorSession(selectedProvider);
+      if (!result.ok) {
+        setCreateError(
+          result.reason === 'disabled'
+            ? '交互式 Lovdex助手已在设置中关闭'
+            : result.message ?? '创建 Lovdex助手 会话失败',
+        );
+        return;
+      }
+      try {
+        localStorage.setItem('selected-provider', selectedProvider);
+      } catch {
+        // ignore storage failures
+      }
+      setNewDialogOpen(false);
+      openSession(result.sessionId);
+    } finally {
+      creatingRef.current = false;
+    }
+  }
 
   const loadSessions = useCallback(async () => {
     try {
@@ -349,7 +413,7 @@ export default function SidebarAssistant({ activeSessionId = null, onOpenSession
       {/* Mobile: 显式行，按钮常驻（触屏无 hover）。点击整行折叠。 */}
       <div className="md:hidden">
         <div
-          className="mx-1 flex items-center justify-between rounded-lg bg-primary/5 p-2 active:scale-[0.98] transition-all duration-150"
+          className="mx-1 flex items-center justify-between rounded-lg bg-primary/5 p-2 transition-all duration-150 active:scale-[0.98]"
           onClick={toggleCollapsed}
           title={hasSessions ? (collapsed ? '展开 Lovdex助手 会话' : '收起 Lovdex助手 会话') : 'Lovdex助手'}
         >
@@ -362,8 +426,7 @@ export default function SidebarAssistant({ activeSessionId = null, onOpenSession
               className="flex h-7 w-7 items-center justify-center rounded text-primary active:scale-90"
               onClick={(e) => {
                 e.stopPropagation();
-                resetOperatorSessionFlow(true);
-                navigate('/assistant?new=1');
+                openNewDialog();
               }}
               title="新建 Lovdex助手 会话"
               aria-label="新建 Lovdex助手 会话"
@@ -410,15 +473,13 @@ export default function SidebarAssistant({ activeSessionId = null, onOpenSession
             className="touch:opacity-100 flex h-7 w-7 cursor-pointer items-center justify-center rounded text-muted-foreground opacity-0 transition-all duration-150 hover:bg-primary/20 hover:text-primary hover:ring-1 hover:ring-primary/40 group-hover:opacity-100"
             onClick={(e) => {
               e.stopPropagation();
-              resetOperatorSessionFlow(true);
-              navigate('/assistant?new=1');
+              openNewDialog();
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 e.stopPropagation();
-                resetOperatorSessionFlow(true);
-                navigate('/assistant?new=1');
+                openNewDialog();
               }
             }}
             title="新建 Lovdex助手 会话"
@@ -452,6 +513,66 @@ export default function SidebarAssistant({ activeSessionId = null, onOpenSession
 
       {/* Desktop: collapsible Lovdex助手 session history under the row. */}
       {sessionList('ml-3 mt-1 hidden max-h-[40vh] border-l border-border pl-3 md:block')}
+
+      {/* 新建会话：先选 provider，确认后才 createSession（不再在「+」上直接建）。 */}
+      <Dialog
+        open={newDialogOpen}
+        onOpenChange={(open) => {
+          if (!creatingRef.current) setNewDialogOpen(open);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogTitle>新建 Lovdex助手 会话</DialogTitle>
+          <div className="px-6 pb-2 pt-5">
+            <p className="text-sm font-semibold text-foreground">选择 Provider</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              选择运行 Lovdex助手 会话使用的 Provider，确认后创建新会话。
+            </p>
+          </div>
+          <div className="flex flex-col gap-1 px-6 py-2">
+            {PROVIDER_OPTIONS.map((option) => {
+              const selected = selectedProvider === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setSelectedProvider(option.id)}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors',
+                    selected
+                      ? 'border-primary/50 bg-primary/5'
+                      : 'border-border/60 hover:border-border hover:bg-muted',
+                  )}
+                  aria-pressed={selected}
+                >
+                  <SessionProviderLogo provider={option.id} className="h-5 w-5 shrink-0" />
+                  <span className="min-w-0 flex-1 text-sm font-medium text-foreground">{option.name}</span>
+                  {selected && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                </button>
+              );
+            })}
+          </div>
+          {createError && (
+            <div className="px-6 pb-2 text-sm text-red-500">{createError}</div>
+          )}
+          <div className="flex justify-end gap-2 border-t border-border bg-muted/30 px-6 py-4">
+            <Button
+              variant="ghost"
+              onClick={() => setNewDialogOpen(false)}
+              disabled={creatingRef.current}
+            >
+              取消
+            </Button>
+            <Button
+              variant="chunkyPrimary"
+              onClick={() => void confirmCreate()}
+              disabled={creatingRef.current}
+            >
+              {creatingRef.current ? '创建中…' : '创建会话'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

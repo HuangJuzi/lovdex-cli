@@ -305,10 +305,11 @@ export const api = {
     listSessions: () => authenticatedFetch('/api/providers/sessions/operator'),
     // Create an operator assistant session. The workspace is bound to the
     // backend (operator config) — the client does not pass a projectPath.
-    createSession: () =>
+    // Provider is chosen in the new-session dialog (defaults to claude).
+    createSession: (provider = 'claude') =>
       authenticatedFetch('/api/providers/sessions', {
         method: 'POST',
-        body: JSON.stringify({ provider: 'claude', isOperator: true }),
+        body: JSON.stringify({ provider, isOperator: true }),
       }),
   },
 

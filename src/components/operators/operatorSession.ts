@@ -20,6 +20,7 @@
  */
 
 import { api } from '../../utils/api';
+import type { LLMProvider } from '../../types/app';
 
 export type EnsureOperatorSessionResult =
   | { ok: true; sessionId: string }
@@ -28,13 +29,13 @@ export type EnsureOperatorSessionResult =
 export type OperatorSessionDeps = {
   settings: () => Promise<Response>;
   listSessions: () => Promise<Response>;
-  createSession: () => Promise<Response>;
+  createSession: (provider?: LLMProvider) => Promise<Response>;
 };
 
 const productionDeps: OperatorSessionDeps = {
   settings: () => api.operator.settings(),
   listSessions: () => api.operator.listSessions(),
-  createSession: () => api.operator.createSession(),
+  createSession: (provider = 'claude') => api.operator.createSession(provider),
 };
 
 /**
@@ -99,5 +100,72 @@ export function ensureOperatorSession(
   })();
 
   flows.set(forceNew, flow);
+  return flow;
+}
+
+/**
+ * Per-provider in-flight/sticky create flows for the new-session dialog.
+ *
+ * The sidebar「+」button now opens a provider dialog instead of navigating to
+ * /assistant?new=1; the actual `POST /api/providers/sessions` happens only
+ * when the user confirms the dialog. This map single-flights that confirm so a
+ * double click (or a React.StrictMode remount of the dialog host) allocates
+ * exactly one session per provider. It is sticky-on-success for the same race
+ * the `flows` map guards against; `resetOperatorCreateFlow` clears it when the
+ * dialog opens so a later confirm always creates a fresh session.
+ */
+const createFlows = new Map<LLMProvider, Promise<EnsureOperatorSessionResult>>();
+
+/** Clears a cached create flow (or all), forcing the next confirm to POST. */
+export function resetOperatorCreateFlow(provider?: LLMProvider): void {
+  if (provider === undefined) createFlows.clear();
+  else createFlows.delete(provider);
+}
+
+/**
+ * Creates a brand-new operator session for the given provider, single-flighted
+ * at module level. Only the settings gate (interactive chat on/off) runs before
+ * the POST — the dialog's confirm is already an explicit "new session" intent,
+ * so there is no reuse-latest step here.
+ */
+export function createOperatorSession(
+  provider: LLMProvider,
+  deps: OperatorSessionDeps = productionDeps,
+): Promise<EnsureOperatorSessionResult> {
+  const existing = createFlows.get(provider);
+  if (existing) return existing;
+
+  const flow = (async (): Promise<EnsureOperatorSessionResult> => {
+    try {
+      // Interactive chat can be disabled in the operator settings.
+      const cfgRes = await deps.settings();
+      if (cfgRes.ok) {
+        const cfg = (await cfgRes.json()) as { interactive_chat_enabled?: boolean };
+        if (cfg.interactive_chat_enabled === false) {
+          return { ok: false, reason: 'disabled' };
+        }
+      }
+
+      const createRes = await deps.createSession(provider);
+      if (!createRes.ok) {
+        // Transient failure — do not poison later attempts with a sticky error.
+        createFlows.delete(provider);
+        return { ok: false, reason: 'http', status: createRes.status };
+      }
+      const created = (await createRes.json()) as { data?: { sessionId?: string } };
+      const sessionId = created?.data?.sessionId;
+      if (!sessionId) {
+        createFlows.delete(provider);
+        return { ok: false, reason: 'missing-id' };
+      }
+      return { ok: true, sessionId };
+    } catch (err) {
+      // Failure must not poison later attempts — allow a retry.
+      createFlows.delete(provider);
+      return { ok: false, reason: 'error', message: (err as Error).message ?? '启动 Lovdex助手失败' };
+    }
+  })();
+
+  createFlows.set(provider, flow);
   return flow;
 }

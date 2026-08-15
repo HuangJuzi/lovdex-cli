@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  createOperatorSession,
   ensureOperatorSession,
+  resetOperatorCreateFlow,
   resetOperatorSessionFlow,
   type OperatorSessionDeps,
 } from './operatorSession';
@@ -145,4 +147,65 @@ test('missing sessionId in the response surfaces as missing-id', async () => {
   const result = await ensureOperatorSession(true, deps);
 
   assert.deepEqual(result, { ok: false, reason: 'missing-id' });
+});
+
+test('createOperatorSession passes the chosen provider through to createSession', async () => {
+  reset();
+  resetOperatorCreateFlow();
+  let seenProvider: string | undefined;
+  const { deps } = makeDeps({
+    createSession: async (provider) => {
+      seenProvider = provider;
+      return jsonResponse({ data: { sessionId: 's-opencode' } }, 201);
+    },
+  });
+
+  const result = await createOperatorSession('opencode', deps);
+
+  assert.equal(seenProvider, 'opencode');
+  assert.deepEqual(result, { ok: true, sessionId: 's-opencode' });
+});
+
+test('createOperatorSession single-flights concurrent confirms into one POST', async () => {
+  reset();
+  resetOperatorCreateFlow();
+  const { calls, deps } = makeDeps();
+
+  const [a, b] = await Promise.all([
+    createOperatorSession('claude', deps),
+    createOperatorSession('claude', deps),
+  ]);
+
+  assert.equal(calls.createSession, 1, 'two confirms must share one createSession');
+  assert.deepEqual(a, { ok: true, sessionId: 's1' });
+  assert.deepEqual(b, { ok: true, sessionId: 's1' });
+});
+
+test('resetOperatorCreateFlow forces a fresh POST on the next confirm', async () => {
+  reset();
+  resetOperatorCreateFlow();
+  const { calls, deps } = makeDeps();
+
+  await createOperatorSession('claude', deps);
+  resetOperatorCreateFlow('claude');
+  const result = await createOperatorSession('claude', deps);
+
+  assert.equal(calls.createSession, 2, 'reset must force a new POST');
+  assert.deepEqual(result, { ok: true, sessionId: 's2' });
+});
+
+test('createOperatorSession failure clears its entry so a retry POSTs again', async () => {
+  reset();
+  resetOperatorCreateFlow();
+  const failing = makeDeps({
+    createSession: async () => new Response('{}', { status: 500 }),
+  }).deps;
+
+  const failed = await createOperatorSession('qoder', failing);
+  assert.deepEqual(failed, { ok: false, reason: 'http', status: 500 });
+
+  const { calls: calls2, deps: deps2 } = makeDeps();
+  const result = await createOperatorSession('qoder', deps2);
+  assert.equal(calls2.createSession, 1);
+  assert.deepEqual(result, { ok: true, sessionId: 's1' });
 });
