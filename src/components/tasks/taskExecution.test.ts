@@ -37,6 +37,16 @@ test('taskPromptOf trims the description', () => {
   assert.equal(taskPromptOf({ title: 't', description: '  do the thing  ' }), 'do the thing');
 });
 
+test('taskPromptOf prefixes slash-leading prompts so the CLI does not treat them as commands', () => {
+  const prompt = taskPromptOf({ title: '/help 里面没有弹出所有的命令和skill', description: null });
+  assert.ok(!prompt.startsWith('/'));
+  assert.ok(prompt.includes('/help 里面没有弹出所有的命令和skill'));
+});
+
+test('taskPromptOf leaves ordinary prompts untouched', () => {
+  assert.equal(taskPromptOf({ title: 't', description: '修复空指针' }), '修复空指针');
+});
+
 test('buildTaskChatSend defaults content to the task prompt', () => {
   const frame = buildTaskChatSend('s1', task);
   assert.equal(frame.type, 'chat.send');

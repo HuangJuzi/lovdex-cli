@@ -64,7 +64,11 @@ function readToolsSettings(provider: string): ToolsSettings {
  * ever had a title.
  */
 export function taskPromptOf(task: Pick<Task, 'description' | 'title'>): string {
-  return (task.description ?? '').trim() || task.title;
+  const prompt = (task.description ?? '').trim() || task.title;
+  // A leading "/" makes the provider CLI parse the whole prompt as a local
+  // slash command, so the run ends with no transcript and the session reads
+  // empty. Prefixing a line keeps the intent while dodging that parsing.
+  return prompt.startsWith('/') ? `执行以下任务：\n${prompt}` : prompt;
 }
 
 /**
